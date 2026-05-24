@@ -84,6 +84,12 @@ export const HOW_IT_WORKS_STEPS = [
     titleKey: "Build or Upload Your CV",
     descriptionKey:
       "Start from scratch with our AI-powered builder or upload your existing CV. Choose from premium templates designed to impress recruiters.",
+    badges: ["50+ Templates", "PDF Import", "DOCX Support", "Auto-Save"],
+    detailPoints: [
+      "Pick a blank template or upload your existing CV",
+      "AI pre-fills sections from your uploaded file",
+      "Switch templates instantly with no data loss",
+    ],
   },
   {
     step: "02",
@@ -91,6 +97,12 @@ export const HOW_IT_WORKS_STEPS = [
     titleKey: "Get AI Analysis & Feedback",
     descriptionKey:
       "Our AI scans your CV for ATS compatibility, grammar issues, keyword gaps, and gives you a detailed improvement score.",
+    badges: ["ATS Score", "Grammar Check", "Keywords", "Readability"],
+    detailPoints: [
+      "Instant ATS compatibility score out of 100",
+      "Highlighted grammar issues with one-click fixes",
+      "Missing keyword suggestions tailored to the job",
+    ],
   },
   {
     step: "03",
@@ -98,6 +110,12 @@ export const HOW_IT_WORKS_STEPS = [
     titleKey: "Apply with Confidence",
     descriptionKey:
       "Download your polished, recruiter-ready CV and start landing more interviews. Track your progress with our analytics dashboard.",
+    badges: ["1-Click Export", "Track Progress", "Analytics", "Interview Prep"],
+    detailPoints: [
+      "Export as PDF, Word, or share a live link",
+      "Track application status across companies",
+      "Practice with AI-generated interview questions",
+    ],
   },
 ];
 

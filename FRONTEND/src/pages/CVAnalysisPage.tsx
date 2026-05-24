@@ -1,21 +1,13 @@
-import {
-  Box,
-  Container,
-  Typography,
-  Paper,
-  CircularProgress,
-  Button,
-} from "@mui/material";
-import { useEffect, useRef } from "react";
+import { Box, Container, Typography, Paper, Button } from "@mui/material";
+import { useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useDispatch } from "react-redux";
 import { useFile } from "../hooks/useFile";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
 import CVAnalysisDashboard from "../features/CVAnalysis/CVAnalysisDashboard";
+import ContentBlock from "../components/ui/ContentBlock";
 
 const CVAnalysisPage = () => {
   const { t } = useTranslation();
-  const dispatch = useDispatch<any>();
   const { uploadedFile, setUploadedFile } = useFile();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,30 +26,14 @@ const CVAnalysisPage = () => {
     <Box sx={{ bgcolor: "#f5f4ef", minHeight: "100vh", py: { xs: 6, md: 10 } }}>
       <Container maxWidth="xl">
         <Box sx={{ textAlign: "center", mb: 6 }}>
-          <Typography
-            variant="h3"
-            sx={{
-              fontWeight: "bold",
-              color: "#1a1a18",
-              fontFamily: '"DM Serif Display", serif',
-              mb: 2,
-            }}
-          >
-            {t("AI Resume Analyzer")}
-          </Typography>
-          <Typography
-            variant="h6"
-            sx={{
-              color: "#6b6b66",
-              maxWidth: 700,
-              mx: "auto",
-              fontWeight: "normal",
-            }}
-          >
-            {t(
+          <ContentBlock
+            size="section"
+            headline={t("AI Resume Analyzer")}
+            text={t(
               "Upload your CV for a comprehensive AI review. Discover your ATS score, get actionable suggestions, and prepare with tailored interview questions.",
             )}
-          </Typography>
+            textMaxWidth="700px"
+          />
         </Box>
 
         {!uploadedFile ? (

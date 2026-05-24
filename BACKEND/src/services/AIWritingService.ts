@@ -11,9 +11,9 @@ export const generateAIContent = async (
 ): Promise<string> => {
   try {
     const response = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
+      "https://api.groq.com/openai/v1/chat/completions",
       {
-        model: "gpt-4o-mini",
+        model: "llama-3.1-8b-instant",
         messages: [
           {
             role: "system",
@@ -33,7 +33,7 @@ export const generateAIContent = async (
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
         },
         timeout: 30000,
       }

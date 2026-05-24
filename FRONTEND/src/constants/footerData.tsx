@@ -18,18 +18,18 @@ export const FOOTER_LINKS_DATA = {
   Company: [
     { label: "About Us", to: "/" },
     { label: "Careers", to: "/" },
-    { label: "Privacy Policy", to: "/" },
-    { label: "Terms of Service", to: "/" },
+    { label: "Privacy Policy", to: "/privacy" },
+    { label: "Terms of Service", to: "/terms" },
   ],
 };
 
 export const FOOTER_SOCIAL_LINKS = [
-  { icon: <TwitterIcon fontSize="small" />, href: "#" },
-  { icon: <LinkedInIcon fontSize="small" />, href: "#" },
+  {
+    icon: <LinkedInIcon fontSize="small" />,
+    href: "https://www.linkedin.com/in/omaralsayed10",
+  },
   {
     icon: <GitHubIcon fontSize="small" />,
-    href: "https://github.com/MohamedKhalifa7/Resume-IQ",
+    href: "https://github.com/OmarAlsayed10",
   },
 ];
-
-export const FOOTER_LEGAL_LINKS = ["Privacy", "Terms", "Cookies"];

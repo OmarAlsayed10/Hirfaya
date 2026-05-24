@@ -1,7 +1,8 @@
 import OpenAI from "openai";
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1",
 });
 
 type PredefinedResponses = {
@@ -102,7 +103,7 @@ export const generateChatResponse = async (message: string, chatId: string) => {
   }
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "llama-3.1-8b-instant",
     messages: [
       {
         role: "system",

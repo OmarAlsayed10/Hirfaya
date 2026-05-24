@@ -25,12 +25,14 @@ import ChatBot from "./features/chatBot/ChatBot";
 import ProPaymentForm from "./features/payment/Payment";
 import Blog from "./pages/blogs.jsx";
 import BlogDetail from "./pages/blogDetails.jsx";
-import PricingSection from "./features/Home/PricingSection.jsx";
 
 import PricingPage from "./pages/PricingPage.tsx";
 import Settings from "./features/Settings/Settings";
 import TemplatesPage from "./pages/Templates";
 import HelpCenter from "./pages/HelpCenter";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import { PricingSection } from "./features/Home/index.ts";
 
 const router = createBrowserRouter([
   {
@@ -96,6 +98,8 @@ const router = createBrowserRouter([
       },
       { path: "templates", element: <TemplatesPage /> },
       { path: "help", element: <HelpCenter /> },
+      { path: "terms", element: <TermsPage /> },
+      { path: "privacy", element: <PrivacyPage /> },
     ],
   },
   { path: "register", element: <RegisterPage /> },

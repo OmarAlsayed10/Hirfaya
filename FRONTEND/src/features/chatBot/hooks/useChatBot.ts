@@ -15,24 +15,33 @@ export const useChatBot = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
+        if (!open) return;
+
         const createChat = async () => {
             try {
                 const res = await axios.post(
                     'http://localhost:3001/api/chatbot/create',
-                    { messages },
+                    { messages: [] },
                     { withCredentials: true }
                 );
-                setChatId(res.data._id);
+                setChatId(res.data.id);
+                setErrorMessage('');
             } catch (err: any) {
                 if (err.response?.status === 401) {
                     setErrorMessage('🔒 You need to log in to start the chatbot.');
+                } else if (err.response?.status === 403) {
+                    setErrorMessage('🔒 This feature is for Pro users only.');
                 } else {
+                    setErrorMessage('❌ Could not start chat session. Please refresh.');
                     console.error('Error creating chat:', err);
                 }
             }
         };
+
+        setChatId(null);
+        setErrorMessage('');
         createChat();
-    }, []);
+    }, [open]);
 
     const handleChatButtonClick = () => {
         if (!user) {
@@ -48,7 +57,12 @@ export const useChatBot = () => {
     };
 
     const handleSend = async () => {
-        if (!input.trim() || !chatId) return;
+        if (!input.trim()) return;
+
+        if (!chatId) {
+            setErrorMessage('⚠️ Chat session not ready. Please refresh the page.');
+            return;
+        }
 
         setErrorMessage('');
 

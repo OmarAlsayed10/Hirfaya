@@ -1,0 +1,1 @@
+export { GetStartMenu } from './GetStartMenu';

@@ -1,0 +1,1 @@
+export { GrammarCheckResults } from './GrammarCheckResults';

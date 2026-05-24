@@ -1,7 +1,8 @@
 import OpenAI from "openai";
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1",
 });
 
 export async function aiResponse(cvText: string): Promise<{
@@ -51,7 +52,7 @@ Based on this resume, respond ONLY with a valid JSON object in exactly this form
 }`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "llama-3.1-8b-instant",
     messages: [
       { role: "system", content: "You are a professional ATS compliance advisor. Always respond with valid JSON only, no markdown, no code fences, no extra text." },
       { role: "user", content: prompt },

@@ -18,7 +18,6 @@ const AuthProvider = ({ children }) => {
       if (res.data && res.data.user) {
         setUser(res.data.user);
         setToken(res.data.token);
-        console.log("User data:", res.data.user);
       } else {
         throw new Error("Invalid response from server.");
       }
@@ -54,6 +53,11 @@ const AuthProvider = ({ children }) => {
     setToken(null);
   };
 
+  const updateUserFromPayment = (userData: any, newToken: string) => {
+    setUser((prev: any) => ({ ...prev, ...userData }));
+    if (newToken) setToken(newToken);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -64,6 +68,7 @@ const AuthProvider = ({ children }) => {
         logout,
         loading,
         fetchingAndFrefreshUser,
+        updateUserFromPayment,
       }}
     >
       {children}

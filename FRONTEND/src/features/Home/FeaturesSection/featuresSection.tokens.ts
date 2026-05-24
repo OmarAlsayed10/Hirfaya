@@ -1,0 +1,105 @@
+import { COLORS, TYPOGRAPHY, RADIUS, SHADOWS } from '../../../theme/tokens';
+
+const featuresSection = {
+  root: {
+    py: { xs: 10, md: 14 },
+    backgroundColor: COLORS.bgLight,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  blob: {
+    position: 'absolute',
+    top: -80,
+    left: -80,
+    width: 320,
+    height: 320,
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(42,92,69,0.07) 0%, transparent 70%)',
+    pointerEvents: 'none',
+  },
+  sectionHeader: {
+    textAlign: 'center',
+    mb: { xs: 7, md: 9 },
+    px: 2,
+  },
+  chip: {
+    mb: 2,
+    backgroundColor: COLORS.bgIconTinted,
+    color: COLORS.primary,
+    fontWeight: 600,
+    letterSpacing: '0.5px',
+    fontSize: TYPOGRAPHY.sizeXs,
+  },
+  grid: {
+    px: { xs: 2, sm: 4, md: 8 },
+    maxWidth: '1200px',
+    mx: 'auto',
+    display: 'grid',
+    gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+    gap: 3,
+  },
+  card: {
+    height: '100%',
+    p: 3.5,
+    borderRadius: '14px',
+    backgroundColor: COLORS.bgWhite,
+    border: '1px solid rgba(26,26,24,0.07)',
+    cursor: 'pointer',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    transition: 'all 0.25s ease',
+    '&:hover': {
+      transform: 'translateY(-5px)',
+      boxShadow: '0 20px 40px -12px rgba(42,92,69,0.15)',
+      borderColor: COLORS.primaryAlpha35,
+      '& .arrow-icon': { opacity: 1, transform: 'translateX(4px)' },
+    },
+  },
+  iconBadgeRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  iconBox: {
+    p: 1.5,
+    backgroundColor: COLORS.bgIconTinted,
+    borderRadius: '10px',
+    display: 'inline-flex',
+  },
+  badgeChip: {
+    backgroundColor: COLORS.bgLight,
+    color: COLORS.textSecondary,
+    fontSize: '0.7rem',
+    fontWeight: 600,
+    height: 24,
+  },
+  cardTitle: {
+    fontWeight: 600,
+    color: COLORS.textPrimary,
+    mb: 0.75,
+    fontSize: TYPOGRAPHY.sizeMd,
+  },
+  cardDesc: {
+    color: COLORS.textSecondary,
+    lineHeight: 1.7,
+    fontSize: TYPOGRAPHY.sizeBase,
+  },
+  arrowRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 0.5,
+    color: COLORS.primary,
+    fontSize: '0.82rem',
+    fontWeight: 600,
+    opacity: 0,
+    transition: 'all 0.25s ease',
+  },
+  arrowLabel: {
+    fontSize: '0.82rem',
+    fontWeight: 600,
+    color: COLORS.primary,
+  },
+} as const;
+
+export default featuresSection;

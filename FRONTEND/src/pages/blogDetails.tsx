@@ -66,16 +66,13 @@ const BlogDetail = () => {
         <Typography variant="h4" fontWeight="bold" mt={2}>
           {blogPost.title}
         </Typography>
-        <Typography variant="subtitle2" color="text.secondary" mt={1}>
-          {t("By")} {blogPost.author} • {blogPost.date}
-        </Typography>
       </Box>
 
       <Box mt={4}>
         {blogPost.content
           .split("\n")
-          .filter((line) => line.trim() !== "")
-          .map((paragraph, index) => (
+          .filter((line: string) => line.trim() !== "")
+          .map((paragraph: string, index: number) => (
             <Typography variant="body1" paragraph key={index}>
               {paragraph}
             </Typography>

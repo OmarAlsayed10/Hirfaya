@@ -1,7 +1,8 @@
 import OpenAI from "openai";
 
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
+    apiKey: process.env.GROQ_API_KEY,
+    baseURL: "https://api.groq.com/openai/v1",
 });
 
 export async function grammarCheck (grammarText:String):Promise<{
@@ -38,7 +39,7 @@ ${grammarText}
 `;
 
     const response = await openai.chat.completions.create({
-        model:"gpt-4o-mini",
+        model:"llama-3.1-8b-instant",
         messages:[
             {role:"system",content:"you are a professional grammar checker"},
             {role:"user",content:prompt}

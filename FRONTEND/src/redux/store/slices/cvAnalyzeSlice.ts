@@ -6,8 +6,7 @@ export const cvAnalyzeAction = createAsyncThunk(
   async function featchAnalysisCV(file: File) {
     try {
       const formData = new FormData();
-      formData.append("cv", file); // must match backend's multer field name
-      console.log("Uploading file in thunk:", file);
+      formData.append("cv", file);
       const response = await axios.post(
         "http://localhost:3001/api/ai/analyze",
         formData,
@@ -17,9 +16,6 @@ export const cvAnalyzeAction = createAsyncThunk(
           },
         }
       );
-
-      console.log("Response from server:", response.data);
-
       if (response.status === 200) {
         return response.data;
       }
