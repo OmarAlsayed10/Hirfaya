@@ -12,15 +12,219 @@ model User {
   firstName      String
   lastName       String
   email          String    @unique
+  passwordHash   String?
+  emailVerified  Boolean   @default(false)
+  otp            String?
+  otpExpiry      DateTime?
   photo          String?
+  phone          String?
+  location       String?
+  title          String?
+  linkedin       String?
+  github         String?
+  portfolio      String?
+  summary        String?   @db.Text
+  avatarColor    String?
+  skills         String[]  @default([])
+  onboarded      Boolean   @default(false)
   role           String    @default("normal user")
   proExpiresAt   DateTime?
   googleId       String?   @unique
   lastNameChange DateTime?
   createdAt      DateTime  @default(now())
 
-  cvs   CV[]
-  chats Chat[]
+  planTier           String  @default("basic")
+  credits            Int     @default(20)
+  bonusCredits       Int     @default(0)
+  creditPeriod       String?
+  liveMarketSearches Int     @default(0)
+  liveMarketPeriod   String?
+
+  banned       Boolean @default(false)
+  bannedReason String?
+  lastIp       String?
+
+  cvs                CV[]
+  chats              Chat[]
+  paymentRequests    PaymentRequest[]
+  jobPreference      JobPreference?
+  jobMatches         JobMatch[]
+  jobRoleSuggestions JobRoleSuggestion[]
+  variants           CVVariant[]
+  documents          Document[]
+  careerMatchCaches  CareerMatchCache[]
+}
+
+model CareerMatchCache {
+  id             String   @id @default(uuid())
+  userId         String
+  cacheKey       String
+  response       Json
+  usesLiveSearch Boolean  @default(false)
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cacheKey])
+  @@index([expiresAt])
+}
+
+model JobPreference {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  role      String
+  roleIds   String[] @default([])
+  level     String?
+  location  String?
+  remote    Boolean  @default(false)
+  keywords  String?
+  blocklist String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model JobMatch {
+  id          String    @id @default(uuid())
+  userId      String
+  source      String
+  externalId  String
+  title       String
+  company     String
+  location    String?
+  url         String
+  postedAt    DateTime?
+  fitScore    Int       @default(0)
+  earlyBird   Boolean   @default(false)
+  status      String    @default("matched")
+  coverLetter String?
+  appliedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, source, externalId])
+  @@index([userId, status])
+}
+
+model Job {
+  id          String    @id @default(uuid())
+  source      String
+  externalId  String
+  title       String
+  company     String
+  location    String?
+  remote      Boolean   @default(false)
+  url         String
+  postedAt    DateTime?
+  description String    @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([source, externalId])
+  @@index([postedAt])
+}
+
+model JobCategory {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  nameAr    String
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  roles     JobRole[]
+}
+
+model JobRole {
+  id         String      @id @default(uuid())
+  categoryId String
+  name       String
+  nameAr     String
+  active     Boolean     @default(true)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  category   JobCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, name])
+  @@index([categoryId, active])
+}
+
+enum JobRoleSuggestionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model JobRoleSuggestion {
+  id           String                  @id @default(uuid())
+  userId       String
+  categoryName String
+  roleName     String
+  note         String?
+  status       JobRoleSuggestionStatus @default(PENDING)
+  reviewedAt   DateTime?
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+}
+
+model CVVariant {
+  id            String   @id @default(uuid())
+  userId        String
+  jobMatchId    String
+  label         String
+  content       String   @db.Text
+  sentCount     Int      @default(0)
+  responseCount Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model IpAnalysisUsage {
+  ip        String   @id
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model BannedIp {
+  ip        String   @id
+  reason    String?
+  createdAt DateTime @default(now())
+}
+
+model AiUsage {
+  day             String
+  model           String
+  tokens          Int       @default(0)
+  calls           Int       @default(0)
+  lastRateLimitAt DateTime?
+
+  @@id([day, model])
+}
+
+model Blog {
+  id         String   @id @default(uuid())
+  slug       String   @unique
+  title      String
+  excerpt    String
+  content    String   @db.Text
+  coverImage String?
+  category   String   @default("General")
+  published  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([published, createdAt])
 }
 
 model CV {
@@ -29,12 +233,34 @@ model CV {
   personalInfo  Json
   experience    Json
   education     Json
+  projects      Json     @default("[]")
   skills        Json
   cloudinaryUrl String?
+  isPrimary     Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isPrimary])
+}
+
+// Prose documents (cover letters, LinkedIn bios) — text-based, distinct from structured CVs.
+model Document {
+  id            String   @id @default(uuid())
+  userId        String
+  type          String
+  title         String
+  content       String   @db.Text
+  targetRole    String?
+  targetCompany String?
+  isPrimary     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
 }
 
 model Chat {
@@ -44,4 +270,67 @@ model Chat {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Plans ────────────────────────────────────────────────────────────────────
+
+model Plan {
+  id           String   @id @default(uuid())
+  slug         String   @unique
+  displayName  String
+  priceEGP     Decimal  @db.Decimal(10, 2)
+  durationDays Int
+  tier         String   @default("pro")
+  kind         String   @default("subscription")
+  grantCredits Int      @default(0)
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  paymentRequests PaymentRequest[]
+
+  @@map("plans")
+}
+
+// ─── Payments ─────────────────────────────────────────────────────────────────
+
+model PaymentRequest {
+  id                   String              @id @default(uuid())
+  userId               String
+  planId               String?
+  // Snapshot of price at purchase time — plan price may change later
+  amountSnapshot       Decimal             @db.Decimal(10, 2)
+  purchaseKind         PaymentPurchaseKind @default(SUBSCRIPTION)
+  grantCreditsSnapshot Int                 @default(0)
+  pricingVersion       String?
+  currency             String              @default("EGP")
+  status               PaymentStatus       @default(PENDING)
+  referenceNumber      String?
+  screenshotUrl        String?
+  method               PaymentMethod       @default(INSTAPAY)
+  rejectionReason      String?
+  reviewedAt           DateTime?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan? @relation(fields: [planId], references: [id])
+
+  @@map("payment_requests")
+}
+
+enum PaymentPurchaseKind {
+  SUBSCRIPTION
+  FIXED_TOPUP
+  CUSTOM_TOPUP
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PaymentMethod {
+  INSTAPAY
 }

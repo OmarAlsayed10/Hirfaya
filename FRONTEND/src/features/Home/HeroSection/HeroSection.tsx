@@ -19,7 +19,7 @@ const HeroSection = () => {
         <Grow in timeout={1000}>
           <Box sx={heroSection.headlineBlock}>
             <Typography sx={heroSection.eyebrow}>
-              {t('Resume-IQ BUILDER')}
+              {t('Careerak-CV BUILDER')}
             </Typography>
 
             <Typography variant="h1" sx={heroSection.h1}>

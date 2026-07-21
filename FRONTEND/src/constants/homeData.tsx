@@ -97,11 +97,11 @@ export const HOW_IT_WORKS_STEPS = [
     titleKey: "Get AI Analysis & Feedback",
     descriptionKey:
       "Our AI scans your CV for ATS compatibility, grammar issues, keyword gaps, and gives you a detailed improvement score.",
-    badges: ["ATS Score", "Grammar Check", "Keywords", "Readability"],
+    badges: ["CV Quality Score", "Grammar Check", "Keywords", "Readability"],
     detailPoints: [
-      "Instant ATS compatibility score out of 100",
+      "Instant CV Quality Score out of 100",
       "Highlighted grammar issues with one-click fixes",
-      "Missing keyword suggestions tailored to the job",
+      "Clear keyword coverage suggestions",
     ],
   },
   {
@@ -126,7 +126,7 @@ export const TESTIMONIALS_DATA = [
     company: "Google",
     avatar: "S",
     rating: 5,
-    text: "Resume-IQ transformed my job search. The AI analysis pointed out exactly what recruiters look for and helped me land interviews at top tech companies.",
+    text: "Careerak-CV transformed my job search. The AI analysis pointed out exactly what recruiters look for and helped me land interviews at top tech companies.",
   },
   {
     name: "James K.",
@@ -142,7 +142,7 @@ export const TESTIMONIALS_DATA = [
     company: "Meta",
     avatar: "A",
     rating: 5,
-    text: "The grammar checker and smart feedback caught issues I'd been overlooking for years. My application rate jumped by 60% after using Resume-IQ.",
+    text: "The grammar checker and smart feedback caught issues I'd been overlooking for years. My application rate jumped by 60% after using Careerak-CV.",
   },
 ];
 

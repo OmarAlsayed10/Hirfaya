@@ -1,5 +1,7 @@
+import { PlanTier } from '../../../constants/pricingData';
+
 export interface PlanCardProps {
-  variant: 'free' | 'pro';
+  variant: PlanTier;
   buttonLabel: string;
   onButtonClick: () => void;
   disabled?: boolean;

@@ -1,6 +1,6 @@
 import { Box, CircularProgress, ThemeProvider } from "@mui/material";
 import { Provider } from "react-redux";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-router-dom";
 import Error from "./pages/error";
 import store from "./redux/store/store";
 import Layout from "./pages/layout";
@@ -13,6 +13,8 @@ import RegisterPage from "./features/Auth/RegisterPage";
 import GoogleAuthSuccess from "./features/Auth/GoogleAuthSuccess";
 import GrammarCheck from "./features/GrammarCheck/GrammarCheck";
 import CVAnalysisPage from "./pages/CVAnalysisPage";
+import JobRadarPage from "./pages/JobRadarPage";
+import CareerMatchPage from "./pages/CareerMatchPage";
 import { FileProvider } from "./context/fileContext.jsx";
 import { TemplateProvider } from "./context/choosenTempContext.jsx";
 import ProtectedRoute from "./guard/ProtectedRoute.jsx";
@@ -28,13 +30,26 @@ import BlogDetail from "./pages/blogDetails.jsx";
 
 import PricingPage from "./pages/PricingPage.tsx";
 import Settings from "./features/Settings/Settings";
+import OnboardingWizard from "./features/Onboarding/OnboardingWizard";
+import BuildTypeChooser from "./features/Create/BuildTypeChooser";
+import ProseDocumentEditor from "./features/Create/ProseDocumentEditor";
 import TemplatesPage from "./pages/Templates";
 import HelpCenter from "./pages/HelpCenter";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import { PricingSection } from "./features/Home/index.ts";
+import AdminDashboard from "./features/admin/AdminDashboard";
+import AdminRoute from "./guard/AdminRoute";
+import PaidRoute from "./guard/PaidRoute";
+import { FeedbackProvider } from "./context/FeedbackContext";
 
-const router = createBrowserRouter([
+const FeedbackRouterRoot = () => (
+  <FeedbackProvider>
+    <Outlet />
+  </FeedbackProvider>
+);
+
+const appRoutes = [
   {
     path: "/",
     element: <Layout />,
@@ -56,16 +71,50 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-      { path: "auth/success", element: <GoogleAuthSuccess /> },
-      { path: "grammarCheck", element: <GrammarCheck /> },
       {
-        path: "cv-analysis",
+        path: "onboarding",
         element: (
           <ProtectedRoute>
-            <CVAnalysisPage />
+            <OnboardingWizard />
           </ProtectedRoute>
         ),
       },
+      {
+        path: "create",
+        element: (
+          <ProtectedRoute>
+            <BuildTypeChooser />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "documents/new",
+        element: (
+          <ProtectedRoute>
+            <ProseDocumentEditor />
+          </ProtectedRoute>
+        ),
+      },
+      { path: "auth/success", element: <GoogleAuthSuccess /> },
+      { path: "grammarCheck", element: <GrammarCheck /> },
+      { path: "cv-analysis", element: <CVAnalysisPage /> },
+      {
+        path: "career-match",
+        element: (
+          <ProtectedRoute>
+            <CareerMatchPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "job-radar",
+        element: (
+          <ProtectedRoute>
+            <JobRadarPage />
+          </ProtectedRoute>
+        ),
+      },
+      { path: "jobs", element: <Navigate to="/job-radar" replace /> },
       {
         path: "payment-check",
         element: (
@@ -88,14 +137,7 @@ const router = createBrowserRouter([
       { path: "Blogs/:id", element: <BlogDetail /> },
       { path: "*", element: <Error /> },
       { path: "Pro-Features", element: <PricingSection /> },
-      {
-        path: "settings",
-        element: (
-          <ProtectedRoute>
-            <Settings />
-          </ProtectedRoute>
-        ),
-      },
+      { path: "settings", element: <Settings /> },
       { path: "templates", element: <TemplatesPage /> },
       { path: "help", element: <HelpCenter /> },
       { path: "terms", element: <TermsPage /> },
@@ -104,6 +146,21 @@ const router = createBrowserRouter([
   },
   { path: "register", element: <RegisterPage /> },
   { path: "login", element: <LoginPage /> },
+  {
+    path: "admin",
+    element: (
+      <AdminRoute>
+        <AdminDashboard />
+      </AdminRoute>
+    ),
+  },
+];
+
+const router = createBrowserRouter([
+  {
+    element: <FeedbackRouterRoot />,
+    children: appRoutes,
+  },
 ]);
 
 function App() {
@@ -111,7 +168,11 @@ function App() {
   const { loading } = useAuth();
 
   useEffect(() => {
-    document.body.dir = i18n.language === "ar" ? "rtl" : "ltr";
+    const direction = i18n.language === "ar" ? "rtl" : "ltr";
+
+    document.documentElement.lang = i18n.language;
+    document.documentElement.dir = direction;
+    document.body.dir = direction;
   }, [i18n.language]);
 
   if (loading) {

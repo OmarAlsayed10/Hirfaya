@@ -3,11 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ContentBlock from "../components/ui/ContentBlock";
 import PlanCard from "../components/ui/PlanCard";
-import { FEATURE_HIGHLIGHTS } from "../constants/pricingData";
+import { FEATURE_HIGHLIGHTS, TOPUP_NOTE } from "../constants/pricingData";
+import { useAuth } from "../hooks/useAuth";
 
 const PricingPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const isPro = user?.role === "pro user";
+  const tier = isAdmin ? "ultra" : user?.planTier ?? (isPro ? "pro" : "basic");
 
   return (
     <Box sx={{ bgcolor: "#f5f4ef", minHeight: "100vh", py: 8 }}>
@@ -26,33 +31,72 @@ const PricingPage = () => {
           />
         </Box>
 
+        {isAdmin && (
+          <Typography
+            sx={{
+              textAlign: "center",
+              bgcolor: "#fde68a",
+              color: "#92400e",
+              fontWeight: 600,
+              borderRadius: "10px",
+              py: 1.5,
+              px: 2,
+              maxWidth: 640,
+              mx: "auto",
+              mb: 4,
+            }}
+          >
+            {t("You're an admin — all features unlocked. No plan needed.")}
+          </Typography>
+        )}
+
         {/* Pricing Cards */}
         <Box
           sx={{
-            display: "flex",
-            flexWrap: "wrap",
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" },
             gap: 4,
-            justifyContent: "center",
             alignItems: "stretch",
-            mb: 10,
+            maxWidth: 1200,
+            mx: "auto",
+            mb: 8,
           }}
         >
-          <Box sx={{ flex: "0 1 380px" }}>
-            <PlanCard
-              variant="free"
-              buttonLabel={t("Build My Resume")}
-              onButtonClick={() => navigate("/getStart")}
-            />
-          </Box>
-
-          <Box sx={{ flex: "0 1 460px" }}>
-            <PlanCard
-              variant="pro"
-              buttonLabel={t("Build My Resume")}
-              onButtonClick={() => navigate("/payment-check")}
-            />
-          </Box>
+          <PlanCard
+            variant="basic"
+            buttonLabel={t("Build My Resume")}
+            onButtonClick={() => navigate("/getStart")}
+            disabled={tier !== "basic"}
+          />
+          <PlanCard
+            variant="pass"
+            buttonLabel={t("Buy 7-Day Pass")}
+            onButtonClick={() => navigate("/payment-check")}
+            disabled={tier !== "basic"}
+          />
+          <PlanCard
+            variant="pro"
+            buttonLabel={
+              tier === "pro"
+                ? t("Current Plan")
+                : tier === "ultra"
+                ? t("Included")
+                : t("Upgrade to Pro")
+            }
+            onButtonClick={() => navigate("/payment-check")}
+            disabled={tier === "pro" || tier === "ultra"}
+          />
+          <PlanCard
+            variant="ultra"
+            buttonLabel={tier === "ultra" ? t("Current Plan") : t("Go Ultra")}
+            onButtonClick={() => navigate("/payment-check")}
+            disabled={tier === "ultra"}
+          />
         </Box>
+
+        <Typography sx={{ textAlign: "center", color: "#6b6b66", mt: 6, mb: 12 }}>
+          {t(TOPUP_NOTE)}
+        </Typography>
 
         {/* Feature Highlights */}
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 6, mb: 10 }}>

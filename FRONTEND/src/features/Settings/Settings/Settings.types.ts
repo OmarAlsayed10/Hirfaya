@@ -1,4 +1,4 @@
-export type SettingsTab = 'profile' | 'plan' | 'cv';
+export type SettingsTab = 'profile' | 'plan' | 'cv' | 'documents';
 
 export interface NavItem {
   id: SettingsTab;

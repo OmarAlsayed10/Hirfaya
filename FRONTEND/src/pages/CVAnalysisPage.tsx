@@ -1,15 +1,46 @@
-import { Box, Container, Typography, Paper, Button } from "@mui/material";
-import { useRef } from "react";
+import { Box, Container, Typography, Paper, Button, Divider, TextField, MenuItem } from "@mui/material";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
+import { FileUser } from "../components/icons/MuiIcons";
 import { useFile } from "../hooks/useFile";
+import { CV_ENDPOINTS } from "../constants/endpoints";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
 import CVAnalysisDashboard from "../features/CVAnalysis/CVAnalysisDashboard";
 import ContentBlock from "../components/ui/ContentBlock";
+import { cvToText } from "../utils/cvToText";
+
 
 const CVAnalysisPage = () => {
   const { t } = useTranslation();
   const { uploadedFile, setUploadedFile } = useFile();
+  const [primaryText, setPrimaryText] = useState("");
+  const [primaryError, setPrimaryError] = useState("");
+  const [loadingPrimary, setLoadingPrimary] = useState(false);
+  const [level, setLevel] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const usePrimaryCV = async () => {
+    setPrimaryError("");
+    setLoadingPrimary(true);
+    try {
+      const { data } = await axios.get(CV_ENDPOINTS.primary, { withCredentials: true });
+      if (!data?.cv) {
+        setPrimaryError(t("No saved CV found. Build one first."));
+        return;
+      }
+      const text = cvToText(data.cv);
+      if (text.trim().length < 30) {
+        setPrimaryError(t("Your saved CV is too empty to analyze."));
+        return;
+      }
+      setPrimaryText(text);
+    } catch {
+      setPrimaryError(t("Couldn't load your CV. Try again."));
+    } finally {
+      setLoadingPrimary(false);
+    }
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -20,6 +51,7 @@ const CVAnalysisPage = () => {
 
   const clearFile = () => {
     setUploadedFile(null);
+    setPrimaryText("");
   };
 
   return (
@@ -30,14 +62,30 @@ const CVAnalysisPage = () => {
             size="section"
             headline={t("AI Resume Analyzer")}
             text={t(
-              "Upload your CV for a comprehensive AI review. Discover your ATS score, get actionable suggestions, and prepare with tailored interview questions.",
+              "Review the quality, clarity, formatting, and ATS readiness of your CV. Job matching lives in the separate Career Match feature.",
             )}
             textMaxWidth="700px"
           />
         </Box>
 
-        {!uploadedFile ? (
+        {!uploadedFile && !primaryText ? (
           <Box sx={{ maxWidth: 800, mx: "auto", animation: "fadeIn 0.5s" }}>
+            <Box sx={{ mb: 3 }}>
+              <TextField
+                select
+                label={t("Experience level (optional)")}
+                value={level}
+                onChange={(event) => setLevel(event.target.value)}
+                helperText={t("Leave this blank if you want the analyzer to infer your level.")}
+                fullWidth
+              >
+                <MenuItem value="">{t("Infer from my CV")}</MenuItem>
+                {['Fresh', 'Junior', 'Mid', 'Senior', 'Lead'].map((option) => (
+                  <MenuItem key={option} value={option}>{t(option)}</MenuItem>
+                ))}
+              </TextField>
+            </Box>
+
             <Paper
               elevation={0}
               sx={{
@@ -95,6 +143,38 @@ const CVAnalysisPage = () => {
                 accept=".pdf,.doc,.docx"
               />
             </Paper>
+
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, my: 3 }}>
+              <Divider sx={{ flex: 1 }} />
+              <Typography sx={{ color: "#9b9b96", fontSize: "0.85rem" }}>{t("or")}</Typography>
+              <Divider sx={{ flex: 1 }} />
+            </Box>
+
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={usePrimaryCV}
+              disabled={loadingPrimary}
+              startIcon={<FileUser size={20} />}
+              sx={{
+                py: 1.5,
+                borderRadius: "16px",
+                borderColor: "rgba(42, 92, 69, 0.4)",
+                color: "#2a5c45",
+                bgcolor: "white",
+                textTransform: "none",
+                fontWeight: "bold",
+                fontSize: "1rem",
+                "&:hover": { borderColor: "#2a5c45", bgcolor: "rgba(42, 92, 69, 0.02)" },
+              }}
+            >
+              {loadingPrimary ? t("Loading your CV...") : t("Use my primary CV")}
+            </Button>
+            {primaryError && (
+              <Typography sx={{ color: "#c25b1a", fontSize: "0.85rem", textAlign: "center", mt: 1.5 }}>
+                {primaryError}
+              </Typography>
+            )}
           </Box>
         ) : (
           <Box sx={{ animation: "fadeIn 0.5s" }}>
@@ -108,7 +188,7 @@ const CVAnalysisPage = () => {
             >
               <Typography sx={{ color: "#6b6b66", fontWeight: "bold" }}>
                 Analyzing:{" "}
-                <span style={{ color: "#2a5c45" }}>{uploadedFile.name}</span>
+                <span style={{ color: "#2a5c45" }}>{uploadedFile ? uploadedFile.name : t("Primary CV")}</span>
               </Typography>
               <Button
                 variant="outlined"
@@ -128,7 +208,7 @@ const CVAnalysisPage = () => {
                 {t("Analyze Another File")}
               </Button>
             </Box>
-            <CVAnalysisDashboard uploadedFile={uploadedFile} />
+            <CVAnalysisDashboard uploadedFile={uploadedFile ?? undefined} cvText={primaryText || undefined} level={level || undefined} />
           </Box>
         )}
       </Container>

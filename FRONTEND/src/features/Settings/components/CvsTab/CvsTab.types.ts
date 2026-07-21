@@ -1,5 +1,7 @@
 export interface CV {
-  _id: string;
-  title: string;
+  id: string;
+  _id?: string;
+  title?: string;
+  isPrimary?: boolean;
   updatedAt: string;
 }

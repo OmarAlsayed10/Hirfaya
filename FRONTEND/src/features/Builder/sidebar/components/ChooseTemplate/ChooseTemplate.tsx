@@ -31,16 +31,22 @@ function ChooseTemplateDialog({ onClose, open }: ChooseTemplateDialogProps) {
   const handleClose = () => onClose();
 
   return (
-    <Dialog onClose={handleClose} open={open}>
+    <Dialog
+      onClose={handleClose}
+      open={open}
+      fullWidth
+      maxWidth="lg"
+      fullScreen={isMobile}
+      PaperProps={{ sx: { borderRadius: isMobile ? 0 : '20px' } }}
+    >
       <Box sx={chooseTemplate.dialogHeader}>
-        <DialogTitle>{t('Choose Template')}</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 'bold' }}>{t('Choose Template')}</DialogTitle>
         <CloseIcon sx={chooseTemplate.closeIcon} onClick={handleClose} />
       </Box>
-      <Grid container spacing={2} sx={chooseTemplate.grid}>
+      <Grid container spacing={3} sx={chooseTemplate.grid}>
         {templates.map((template: TemplateItem, index: number) => (
-          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index} sx={{ display: 'flex' }}>
             <TemplateCard
-              sx={{ minWidth: isMobile ? '100%' : '30%' }}
               title={template.title}
               img={template.img}
               disc={template.disc}

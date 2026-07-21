@@ -6,7 +6,7 @@ export const aiWritingAssist = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { jobTitle, sectionName, industry, experience } = req.body;
+  const { jobTitle, sectionName, industry, experience, formData } = req.body;
 
   if (!jobTitle || !sectionName || !industry || !experience) {
     res.status(400).json({ message: "All fields are required." });
@@ -18,7 +18,8 @@ export const aiWritingAssist = async (
       jobTitle,
       sectionName,
       industry,
-      experience
+      experience,
+      formData
     );
     res.status(200).json({ sectionName, generatedContent });
   } catch (error) {

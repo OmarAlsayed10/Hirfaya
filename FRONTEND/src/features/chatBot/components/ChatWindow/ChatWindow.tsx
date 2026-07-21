@@ -9,6 +9,7 @@ import {
 import SendIcon from '@mui/icons-material/Send';
 import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import chatWindow from './chatWindow.tokens';
 import type { ChatWindowProps, ChatMessage } from './ChatWindow.types';
 import { COLORS } from '../../../../theme/tokens';
@@ -24,6 +25,7 @@ export const ChatWindow = ({
   messagesEndRef,
 }: ChatWindowProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   if (!open) return null;
 
@@ -32,7 +34,7 @@ export const ChatWindow = ({
       <Box sx={chatWindow.header}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Avatar src="/Images/bot.jpg" sx={{ width: 30, height: 30, mr: 1 }} />
-          <Typography fontWeight="bold" sx={chatWindow.headerTitle}>ChatBot</Typography>
+          <Typography fontWeight="bold" sx={chatWindow.headerTitle}>{t('ChatBot')}</Typography>
         </Box>
         <Button onClick={() => setOpen(false)} sx={chatWindow.closeButton}>
           <CloseIcon />
@@ -72,7 +74,7 @@ export const ChatWindow = ({
               onClick={() => navigate('/login')}
               style={{ color: COLORS.primary, cursor: 'pointer', fontWeight: 500 }}
             >
-              Login
+              {t('Login')}
             </span>
           </Typography>
         )}
@@ -80,7 +82,7 @@ export const ChatWindow = ({
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <TextField
             fullWidth
-            placeholder="Type your message..."
+            placeholder={t('Type your message...')}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !errorMessage && handleSend()}

@@ -36,17 +36,13 @@ const chatBotController = async (req: Request, res: Response) => {
 
   const response = await generateChatResponse(message, chatId);
 
-  // messages is a Json column — cast it to array and append
-  const messages = (chat.messages as Array<{ type: string; content: string }>) || [];
-  messages.push(
+  // Atomic jsonb append — concurrent messages to the same chat serialize at the DB
+  // and can't clobber each other's write (a read-modify-write would lose one).
+  const appended = JSON.stringify([
     { type: "user", content: message },
-    { type: "bot", content: response as string }
-  );
-
-  await prisma.chat.update({
-    where: { id: chatId },
-    data: { messages },
-  });
+    { type: "bot", content: response as string },
+  ]);
+  await prisma.$executeRaw`UPDATE "Chat" SET messages = messages || ${appended}::jsonb WHERE id = ${chatId}`;
 
   res.status(200).json({ response });
 };

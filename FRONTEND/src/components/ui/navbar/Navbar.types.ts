@@ -1,6 +1,7 @@
 export interface NavPage {
   label: string;
   href: string;
+  requiresPaid?: boolean;
 }
 
 export interface NavUser {
@@ -10,4 +11,5 @@ export interface NavUser {
   email?: string;
   role?: string;
   proExpiresAt?: number | string | Date;
+  planTier?: string;
 }

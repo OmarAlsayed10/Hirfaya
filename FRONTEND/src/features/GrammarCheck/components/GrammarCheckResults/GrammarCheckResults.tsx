@@ -74,7 +74,7 @@ export const GrammarCheckResults = ({
             {filteredIssues.length === 0 ? (
               <Box sx={{ py: 6, textAlign: 'center' }}>
                 <Typography sx={{ fontSize: '1.1rem', color: COLORS.textSecondary, mb: 1 }}>{t('noIssuesFound', 'No issues found!')}</Typography>
-                <Typography sx={{ fontSize: '0.95rem', color: COLORS.primary, fontWeight: 'bold' }}>Your text looks perfect.</Typography>
+                <Typography sx={{ fontSize: '0.95rem', color: COLORS.primary, fontWeight: 'bold' }}>{t('Your text looks perfect.')}</Typography>
               </Box>
             ) : (
               filteredIssues.map((issue: GrammarIssue) => {

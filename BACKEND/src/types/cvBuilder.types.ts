@@ -8,28 +8,34 @@ export interface CVParams {
     location: string;
     professionalTitle: string;  
     ProfessionalSummary: string;
+    linkedin?: string;
+    github?: string;
+    portfolio?: string;
   };
  
-  experience?: [
-    {
-      jobTitle?: string;
-      company?: string;
-      location?: string;
-      startDate?: string;
-      endDate?: string;
-      description?: string;
-    }
-  ];
-  education: [
-    {
-      institution: string;
-      degree: string;
-      location: string;
-      startYear: string;
-      endYear: string;
-      description: string;
-    }
-  ];
+  experience?: Array<{
+    jobTitle?: string;
+    company?: string;
+    location?: string;
+    startDate?: string;
+    endDate?: string;
+    description?: string;
+  }>;
+  education: Array<{
+    institution: string;
+    degree: string;
+    location: string;
+    startYear: string;
+    endYear: string;
+    description: string;
+  }>;
+  projects?: Array<{
+    name?: string;
+    technologies?: string;
+    demoUrl?: string;
+    githubUrl?: string;
+    description?: string;
+  }>;
   skills:{
     skills: string[];
     languages?: string;

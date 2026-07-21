@@ -7,8 +7,10 @@ export const cvTemplateAction = createAsyncThunk(
 
 
     async () => {
-        return [{ title: 'classic-cv', id: 1, img: classic, pro: false, disc: 'discription 1' },
-        { title: 'linkedin-cv', id: 2, img: linkedin, pro: true, disc: 'discription 2' },
+        return [{ title: 'jake-cv', id: 4, img: classic, pro: true, disc: 'ATS-optimized single-column (recommended)' },
+        { title: 'harvard-cv', id: 5, img: classic, pro: true, disc: 'Harvard resume format (serif, single-column)' },
+        { title: 'classic-cv', id: 1, img: classic, pro: false, disc: 'discription 1' },
+        { title: 'linkedin-cv', id: 2, img: linkedin, pro: false, disc: 'discription 2' },
         { title: 'modern-cv', id: 3, img: modern, pro: true, disc: 'discription 3' },]
     }
 

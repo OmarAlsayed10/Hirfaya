@@ -2,3 +2,26 @@ body {
   margin: 0;
   padding: 0;
 }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ponytail: flip MUI physical icon margins for RTL. If more components break, install stylis-plugin-rtl for a global emotion RTL cache. */
+[dir="rtl"] .MuiButton-startIcon {
+  margin-right: -4px;
+  margin-left: 8px;
+}
+[dir="rtl"] .MuiButton-endIcon {
+  margin-left: -4px;
+  margin-right: 8px;
+}
+[dir="rtl"] .MuiChip-icon {
+  margin-left: 5px;
+  margin-right: -6px;
+}
+[dir="rtl"] .MuiChip-deleteIcon {
+  margin-right: 5px;
+  margin-left: -6px;
+}

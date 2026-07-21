@@ -1,9 +1,4 @@
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-    apiKey: process.env.GROQ_API_KEY,
-    baseURL: "https://api.groq.com/openai/v1",
-});
+import { groqChat, MODELS } from "../lib/groqChat";
 
 export async function grammarCheck (grammarText:String):Promise<{
     Spelling:String[],
@@ -38,8 +33,8 @@ Now analyze this CV content:
 ${grammarText}
 `;
 
-    const response = await openai.chat.completions.create({
-        model:"llama-3.1-8b-instant",
+    const response = await groqChat({
+        model: MODELS.fast,
         messages:[
             {role:"system",content:"you are a professional grammar checker"},
             {role:"user",content:prompt}

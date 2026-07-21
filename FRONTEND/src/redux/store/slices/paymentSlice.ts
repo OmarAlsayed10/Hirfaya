@@ -1,99 +1,227 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
-import Cookies from "js-cookie";
+import { PAYMENT_ENDPOINTS } from "../../../constants/endpoints";
 
-const API_BASE_URL = "http://localhost:3001";
+export interface Plan {
+  id: string;
+  slug: string;
+  displayName: string;
+  priceEGP: string;
+  durationDays: number;
+  tier: string;
+  kind: string;
+  grantCredits: number;
+}
 
+export interface InstapayDetails {
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  amountEGP: string;
+  currency: string;
+  planDisplayName: string;
+  durationDays: number;
+  instructions: string[];
+}
 
-export const startPaymentSession = createAsyncThunk(
-  "payment/startSession",
-  async (userId) => {
-    const response = await axios.post(`http://localhost:3001/payment/create-checkout-session`,
-      { userId }, { withCredentials: true, }
+export interface CreditQuote {
+  amountEGP: string;
+  credits: number;
+  egpPerCredit: string;
+  pricingVersion: string;
+}
+
+export interface PaymentRequestStatus {
+  id: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  amountSnapshot: string;
+  currency: string;
+  referenceNumber: string | null;
+  rejectionReason: string | null;
+  createdAt: string;
+  reviewedAt: string | null;
+  purchaseKind: "SUBSCRIPTION" | "FIXED_TOPUP" | "CUSTOM_TOPUP";
+  grantCreditsSnapshot: number;
+  plan: { slug: string; displayName: string; durationDays: number } | null;
+}
+
+interface PaymentState {
+  plans: Plan[];
+  plansLoading: boolean;
+  selectedPlan: Plan | null;
+  instapayDetails: InstapayDetails | null;
+  selectedCustomQuote: CreditQuote | null;
+  detailsLoading: boolean;
+  submitLoading: boolean;
+  submitResult: { requestId: string; status: string } | null;
+  paymentStatus: PaymentRequestStatus | null;
+  statusLoading: boolean;
+  error: string | null;
+}
+
+const initialState: PaymentState = {
+  plans: [],
+  plansLoading: false,
+  selectedPlan: null,
+  instapayDetails: null,
+  selectedCustomQuote: null,
+  detailsLoading: false,
+  submitLoading: false,
+  submitResult: null,
+  paymentStatus: null,
+  statusLoading: false,
+  error: null,
+};
+
+export const fetchPlans = createAsyncThunk("payment/fetchPlans", async () => {
+  const { data } = await axios.get(PAYMENT_ENDPOINTS.plans);
+  return data.plans as Plan[];
+});
+
+export const fetchInstapayDetails = createAsyncThunk(
+  "payment/fetchInstapayDetails",
+  async (planId: string) => {
+    const { data } = await axios.get(
+      PAYMENT_ENDPOINTS.instapayDetails(planId),
+      { withCredentials: true }
     );
-    return response.data;
-
+    return data as InstapayDetails;
   }
 );
 
-export const handlePaymentSuccess = createAsyncThunk(
-  "payment/success",
-  async (userId) => {
-    const response = await axios.post(`http://localhost:3001/payment/payment-success`, { userId }, { withCredentials: true, })
-
-    if (response.data.token) {
-      Cookies.set("token", response.data.token, {
-        expires: 1,
-        secure: true,
-        sameSite: "strict"
-      })
-    }
-    return response.data
-  }
-)
-
-export const createPaypalOrder = createAsyncThunk(
-  "payment/createOrder",
-  async () => {
-    const { data } = await axios.post("payment/create-order")
-    return data;
-  }
-)
-
-export const capturePaypalOrder = createAsyncThunk(
-  "payment/captureOrder",
-  async () => {
-    const { data } = await axios.post(`${API_BASE_URL}/verify-payment`, {
-    }); return data;
-
-  }
-)
-
-export const paymentSlice = createSlice({
-  name: "payment",
-  initialState: {
-    loading: false,
-    url: null,
-    error: null,
-    success: false,
-    proExpiresAt: null,
-    user: null
+export const fetchCustomInstapayDetails = createAsyncThunk(
+  "payment/fetchCustomInstapayDetails",
+  async (amountEGP: string) => {
+    const { data } = await axios.post(
+      PAYMENT_ENDPOINTS.customInstapayDetails,
+      { amountEGP },
+      { withCredentials: true },
+    );
+    return data as InstapayDetails;
   },
-  reducers: {},
+);
+
+export const submitInstapayPayment = createAsyncThunk(
+  "payment/submit",
+  async (
+    payload: { planId?: string; customAmountEGP?: string; referenceNumber: string; screenshot: File },
+    { rejectWithValue }
+  ) => {
+    try {
+      const form = new FormData();
+      if (payload.planId) form.append("planId", payload.planId);
+      if (payload.customAmountEGP) form.append("customAmountEGP", payload.customAmountEGP);
+      form.append("referenceNumber", payload.referenceNumber);
+      form.append("screenshot", payload.screenshot);
+
+      const { data } = await axios.post(PAYMENT_ENDPOINTS.submit, form, {
+        withCredentials: true,
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return data as { requestId: string; status: string };
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message ?? "Failed to submit payment."
+      );
+    }
+  }
+);
+
+export const fetchPaymentStatus = createAsyncThunk(
+  "payment/fetchStatus",
+  async () => {
+    const { data } = await axios.get(PAYMENT_ENDPOINTS.status, {
+      withCredentials: true,
+    });
+    return data.paymentRequest as PaymentRequestStatus | null;
+  }
+);
+
+const paymentSlice = createSlice({
+  name: "payment",
+  initialState,
+  reducers: {
+    selectPlan(state, action: PayloadAction<Plan>) {
+      state.selectedPlan = action.payload;
+      state.instapayDetails = null;
+      state.selectedCustomQuote = null;
+    },
+    selectCustomQuote(state, action: PayloadAction<CreditQuote>) {
+      state.selectedPlan = null;
+      state.selectedCustomQuote = action.payload;
+      state.instapayDetails = null;
+    },
+    clearError(state) {
+      state.error = null;
+    },
+    resetSubmit(state) {
+      state.submitResult = null;
+      state.error = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
-      .addCase(startPaymentSession.pending, (state) => {
-        state.loading = true;
+      .addCase(fetchPlans.pending, (state) => {
+        state.plansLoading = true;
         state.error = null;
-        state.success = false;
       })
-      .addCase(startPaymentSession.fulfilled, (state, action) => {
-        state.loading = false;
-        state.url = action.payload.url;
-        state.success = true;
+      .addCase(fetchPlans.fulfilled, (state, action) => {
+        state.plansLoading = false;
+        state.plans = action.payload;
       })
-      .addCase(startPaymentSession.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-        state.success = false;
+      .addCase(fetchPlans.rejected, (state) => {
+        state.plansLoading = false;
+        state.error = "Failed to load plans.";
       })
-      .addCase(handlePaymentSuccess.fulfilled, (state, action) => {
-        state.success = true;
-        state.proExpiresAt = action.payload.proExpiresAt;
+      .addCase(fetchInstapayDetails.pending, (state) => {
+        state.detailsLoading = true;
+        state.error = null;
       })
-      .addCase(handlePaymentSuccess.rejected, (state, action) => {
-        state.error = action.payload
+      .addCase(fetchInstapayDetails.fulfilled, (state, action) => {
+        state.detailsLoading = false;
+        state.instapayDetails = action.payload;
       })
-      .addCase(createPaypalOrder.pending, (state) => { state.loading = true; })
-      .addCase(createPaypalOrder.fulfilled, (state) => { state.loading = false; })
-      .addCase(createPaypalOrder.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || "Failed";
+      .addCase(fetchInstapayDetails.rejected, (state) => {
+        state.detailsLoading = false;
+        state.error = "Failed to load payment details.";
       })
-      .addCase(capturePaypalOrder.fulfilled, (state) => {
-        state.success = true;
+      .addCase(fetchCustomInstapayDetails.pending, (state) => {
+        state.detailsLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchCustomInstapayDetails.fulfilled, (state, action) => {
+        state.detailsLoading = false;
+        state.instapayDetails = action.payload;
+      })
+      .addCase(fetchCustomInstapayDetails.rejected, (state) => {
+        state.detailsLoading = false;
+        state.error = "Failed to load custom payment details.";
+      })
+      .addCase(submitInstapayPayment.pending, (state) => {
+        state.submitLoading = true;
+        state.error = null;
+      })
+      .addCase(submitInstapayPayment.fulfilled, (state, action) => {
+        state.submitLoading = false;
+        state.submitResult = action.payload;
+      })
+      .addCase(submitInstapayPayment.rejected, (state, action) => {
+        state.submitLoading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(fetchPaymentStatus.pending, (state) => {
+        state.statusLoading = true;
+      })
+      .addCase(fetchPaymentStatus.fulfilled, (state, action) => {
+        state.statusLoading = false;
+        state.paymentStatus = action.payload;
+      })
+      .addCase(fetchPaymentStatus.rejected, (state) => {
+        state.statusLoading = false;
       });
   },
 });
 
+export const { selectPlan, selectCustomQuote, clearError, resetSubmit } = paymentSlice.actions;
+export { paymentSlice };
 export default paymentSlice.reducer;

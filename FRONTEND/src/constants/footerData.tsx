@@ -6,6 +6,7 @@ export const FOOTER_LINKS_DATA = {
   Product: [
     { label: "CV Builder", to: "/getStart" },
     { label: "CV Analyzer", to: "/cv-analysis" },
+    { label: "Career Match", to: "/career-match" },
     { label: "Templates", to: "/templates" },
     { label: "Pricing", to: "/payment-check" },
   ],

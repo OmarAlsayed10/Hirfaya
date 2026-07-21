@@ -28,7 +28,7 @@ const LocationInput = ({ control, watch, setValue }: LocationInputProps) => {
   return (
     <Box sx={locationInput.wrapper}>
       <Typography variant="subtitle1" sx={locationInput.label}>
-        {t('Location')} *
+        {t('Location')}
       </Typography>
 
       <Box sx={locationInput.fieldRow}>
@@ -51,7 +51,7 @@ const LocationInput = ({ control, watch, setValue }: LocationInputProps) => {
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  placeholder={t('Select country')}
+                  placeholder={t('Country (optional)')}
                   error={!!error}
                   helperText={error?.message}
                   size="small"
@@ -69,18 +69,18 @@ const LocationInput = ({ control, watch, setValue }: LocationInputProps) => {
           control={control}
           render={({ field: { onChange, value }, fieldState: { error } }) => (
             <Autocomplete
-              options={cityOptions}
-              value={cityOptions.find((o) => o.value === value) || null}
-              onChange={(_, newValue) => onChange(newValue?.value || '')}
-              getOptionLabel={(option) => option.label}
-              isOptionEqualToValue={(option, val) => option.value === val.value}
-              disabled={!selectedCountryCode}
+              freeSolo
+              options={cityOptions.map((o) => o.label)}
+              value={(value as string) || ''}
+              inputValue={(value as string) || ''}
+              onInputChange={(_, newValue) => onChange(newValue)}
+              onChange={(_, newValue) => onChange((newValue as string) || '')}
               size="small"
               sx={locationInput.autocomplete}
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  placeholder={selectedCountryCode ? t('Select city') : t('Select country first')}
+                  placeholder={t('Type your city')}
                   error={!!error}
                   helperText={error?.message}
                   size="small"
@@ -89,29 +89,9 @@ const LocationInput = ({ control, watch, setValue }: LocationInputProps) => {
             />
           )}
         />
-      </Box>
-
-      <Box>
-        <Typography sx={locationInput.sublabel}>{t('District / Town')}</Typography>
-        <Controller
-          name="town"
-          control={control}
-          render={({ field, fieldState: { error } }) => (
-            <TextField
-              {...field}
-              fullWidth
-              variant="standard"
-              placeholder={t('District, neighborhood (optional)')}
-              error={!!error}
-              helperText={error?.message}
-              InputProps={{ disableUnderline: true }}
-              sx={locationInput.textField}
-            />
-          )}
-        />
-      </Box>
-    </Box>
+      </Box>    </Box>
   );
 };
 
 export default LocationInput;
+

@@ -1,94 +1,181 @@
 import {
-  Container,
-  Typography,
-  Grid,
-  Paper,
   Box,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Snackbar,
-  Alert,
-} from '@mui/material';
-import { useTranslation } from 'react-i18next';
-import { usePayment } from '../hooks/usePayment';
-import { CreditCardForm } from '../components/CreditCardForm';
-import { PlanSummaryCards } from '../components/PlanSummaryCards';
-import payment from './payment.tokens';
+  Container,
+  Paper,
+  Stepper,
+  Step,
+  StepLabel,
+  Typography,
+} from "@mui/material";
+import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { usePayment } from "../hooks/usePayment";
+import { PlanSummaryCards } from "../components/PlanSummaryCards";
+import { InstapayDetailsCard } from "../components/InstapayDetailsCard";
+import CreditPurchaseCards from "../components/CreditPurchaseCards";
+import { CreditCardForm } from "../components/CreditCardForm";
+import { PaymentStatusCard } from "../components/PaymentStatusCard";
+import { COLORS, RADIUS, TYPOGRAPHY } from "../../../theme/tokens";
+
+import { useFeedback } from "../../../context/FeedbackContext";
+const STEPS = ["Select Purchase", "Payment Details", "Submit Proof", "Status"];
+const STEP_INDEX: Record<string, number> = {
+  "select-plan": 0,
+  "instapay-details": 1,
+  submit: 2,
+  status: 3,
+};
 
 const Payment = () => {
-  const {
-    form,
-    errors,
-    loading,
-    dialogOpen,
-    errorSnackbarOpen,
-    errorMessage,
-    handleChange,
-    handleSubmit,
-    handleDialogClose,
-    handleErrorSnackbarClose,
-  } = usePayment();
-
   const { t } = useTranslation();
+  const { notify } = useFeedback();
+  const {
+    step,
+    plans,
+    plansLoading,
+    selectedPlan,
+    instapayDetails,
+    detailsLoading,
+    referenceNumber,
+    setReferenceNumber,
+    screenshot,
+    fileError,
+    refError,
+    submitLoading,
+    paymentStatus,
+    statusLoading,
+    error,
+    handleSelectPlan,
+    handleContinueToSubmit,
+    handleScreenshotChange,
+    handleSubmit,
+    handleSelectCustomQuote,
+    handleBack,
+    handleRetry,
+  } = usePayment();
+  useEffect(() => {
+    if (error) notify(error);
+  }, [error, notify]);
+
+
+  const activeStep = STEP_INDEX[step];
 
   return (
-    <Box sx={payment.root}>
-      <Container maxWidth="md">
-        <Paper elevation={0} sx={payment.paper}>
-          <Box sx={payment.formSection}>
-            <Typography variant="h4" gutterBottom sx={payment.formTitle}>
-              {t('Upgrade to Pro')}
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 3 }} color="text.secondary">
-              {t('payment text')}
-            </Typography>
+    <Box sx={{ background: "#f5f5fa", minHeight: "100vh", py: 6 }}>
 
-            <form onSubmit={handleSubmit}>
-              <Grid container spacing={2}>
-                <CreditCardForm
-                  form={form}
-                  errors={errors}
-                  handleChange={handleChange}
-                  loading={loading}
-                />
-              </Grid>
-            </form>
+      <Container maxWidth="lg">
+        <Paper
+          elevation={0}
+          sx={{
+            borderRadius: RADIUS.xl,
+            border: `1px solid rgba(26,26,24,0.1)`,
+            overflow: "hidden",
+            bgcolor: "#fff",
+          }}
+        >
+          {/* Header */}
+          <Box sx={{ p: 4, pb: 0 }}>
+            <Typography
+              variant="h5"
+              sx={{
+                fontFamily: TYPOGRAPHY.fontSerif,
+                color: COLORS.textPrimary,
+                mb: 1,
+              }}
+            >
+              {t('Plans & Credits')}
+            </Typography>
+            <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
+              {STEPS.map((label) => (
+                <Step key={label}>
+                  <StepLabel
+                    sx={{
+                      "& .MuiStepLabel-label": { fontSize: "0.75rem" },
+                      "& .MuiStepIcon-root.Mui-active": { color: COLORS.primary },
+                      "& .MuiStepIcon-root.Mui-completed": { color: COLORS.primary },
+                    }}
+                  >
+                    {t(label)}
+                  </StepLabel>
+                </Step>
+              ))}
+            </Stepper>
           </Box>
 
-          <PlanSummaryCards />
+          {/* Body */}
+          <Box sx={{ p: 4 }}>
+            {step === "select-plan" && (
+              <>
+                <Typography
+                  variant="body2"
+                  sx={{ color: COLORS.textSecondary, mb: 2 }}
+                >
+                  {t('Choose the plan that fits your job search timeline.')}
+                </Typography>
+                <PlanSummaryCards
+                  plans={plans.filter((plan) => plan.kind !== "topup")}
+                  loading={plansLoading}
+                  selectedPlanId={selectedPlan?.id ?? null}
+                  onSelect={handleSelectPlan}
+                />
+              </>
+            )}
+
+            {step === "instapay-details" && (
+              <>
+                <CreditPurchaseCards
+                  plans={plans}
+                  selectedPlanId={selectedPlan?.id ?? null}
+                  onSelectPlan={handleSelectPlan}
+                  onSelectCustom={handleSelectCustomQuote}
+                />
+                <Typography
+                  variant="body2"
+                  sx={{ color: COLORS.textSecondary, mb: 2 }}
+                >
+                  {t('Open your InstaPay app and transfer the exact amount shown below.')}
+                </Typography>
+                <InstapayDetailsCard
+                  details={instapayDetails}
+                  loading={detailsLoading}
+                  onContinue={handleContinueToSubmit}
+                  onBack={handleBack}
+                />
+              </>
+            )}
+
+            {step === "submit" && (
+              <>
+                <Typography
+                  variant="body2"
+                  sx={{ color: COLORS.textSecondary, mb: 2 }}
+                >
+                  {t('Enter the reference number from your InstaPay transfer and upload a screenshot as proof.')}
+                </Typography>
+                <CreditCardForm
+                  referenceNumber={referenceNumber}
+                  onReferenceChange={setReferenceNumber}
+                  screenshot={screenshot}
+                  onScreenshotChange={handleScreenshotChange}
+                  refError={refError}
+                  fileError={fileError}
+                  loading={submitLoading}
+                  onSubmit={handleSubmit}
+                  onBack={handleBack}
+                />
+              </>
+            )}
+
+            {step === "status" && (
+              <PaymentStatusCard
+                status={paymentStatus}
+                loading={statusLoading}
+                onRetry={handleRetry}
+              />
+            )}
+          </Box>
         </Paper>
       </Container>
-
-      <Dialog open={dialogOpen} onClose={handleDialogClose}>
-        <DialogTitle>{t('Payment Successful')}</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1">{t('payment success message')}</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={handleDialogClose}
-            color="secondary"
-            variant="contained"
-            fullWidth
-          >
-            {t('Continue to Home')}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Snackbar
-        open={errorSnackbarOpen}
-        autoHideDuration={6000}
-        onClose={handleErrorSnackbarClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert onClose={handleErrorSnackbarClose} severity="error" sx={{ width: '100%' }}>
-          {errorMessage}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 };

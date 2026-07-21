@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { isUserBanned } from "../lib/banCache";
 
 export interface CustomRequest extends Request {
   user?: {
@@ -21,17 +22,22 @@ export const authenticateToken = (
     customReq.cookies?.token || customReq.headers.authorization?.split(" ")[1];
 
   if (!token) {
-    res.status(401).json({ message: "Access denied. No token provided." });
+    res.status(401).json({ code: "AUTH_REQUIRED", message: "Access denied. No token provided." });
     return;
   }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET_Key || "jwt_secret"
-    ) as {
-      userId: string; email: string; role: string  ,proExpiresAt: Date ;
-};
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_Key!) as {
+      userId: string;
+      email: string;
+      role: string;
+      proExpiresAt: Date;
+    };
+
+    if (isUserBanned(decoded.userId)) {
+      res.status(403).json({ code: "ACCOUNT_SUSPENDED", message: "Account suspended." });
+      return;
+    }
 
     customReq.user = {
       userId: decoded.userId,
@@ -39,11 +45,10 @@ export const authenticateToken = (
       role: decoded.role,
       proExpiresAt: decoded.proExpiresAt,
     };
-    console.log("user info", customReq.user);
 
     next();
   } catch (err) {
-    res.status(403).json({ message: "Invalid or expired token." });
+    res.status(401).json({ code: "AUTH_REQUIRED", message: "Invalid or expired token." });
     return;
   }
 };

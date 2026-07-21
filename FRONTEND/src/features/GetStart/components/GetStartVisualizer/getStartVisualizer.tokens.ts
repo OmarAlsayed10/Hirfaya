@@ -2,23 +2,22 @@ import { COLORS, RADIUS } from '../../../../theme/tokens';
 
 const getStartVisualizer = {
   paper: {
-    p: { xs: 3, md: 6 },
+    p: { xs: 3, md: 4 },
     borderRadius: '24px',
     border: `1px solid ${COLORS.borderLight}`,
     display: 'flex',
     flexDirection: 'column',
     bgcolor: 'white',
-    minHeight: 450,
   },
   previewArea: {
     flexGrow: 1,
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-    mb: 5,
+    mb: 3,
   },
   builderPreview: {
-    py: 6,
+    py: 3,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -27,7 +26,7 @@ const getStartVisualizer = {
     animation: 'fadeIn 0.5s',
   },
   grammarPreview: {
-    py: 8,
+    py: 4,
     px: 4,
     display: 'flex',
     alignItems: 'center',
@@ -52,7 +51,7 @@ const getStartVisualizer = {
     boxShadow: '0 4px 12px rgba(42,92,69,0.3)',
   },
   analyzerPreview: {
-    py: 8,
+    py: 4,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

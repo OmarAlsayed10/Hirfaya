@@ -1,7 +1,13 @@
 const templateCard = {
   card: (isSelected: boolean) => ({
-    maxWidth: 200,
-    border: isSelected ? 'solid #6a11cb 3px' : undefined,
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    borderRadius: '14px',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+    transition: 'transform 0.15s, box-shadow 0.15s',
+    border: isSelected ? 'solid #6a11cb 3px' : 'solid transparent 3px',
+    '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' },
   }),
   badgeContainer: {
     position: 'absolute',
@@ -25,8 +31,11 @@ const templateCard = {
     fontWeight: 'bold',
   },
   media: {
-    height: 350,
-    width: 210,
+    height: 300,
+    width: '100%',
+    objectFit: 'cover',
+    objectPosition: 'top',
+    bgcolor: '#f5f4ef',
   },
   title: {
     fontWeight: 'bold',

@@ -29,6 +29,12 @@ export const COLORS = {
   goldLight: '#FFF8DC',
 } as const;
 
+// Mirror of the backend avatarColor whitelist (profileService.ts). Keep in sync.
+export const AVATAR_COLORS = [
+  '#2a5c45', '#3d8b65', '#c25b1a', '#2f6f83',
+  '#7a4fb5', '#b5424f', '#c69214', '#4a4a48',
+] as const;
+
 export const TYPOGRAPHY = {
   fontSans: '"DM Sans", sans-serif',
   fontSerif: '"DM Serif Display", serif',

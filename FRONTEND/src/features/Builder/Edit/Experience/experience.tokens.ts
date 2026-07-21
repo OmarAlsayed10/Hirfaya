@@ -44,10 +44,12 @@ const experience = {
     gap: '12px',
   },
   halfWidth: {
-    width: '50%',
+    flex: 1,
+    minWidth: 0,
   },
   fullWidth: {
-    width: '100%',
+    flex: 1,
+    minWidth: 0,
   },
   emptyText: {
     color: '#666',

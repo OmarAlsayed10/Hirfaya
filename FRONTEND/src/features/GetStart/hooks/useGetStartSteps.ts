@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
+import { isProUser } from "../../../utils/proAccess";
 
 export interface StepData {
   id: number;
@@ -18,7 +19,7 @@ export const useGetStartSteps = () => {
   
   const [activeStep, setActiveStep] = useState(0);
 
-  const isPro = user?.role === "pro user";
+  const isPro = isProUser(user);
 
   const handleCheckGrammer = () => {
     if (isPro) {
@@ -29,20 +30,16 @@ export const useGetStartSteps = () => {
   };
 
   const handleCVAnalysis = () => {
-    if (isPro) {
-      navigate("/cv-analysis");
-    } else {
-      navigate("/pricing");
-    }
+    navigate("/cv-analysis");
   };
 
   const steps: StepData[] = [
     {
       id: 0,
-      title: t("Create New CV"),
-      subtitle: t("create.subtitle", "Start from scratch with our guided builder. Choose your templates and sections dynamically."),
-      action: t("Start New CV"),
-      onClick: () => navigate("/builder"),
+      title: t("Create New Document"),
+      subtitle: t("create.subtitle", "Build a CV, cover letter, or LinkedIn bio — each with its recommended template."),
+      action: t("Start Creating"),
+      onClick: () => navigate("/create"),
     },
     {
       id: 1,
@@ -54,7 +51,7 @@ export const useGetStartSteps = () => {
     {
       id: 2,
       title: t("AI Resume Analyzer"),
-      subtitle: t("cv_analyzer.subtitle", "Upload your CV for a comprehensive AI review. Discover your ATS score, get actionable suggestions, and prepare with tailored interview questions."),
+      subtitle: t("cv_analyzer.subtitle", "Upload your CV for a comprehensive AI review. Discover your CV Quality Score, get actionable suggestions, and prepare with tailored interview questions."),
       action: t("Analyze CV"),
       onClick: handleCVAnalysis,
     }

@@ -56,7 +56,7 @@ export const GetStartVisualizer = ({ activeStep, activeData }: GetStartVisualize
       </Box>
 
       <Box sx={{ maxWidth: 600, mx: 'auto', textAlign: 'center', width: '100%' }}>
-        <Typography sx={{ color: COLORS.textSecondary, fontSize: '1.1rem', mb: 4, minHeight: 60 }}>
+        <Typography sx={{ color: COLORS.textSecondary, fontSize: '1.1rem', mb: 3, minHeight: 40 }}>
           {activeData.subtitle}
         </Typography>
 

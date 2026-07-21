@@ -1,44 +1,23 @@
-import { COLORS, RADIUS } from '../../../../theme/tokens';
+import { COLORS } from '../../../../theme/tokens';
 
 const formWorkspace = {
-  root: {
-    width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 3,
-  },
-  stepperPaper: {
-    bgcolor: 'white',
-    borderRadius: 4,
-    border: `1px solid ${COLORS.borderLight}`,
-  },
-  contentPaper: {
-    bgcolor: 'white',
-    borderRadius: 4,
-    border: `1px solid ${COLORS.borderLight}`,
-  },
-  stepContent: {
-    minHeight: '400px',
-  },
+  stepContent: { flex: '1 1 auto', minHeight: 0, overflowX: 'hidden', overflowY: 'auto' },
   navigationRow: {
+    flex: '0 0 auto',
     display: 'flex',
-    justifyContent: 'space-between',
-    mt: 4,
-    pt: 3,
-    borderTop: '1px solid rgba(0,0,0,0.05)',
+    gap: 2,
+    mt: 1,
+    px: 1.5,
+    pb: 1,
   },
-  backButton: {
-    px: 4,
-    borderRadius: 2,
-    color: COLORS.textSecondary,
-    borderColor: COLORS.disabled,
-  },
+  backButton: { textTransform: 'none', px: 3, borderRadius: 2, color: COLORS.textSecondary },
   nextButton: {
     bgcolor: COLORS.primary,
-    px: 5,
+    textTransform: 'none',
+    px: 4,
     borderRadius: 2,
-    '&:hover': { bgcolor: '#1a3c2d' },
     boxShadow: 'none',
+    '&:hover': { bgcolor: COLORS.primaryDark },
   },
 } as const;
 

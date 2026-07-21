@@ -1,4 +1,5 @@
 import { Box, Typography } from "@mui/material";
+import FormattedText from "../components/ui/FormattedText";
 
 const LinkedInCV = ({
   name,
@@ -6,12 +7,16 @@ const LinkedInCV = ({
   phone,
   location,
   professionalTitle,
+  linkedin,
+  github,
+  portfolio,
   summary,
   experience = [],
   education = [],
   skills,
   languages = [],
   certifications = [],
+  sectionOrder = ['personal', 'projects', 'experience', 'education', 'skills', 'languages', 'certifications'],
 }) => {
   return (
     <Box sx={{
@@ -30,6 +35,8 @@ const LinkedInCV = ({
         fontFamily: `"Segoe UI", Tahoma, Geneva, Verdana, sans-serif`,
         color: "#333",
         lineHeight: 1.6,
+        display: 'flex',
+        flexDirection: 'column',
       }}>
         <Box sx={{
           borderBottom: "2px solid #0056b3",
@@ -72,26 +79,53 @@ const LinkedInCV = ({
               <Box component="span" sx={{ fontWeight: 600, color: "#333", mr: 0.5 }}>Location:</Box> 
               {location}
             </Box>
+            {linkedin && (
+              <>
+                <Box component="span" sx={{ color: "#ccc" }}>|</Box>
+                <Box component="span">
+                  <Box component="span" sx={{ fontWeight: 600, color: "#333", mr: 0.5 }}>LinkedIn:</Box>
+                  {linkedin}
+                </Box>
+              </>
+            )}
+            {github && (
+              <>
+                <Box component="span" sx={{ color: "#ccc" }}>|</Box>
+                <Box component="span">
+                  <Box component="span" sx={{ fontWeight: 600, color: "#333", mr: 0.5 }}>GitHub:</Box>
+                  {github}
+                </Box>
+              </>
+            )}
+            {portfolio && (
+              <>
+                <Box component="span" sx={{ color: "#ccc" }}>|</Box>
+                <Box component="span">
+                  <Box component="span" sx={{ fontWeight: 600, color: "#333", mr: 0.5 }}>Portfolio:</Box>
+                  {portfolio}
+                </Box>
+              </>
+            )}
           </Box>
         </Box>
 
-        <Box sx={{ marginBottom: "30px" }}>
-          <Typography variant="h3" sx={{
+        <Box data-cv-section="personal" sx={{ marginBottom: "30px", order: sectionOrder.indexOf('personal') }}>
+          <Typography draggable data-cv-drag-handle variant="h3" sx={{
             fontSize: "20px",
             marginBottom: "10px",
             color: "#004080",
             borderBottom: "1px solid #ccc",
             paddingBottom: "4px",
           }}>Summary</Typography>
-          <Typography sx={{
+          <Typography data-cv-field="personalInfo.ProfessionalSummary" sx={{
             fontSize: "14px",
             marginTop: "6px",
             color: "#444",
-          }}>{summary}</Typography>
+          }}><FormattedText text={summary} /></Typography>
         </Box>
 
-        <Box sx={{ marginBottom: "30px" }}>
-          <Typography variant="h3" sx={{
+        <Box data-cv-section="experience" sx={{ marginBottom: "30px", order: sectionOrder.indexOf('experience') }}>
+          <Typography draggable data-cv-drag-handle variant="h3" sx={{
             fontSize: "20px",
             marginBottom: "10px",
             color: "#004080",
@@ -112,18 +146,18 @@ const LinkedInCV = ({
                 }}>
                   {item.company} — {item.years}
                 </Typography>
-                <Typography sx={{
+                <Typography data-cv-field={`experience.${index}.description`} sx={{
                   fontSize: "14px",
                   marginTop: "6px",
                   color: "#444",
-                }}>{item.description}</Typography>
+                }}><FormattedText text={item.description} /></Typography>
               </Box>
             ))}
           </Box>
         </Box>
 
-        <Box sx={{ marginBottom: "30px" }}>
-          <Typography variant="h3" sx={{
+        <Box data-cv-section="education" sx={{ marginBottom: "30px", order: sectionOrder.indexOf('education') }}>
+          <Typography draggable data-cv-drag-handle variant="h3" sx={{
             fontSize: "20px",
             marginBottom: "10px",
             color: "#004080",
@@ -148,18 +182,18 @@ const LinkedInCV = ({
                   fontSize: "14px",
                   color: "#666",
                 }}>{edu.location}</Typography>
-                <Typography sx={{
+                <Typography data-cv-field={`education.${index}.description`} sx={{
                   fontSize: "14px",
                   marginTop: "6px",
                   color: "#444",
-                }}>{edu.description}</Typography>
+                }}><FormattedText text={edu.description} /></Typography>
               </Box>
             ))}
           </Box>
         </Box>
 
-        <Box sx={{ marginBottom: "30px" }}>
-          <Typography variant="h3" sx={{
+        <Box data-cv-section="skills" sx={{ marginBottom: "30px", order: sectionOrder.indexOf('skills') }}>
+          <Typography draggable data-cv-drag-handle variant="h3" sx={{
             fontSize: "20px",
             marginBottom: "10px",
             color: "#004080",
@@ -176,8 +210,8 @@ const LinkedInCV = ({
           }}>{skills}</Box>
         </Box>
 
-        <Box sx={{ marginBottom: "30px" }}>
-          <Typography variant="h3" sx={{
+        <Box data-cv-section="languages" sx={{ marginBottom: "30px", order: sectionOrder.indexOf('languages') }}>
+          <Typography draggable data-cv-drag-handle variant="h3" sx={{
             fontSize: "20px",
             marginBottom: "10px",
             color: "#004080",
@@ -193,8 +227,8 @@ const LinkedInCV = ({
           </Box>
         </Box>
 
-        <Box sx={{ marginBottom: "30px" }}>
-          <Typography variant="h3" sx={{
+        <Box data-cv-section="certifications" sx={{ marginBottom: "30px", order: sectionOrder.indexOf('certifications') }}>
+          <Typography draggable data-cv-drag-handle variant="h3" sx={{
             fontSize: "20px",
             marginBottom: "10px",
             color: "#004080",

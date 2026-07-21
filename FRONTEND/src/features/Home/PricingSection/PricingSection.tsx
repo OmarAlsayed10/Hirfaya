@@ -1,4 +1,4 @@
-import { Box, Grid } from '@mui/material';
+import { Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +9,9 @@ import pricingSection from './pricingSection.tokens';
 function PricingSection() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const isPro = user?.role === 'pro user';
+  const tier = isAdmin ? 'ultra' : user?.planTier ?? (isPro ? 'pro' : 'basic');
   const navigate = useNavigate();
 
   return (
@@ -23,25 +25,48 @@ function PricingSection() {
         />
       </Box>
 
-      <Grid container spacing={4} justifyContent="center" sx={pricingSection.grid}>
-        <Grid sx={{ width: { xs: '100%', md: '41.66%', lg: '33.33%' } }}>
-          <PlanCard
-            variant="free"
-            buttonLabel={t('Get Started Free')}
-            onButtonClick={() => navigate('/getStart')}
-            disabled={isPro}
-          />
-        </Grid>
-
-        <Grid sx={{ width: { xs: '100%', md: '50%', lg: '41.66%' } }}>
-          <PlanCard
-            variant="pro"
-            buttonLabel={isPro ? t('already upgraded') : t('Upgrade to Pro')}
-            onButtonClick={() => navigate('/payment-check')}
-            disabled={isPro}
-          />
-        </Grid>
-      </Grid>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' },
+          gap: 4,
+          alignItems: 'stretch',
+          maxWidth: 1200,
+          mx: 'auto',
+          ...pricingSection.grid,
+        }}
+      >
+        <PlanCard
+          variant="basic"
+          buttonLabel={t('Get Started Free')}
+          onButtonClick={() => navigate('/getStart')}
+          disabled={tier !== 'basic'}
+        />
+        <PlanCard
+          variant="pass"
+          buttonLabel={t('Buy 7-Day Pass')}
+          onButtonClick={() => navigate('/payment-check')}
+          disabled={tier !== 'basic'}
+        />
+        <PlanCard
+          variant="pro"
+          buttonLabel={
+            tier === 'pro'
+              ? t('Current Plan')
+              : tier === 'ultra'
+              ? t('Included')
+              : t('Upgrade to Pro')
+          }
+          onButtonClick={() => navigate('/payment-check')}
+          disabled={tier === 'pro' || tier === 'ultra'}
+        />
+        <PlanCard
+          variant="ultra"
+          buttonLabel={tier === 'ultra' ? t('Current Plan') : t('Go Ultra')}
+          onButtonClick={() => navigate('/payment-check')}
+          disabled={tier === 'ultra'}
+        />
+      </Box>
     </Box>
   );
 }

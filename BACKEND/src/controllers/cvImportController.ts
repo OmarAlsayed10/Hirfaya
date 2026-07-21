@@ -11,13 +11,11 @@ export const importCVController = (req:Request,res:Response)=>{
     const fileInfo = {
         originalName:file.originalname,
         mimeType: file.mimetype,
-        size: file.size,
-        filename: file.filename,
-        path:file.path
+        size: file.size
       };
 
       res.status(200).json({
-        message:"uploaded successfully!",
+        message:"File validated successfully. It was not stored.",
         file:fileInfo
       })
     

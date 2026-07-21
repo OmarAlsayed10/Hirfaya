@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from "../../../hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useFeedback } from "../../../context/FeedbackContext";
+import { isProUser } from "../../../utils/proAccess";
+import { CHATBOT_ENDPOINTS } from "../../../constants/endpoints";
 export const useChatBot = () => {
     const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
@@ -11,28 +13,31 @@ export const useChatBot = () => {
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     
     const { user } = useAuth();
-    const isPro = user?.role === 'pro user';
-    const navigate = useNavigate();
+    const isPro = isProUser(user);
+    const { notify, showEntitlement } = useFeedback();
 
     useEffect(() => {
-        if (!open) return;
+        if (!open || !isPro) return;
 
         const createChat = async () => {
             try {
                 const res = await axios.post(
-                    'http://localhost:3001/api/chatbot/create',
+                    CHATBOT_ENDPOINTS.create,
                     { messages: [] },
                     { withCredentials: true }
                 );
                 setChatId(res.data.id);
                 setErrorMessage('');
             } catch (err: any) {
-                if (err.response?.status === 401) {
-                    setErrorMessage('🔒 You need to log in to start the chatbot.');
-                } else if (err.response?.status === 403) {
-                    setErrorMessage('🔒 This feature is for Pro users only.');
+                const code = err.response?.data?.code;
+                if (code === "AUTH_REQUIRED" || code === "PRO_REQUIRED") {
+                    setOpen(false);
+                    showEntitlement("PRO_REQUIRED");
+                } else if (code === "CREDITS_EXHAUSTED") {
+                    setOpen(false);
+                    showEntitlement("CREDITS_EXHAUSTED");
                 } else {
-                    setErrorMessage('❌ Could not start chat session. Please refresh.');
+                    notify(err.response?.data?.message || 'Could not start the chat session. Please try again.');
                     console.error('Error creating chat:', err);
                 }
             }
@@ -41,19 +46,15 @@ export const useChatBot = () => {
         setChatId(null);
         setErrorMessage('');
         createChat();
-    }, [open]);
+    }, [isPro, notify, open, showEntitlement]);
 
     const handleChatButtonClick = () => {
-        if (!user) {
-            setOpen(true);
+        if (!isPro) {
+            showEntitlement("PRO_REQUIRED");
             return;
         }
         
-        if (isPro) {
-            setOpen(true);
-        } else {
-            navigate("/pricing");
-        }
+        setOpen(true);
     };
 
     const handleSend = async () => {
@@ -68,7 +69,7 @@ export const useChatBot = () => {
 
         try {
             const res = await axios.post(
-                'http://localhost:3001/api/chatbot',
+                CHATBOT_ENDPOINTS.send,
                 { message: input, chatId },
                 { withCredentials: true }
             );
@@ -77,14 +78,19 @@ export const useChatBot = () => {
             const botMsg = { type: 'bot', text: res.data.response };
             setMessages((prev) => [...prev, userMsg, botMsg]);
             setInput('');
+            window.dispatchEvent(new Event('quota:refresh'));
         } catch (err: any) {
             console.error('Error sending message:', err);
-            if (err.response && err.response.status === 401) {
-                setErrorMessage('🔒 You need to log in to use the chatbot.');
+            const code = err.response?.data?.code;
+            if (code === "AUTH_REQUIRED" || code === "PRO_REQUIRED") {
+                setOpen(false);
+                showEntitlement("PRO_REQUIRED");
+            } else if (code === "CREDITS_EXHAUSTED") {
+                showEntitlement("CREDITS_EXHAUSTED");
             } else if (err.code === 'ERR_NETWORK') {
-                setErrorMessage('❌ Network error. Please check your internet connection.');
+                notify('Network error. Please check your internet connection.');
             } else {
-                setErrorMessage('⚠️ Something went wrong. Please try again later.');
+                notify(err.response?.data?.message || 'Something went wrong. Please try again later.');
             }
         }
     };

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import Navbar from "../components/ui/Navbar";
+import Navbar from "../components/ui/navbar";
 import Footer from "../components/ui/Footer";
 import { Outlet, useLocation } from "react-router-dom";
 import ChatBot from "../features/chatBot/ChatBot";
@@ -8,6 +8,7 @@ import SubscriptionExpiredBanner from "../components/ui/SubscriptionExpiredBanne
 
 const Layout = () => {
   const { pathname } = useLocation();
+  const isBuilder = pathname.startsWith("/builder");
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -15,13 +16,16 @@ const Layout = () => {
 
   return (
     <>
-      <Navbar />
-      <SubscriptionExpiredBanner />
-      <Box component="main" sx={{ minHeight: "80vh" }}>
+      {!isBuilder && <Navbar />}
+      {!isBuilder && <SubscriptionExpiredBanner />}
+      <Box
+        component="main"
+        sx={isBuilder ? { height: '100dvh', overflow: 'hidden' } : { minHeight: '80vh' }}
+      >
         <Outlet />
       </Box>
-      <ChatBot />
-      <Footer />
+      {!isBuilder && <ChatBot />}
+      {!isBuilder && <Footer />}
     </>
   );
 };

@@ -26,7 +26,7 @@ function CTABanner() {
         </Typography>
 
         <Typography sx={ctaBanner.subtitle}>
-          {t('Join over 50,000 professionals who\'ve accelerated their careers with Resume-IQ. Start building your perfect CV today — it\'s free.')}
+          {t('Join over 50,000 professionals who\'ve accelerated their careers with Careerak-CV. Start building your perfect CV today — it\'s free.')}
         </Typography>
 
         <Box sx={ctaBanner.buttonRow}>

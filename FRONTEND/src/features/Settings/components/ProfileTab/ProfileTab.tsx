@@ -1,40 +1,70 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import {
   Box,
   Typography,
   TextField,
   Button,
-  Avatar,
   Grid,
   Alert,
+  Autocomplete,
+  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
   DialogActions,
-  CircularProgress,
 } from '@mui/material';
-import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { Plus } from "../../../../components/icons/MuiIcons";
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { USER_ENDPOINTS } from '../../../../constants/endpoints';
+import { SKILL_DICTIONARY } from '../../../Builder/skillDictionary';
+import CountrySelect from '../../../../components/ui/CountrySelect';
+import { suggestSkills } from './skillSuggestions';
 import profileTab from './profileTab.tokens';
+import { AppDispatch, resetStore } from '../../../../redux/store/store';
 
 const ProfileTab = () => {
   const { t } = useTranslation();
   const { user, fetchingAndFrefreshUser, logout } = useAuth();
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
+  const [details, setDetails] = useState({
+    title: '', location: '', phone: '', linkedin: '', github: '', portfolio: '', summary: '',
+  });
+  const [skills, setSkills] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const feedbackTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const u = user as Record<string, string | null> | null;
+    if (!u) return;
+    setDetails({
+      title: u.title ?? '', location: u.location ?? '', phone: u.phone ?? '',
+      linkedin: u.linkedin ?? '', github: u.github ?? '', portfolio: u.portfolio ?? '',
+      summary: u.summary ?? '',
+    });
+    const su = user as { skills?: string[] } | null;
+    setSkills(Array.isArray(su?.skills) ? su!.skills : []);
+  }, [user]);
+
+  const addSkill = (s: string) => {
+    const v = s.trim();
+    if (v && !skills.some((x) => x.toLowerCase() === v.toLowerCase())) setSkills((p) => [...p, v]);
+  };
+
+  const suggestions = suggestSkills(details.title, skills);
+
+  const setDetail = (k: keyof typeof details) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setDetails((d) => ({ ...d, [k]: e.target.value }));
 
   const feedback = (err?: unknown, msg?: string) => {
     if (feedbackTimeout.current) clearTimeout(feedbackTimeout.current);
@@ -55,13 +85,15 @@ const ProfileTab = () => {
   };
 
   const handleProfileSave = async () => {
-    if (!firstName && !lastName) return;
     try {
       await axios.patch(
         USER_ENDPOINTS.updateProfile,
         {
-          firstName: firstName || user?.firstName,
-          lastName: lastName || user?.lastName,
+          ...(firstName || lastName
+            ? { firstName: firstName || user?.firstName, lastName: lastName || user?.lastName }
+            : {}),
+          ...details,
+          skills,
         },
         { withCredentials: true }
       );
@@ -74,53 +106,16 @@ const ProfileTab = () => {
     }
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
-    e.target.value = '';
-
-    const formData = new FormData();
-    formData.append('photo', file);
-
-    setIsUploading(true);
-    try {
-      await axios.post(USER_ENDPOINTS.updateProfile + '/photo', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        withCredentials: true,
-      });
-      if (fetchingAndFrefreshUser) fetchingAndFrefreshUser();
-      feedback(undefined, 'Photo updated successfully');
-    } catch (e) {
-      feedback(e);
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleDeletePhoto = async () => {
-    try {
-      await axios.delete(USER_ENDPOINTS.updateProfile + '/photo', {
-        withCredentials: true,
-      });
-      if (fetchingAndFrefreshUser) fetchingAndFrefreshUser();
-      feedback(undefined, 'Photo removed successfully');
-    } catch (e) {
-      feedback(e);
-    }
-  };
-
   const handleDeleteAccount = async () => {
     try {
       await axios.delete(USER_ENDPOINTS.deleteAccount, { withCredentials: true });
+      dispatch(resetStore());
       if (logout) logout();
       navigate('/');
     } catch (e) {
       feedback(e);
     }
   };
-
-  const initials =
-    `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase() || 'U';
 
   return (
     <Box>
@@ -136,40 +131,6 @@ const ProfileTab = () => {
       )}
 
       <Typography sx={profileTab.sectionTitle}>{t('Profile')}</Typography>
-
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-        <Box sx={profileTab.avatarWrapper}>
-          <Avatar src={user?.photo || ''} sx={{ width: 56, height: 56, bgcolor: 'primary.light' }}>
-            {initials}
-          </Avatar>
-          <Box component="label" sx={profileTab.cameraButton}>
-            {isUploading ? (
-              <CircularProgress size={12} />
-            ) : (
-              <PhotoCameraIcon color="action" sx={{ fontSize: 14 }} />
-            )}
-            <input type="file" hidden accept="image/*" onChange={handlePhotoUpload} />
-          </Box>
-        </Box>
-        <Box>
-          <Typography fontWeight={500} fontSize={15}>
-            {user?.firstName} {user?.lastName}
-          </Typography>
-          <Typography fontSize={12} color="text.secondary">
-            {user?.email}
-          </Typography>
-          {user?.photo && (
-            <Button
-              size="small"
-              startIcon={<DeleteOutlineIcon sx={{ fontSize: 14 }} />}
-              onClick={handleDeletePhoto}
-              sx={profileTab.removePhotoButton}
-            >
-              {t('Remove photo')}
-            </Button>
-          )}
-        </Box>
-      </Box>
 
       <Grid container spacing={1.5} sx={{ mb: 4 }}>
         <Grid size={{ xs: 12, sm: 6 }}>
@@ -198,7 +159,77 @@ const ProfileTab = () => {
         </Grid>
       </Grid>
 
-      <Box sx={{ mb: 4 }}>
+      <Typography sx={{ ...profileTab.sectionTitle, fontSize: 15, mb: 1.5 }}>
+        {t('Professional details')}
+      </Typography>
+      <Grid container spacing={1.5} sx={{ mb: 4 }}>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField fullWidth size="small" label={t('Professional title')} value={details.title} onChange={setDetail('title')} inputProps={{ maxLength: 100 }} sx={profileTab.textField} />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <CountrySelect
+            value={details.location}
+            onChange={(v) => setDetails((d) => ({ ...d, location: v }))}
+            label={t('Location')}
+            placeholder={t('Country')}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField fullWidth size="small" label={t('Phone')} value={details.phone} onChange={setDetail('phone')} inputProps={{ maxLength: 30 }} sx={profileTab.textField} />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField fullWidth size="small" label="LinkedIn" value={details.linkedin} onChange={setDetail('linkedin')} inputProps={{ maxLength: 200 }} sx={profileTab.textField} />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField fullWidth size="small" label="GitHub" value={details.github} onChange={setDetail('github')} inputProps={{ maxLength: 200 }} sx={profileTab.textField} />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField fullWidth size="small" label={t('Portfolio')} value={details.portfolio} onChange={setDetail('portfolio')} inputProps={{ maxLength: 200 }} sx={profileTab.textField} />
+        </Grid>
+        <Grid size={{ xs: 12 }}>
+          <TextField fullWidth size="small" multiline minRows={3} label={t('Professional summary')} value={details.summary} onChange={setDetail('summary')} inputProps={{ maxLength: 2000 }} sx={profileTab.textField} />
+        </Grid>
+      </Grid>
+
+      <Typography sx={{ ...profileTab.sectionTitle, fontSize: 15, mb: 0.5 }}>
+        {t('Skills')}
+      </Typography>
+      <Typography fontSize={12.5} color="text.secondary" sx={{ mb: 1.5 }}>
+        {t('Saved to your profile and reused across your CVs and cover letters.')}
+      </Typography>
+      <Autocomplete
+        multiple
+        freeSolo
+        options={SKILL_DICTIONARY}
+        value={skills}
+        onChange={(_, v) => setSkills(v as string[])}
+        renderInput={(params) => (
+          <TextField {...params} size="small" placeholder={t('Add a skill and press Enter')} sx={profileTab.textField} />
+        )}
+      />
+
+      {suggestions.length > 0 && (
+        <Box sx={{ mt: 1.5, mb: 4 }}>
+          <Typography fontSize={12.5} color="text.secondary" sx={{ mb: 1 }}>
+            {t('Suggested for')} “{details.title}”
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {suggestions.map((s) => (
+              <Chip
+                key={s}
+                label={s}
+                size="small"
+                variant="outlined"
+                icon={<Plus size={14} />}
+                onClick={() => addSkill(s)}
+                sx={{ cursor: 'pointer' }}
+              />
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      <Box sx={{ mt: 4, mb: 4 }}>
         <Button variant="contained" onClick={handleProfileSave} sx={profileTab.saveButton}>
           {t('Save changes')}
         </Button>

@@ -5,6 +5,8 @@ import {
   getCV,
   editCV,
   removeCV,
+  makePrimaryCV,
+  getPrimary,
 } from "../controllers/cvBuilderController";
 import { authenticateToken } from "../middleware/validateJWTMiddleware";
 
@@ -13,6 +15,10 @@ const router = Router();
 router.post("/save", authenticateToken, saveCV);
 
 router.get("/user", authenticateToken, getUserCVs);
+
+router.get("/primary", authenticateToken, getPrimary);
+
+router.patch("/:cvId/primary", authenticateToken, makePrimaryCV);
 
 router.get("/:cvId", authenticateToken, getCV);
 

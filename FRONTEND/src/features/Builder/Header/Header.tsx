@@ -11,13 +11,13 @@ import SaveIcon from '@mui/icons-material/Save';
 import DownloadIcon from '@mui/icons-material/Download';
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { api } from '../../../lib/api';
 import { useDispatch, useSelector } from 'react-redux';
 import { setMyCvs } from '../../../redux/store/slices/cvBuilderSlice';
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import UpdateIcon from '@mui/icons-material/Update';
-import { BUILDER_ENDPOINTS } from '../../../constants/endpoints';
+import { BUILDER_ENDPOINTS, CV_ENDPOINTS } from '../../../constants/endpoints';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import PdfClassicCV from '../../../templates/pdf/PdfClassicCV';
 import header from './header.tokens';
@@ -27,7 +27,7 @@ const Header = () => {
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
   const dispatch = useDispatch();
-  const formData = useSelector((state: RootState) => state.cvBuilder?.formData || {});
+  const formData = useSelector((state: RootState) => state.cvBuilder.formData);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const { t } = useTranslation();
@@ -35,9 +35,7 @@ const Header = () => {
 
   const fetchUserCVs = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/cvbuilder/user', {
-        withCredentials: true,
-      });
+      const response = await api.get(CV_ENDPOINTS.userCvs);
       dispatch(setMyCvs(response.data || []));
     } catch (err) {
       console.error('Error fetching CVs:', err);
@@ -45,16 +43,16 @@ const Header = () => {
   };
 
   const pdfProps = useMemo(() => {
-    const personalInfo = formData?.personalInfo || {};
+    const personalInfo = formData.personalInfo;
     const name = `${personalInfo.firstName || ''} ${personalInfo.lastName || ''}`;
     const email = personalInfo.email || '';
     const phone = [personalInfo.phoneCode, personalInfo.phone].filter(Boolean).join(' ');
     const location = [personalInfo.town, personalInfo.city, personalInfo.country].filter(Boolean).join(', ');
     const professionalTitle = personalInfo.professionalTitle || '';
     const summary = personalInfo.ProfessionalSummary || '';
-    const skills = (formData?.skills?.skills || []).join(', ');
+    const skills = formData.skills.skills.join(', ');
 
-    const experience = (formData?.experience || []).map((exp: Record<string, string>) => ({
+    const experience = formData.experience.map((exp) => ({
       role: exp.jobTitle || '',
       company: exp.company || '',
       startDate: exp.startDate || '',
@@ -64,7 +62,7 @@ const Header = () => {
       description: exp.description || '',
     }));
 
-    const education = (formData?.education || []).map((edu: Record<string, string>) => ({
+    const education = formData.education.map((edu) => ({
       institution: edu.institution || '',
       degree: edu.degree || '',
       startYear: edu.startYear || '',
@@ -78,7 +76,7 @@ const Header = () => {
 
   const handelSave = async () => {
     try {
-      await axios.post(BUILDER_ENDPOINTS.save, formData, { withCredentials: true });
+      await api.post(BUILDER_ENDPOINTS.save, formData);
       fetchUserCVs();
       setSuccess(true);
       setError('');
@@ -96,7 +94,7 @@ const Header = () => {
   };
 
   const handleEdit = async () => {
-    if (!formData.id && !formData._id) {
+    if (!(formData as any).id && !(formData as any)._id) {
       setError(t('CV ID is missing.'));
       return;
     }
@@ -166,7 +164,7 @@ const Header = () => {
             </Box>
           )}
 
-          {(formData.id || formData._id) && (
+          {((formData as any).id || (formData as any)._id) && (
             <Button
               onClick={handleEdit}
               startIcon={<UpdateIcon sx={{ marginInlineEnd: 1 }} />}

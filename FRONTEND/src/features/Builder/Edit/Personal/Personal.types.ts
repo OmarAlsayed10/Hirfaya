@@ -7,8 +7,11 @@ export interface PersonalFormData {
   email: string;
   phoneCode: string;
   phone: string;
-  country: string;
+  country?: string;
   city: string;
-  town?: string;
   ProfessionalSummary?: string;
+  linkedin?: string;
+  github?: string;
+  portfolio?: string;
 }
+

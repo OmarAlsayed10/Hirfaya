@@ -13,13 +13,14 @@ import { useAuth } from '../../../../../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import templateCard from './templateCard.tokens';
 import type { TemplateCardProps } from './TemplateCard.types';
+import { isProUser } from '../../../../../utils/proAccess';
 
 function TemplateCard({ title, img, disc, pro, onCloseDialog }: TemplateCardProps) {
   const { choosenTemp, setChoosenTemp } = useTemplate();
   const { setGoToPreview } = usePreview();
   const { t } = useTranslation();
   const { user } = useAuth();
-  const isPro = user?.role === 'pro user';
+  const isPro = isProUser(user);
 
   const isSelected = choosenTemp === title;
 
@@ -56,7 +57,7 @@ function TemplateCard({ title, img, disc, pro, onCloseDialog }: TemplateCardProp
         />
       </Box>
 
-      <CardContent>
+      <CardContent sx={{ flexGrow: 1 }}>
         <Typography gutterBottom variant="h6" component="div" sx={templateCard.title}>
           {title}
         </Typography>
@@ -65,7 +66,7 @@ function TemplateCard({ title, img, disc, pro, onCloseDialog }: TemplateCardProp
         </Typography>
       </CardContent>
 
-      <CardActions>
+      <CardActions sx={{ p: 2, pt: 0 }}>
         <Button
           disabled={!isPro && pro}
           size="small"

@@ -19,7 +19,8 @@ const personal = {
     gap: '12px',
   },
   halfWidth: {
-    width: '50%',
+    flex: 1,
+    minWidth: 0,
   },
 } as const;
 

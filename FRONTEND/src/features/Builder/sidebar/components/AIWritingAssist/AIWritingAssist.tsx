@@ -69,7 +69,7 @@ function AIWritingAssistDialog({ onClose, selectedValue, open }: AIWritingAssist
   };
 
   const handleGenerate = () => {
-    (dispatch as ReturnType<typeof useDispatch> & ((action: ReturnType<typeof generateContentAction>) => void))(generateContentAction(formData));
+    (dispatch as ReturnType<typeof useDispatch> & ((action: ReturnType<typeof generateContentAction>) => void))(generateContentAction(formData as unknown as Record<string, string>));
     setContentVisible(true);
   };
 

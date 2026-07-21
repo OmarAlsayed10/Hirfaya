@@ -1,11 +1,12 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { api } from '../../../lib/api';
+import { AI_ENDPOINTS } from '../../../constants/endpoints';
 
 export const generateContentAction = createAsyncThunk(
   "generateContent",
-  async function fetchAIContent(data) {
+  async function fetchAIContent(data: Record<string, string>) {
     try {
-      const response = await axios.post('http://localhost:3001/api/ai/ai-writing-assist', data, { withCredentials: true });
+      const response = await api.post(AI_ENDPOINTS.aiWritingAssist, data);
       if (response.status === 200) {
         return response.data.generatedContent;
       }

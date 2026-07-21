@@ -1,10 +1,16 @@
-import { ChangeEvent, ElementType } from 'react';
+import { ChangeEvent, KeyboardEventHandler, ElementType, ReactNode } from 'react';
+
+export interface FieldFormattingOptions {
+  onValueChange: (formattedText: string) => void;
+}
 
 export interface FormInputProps {
   label: string;
-  name: string;
+  labelAction?: ReactNode;
+  name?: string;
   value: string;
   onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onKeyDown?: KeyboardEventHandler<HTMLDivElement>;
   error?: boolean;
   helperText?: string;
   placeholder?: string;
@@ -12,4 +18,5 @@ export interface FormInputProps {
   icon?: ElementType;
   multiline?: boolean;
   minRows?: number;
+  formatting?: FieldFormattingOptions;
 }

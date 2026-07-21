@@ -12,6 +12,9 @@ type CV = {
     location: string;
     professionalTitle: string;
     ProfessionalSummary: string;
+    linkedin?: string;
+    github?: string;
+    portfolio?: string;
   };
   experience: {
     jobTitle: string;
@@ -71,6 +74,9 @@ async function exportWordCV(CV: CV): Promise<Buffer> {
               new TextRun(`Location: ${CV.personalInfo.location}`),
               new TextRun({ break: 1 }),
               new TextRun(`Professional Title: ${CV.personalInfo.professionalTitle}`),
+              ...(CV.personalInfo.linkedin ? [new TextRun({ break: 1 }), new TextRun(`LinkedIn: ${CV.personalInfo.linkedin}`)] : []),
+              ...(CV.personalInfo.github ? [new TextRun({ break: 1 }), new TextRun(`GitHub: ${CV.personalInfo.github}`)] : []),
+              ...(CV.personalInfo.portfolio ? [new TextRun({ break: 1 }), new TextRun(`Portfolio: ${CV.personalInfo.portfolio}`)] : []),
               new TextRun({ break: 1 }),
               new TextRun(`Summary: ${CV.personalInfo.ProfessionalSummary}`),
             ],

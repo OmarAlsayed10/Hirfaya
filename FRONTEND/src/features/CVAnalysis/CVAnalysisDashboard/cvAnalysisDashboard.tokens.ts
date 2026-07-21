@@ -3,6 +3,8 @@ import { COLORS, TYPOGRAPHY, RADIUS } from '../../../theme/tokens';
 const cvAnalysisDashboard = {
   root: {
     animation: 'fadeIn 0.6s',
+    display: 'flex',
+    flexDirection: 'column',
   },
   scoreCard: {
     p: 4,

@@ -36,7 +36,7 @@ const featuresSection = {
     mx: 'auto',
     display: 'grid',
     gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-    gap: 3,
+    gap: { xs: 2.5, md: 4 },
   },
   card: {
     height: '100%',

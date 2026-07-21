@@ -3,13 +3,13 @@ import {
   Typography,
   Button,
   IconButton,
-  Divider,
   Stack,
-  useTheme,
-  useMediaQuery,
+  Tooltip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateSection } from '../../../../redux/store/slices/cvBuilderSlice';
@@ -17,10 +17,12 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import FormInput from '../../../../components/ui/FormInput';
-import { useEffect } from 'react';
+import AIEditInput from '../../components/AIEditInput/AIEditInput';
+import { useEffect, useState } from 'react';
 import experience from './experience.tokens';
 import type { RootState } from '../../../../redux/store/store';
 import type { ExperienceFormData } from './Experience.types';
+import { COLORS } from '../../../../theme/tokens';
 
 const experienceSchema = z.object({
   experience: z.array(
@@ -37,20 +39,20 @@ const experienceSchema = z.object({
 
 const Experience = () => {
   const { t } = useTranslation();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const dispatch = useDispatch();
   const experiences = useSelector(
     (state: RootState) => state.cvBuilder?.formData?.experience || [],
   );
 
-  const { control, watch } = useForm<ExperienceFormData>({
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const { control, watch, setValue } = useForm<ExperienceFormData>({
     resolver: zodResolver(experienceSchema),
     defaultValues: { experience: JSON.parse(JSON.stringify(experiences)) },
     mode: 'onChange',
   });
 
-  const { fields, append, remove } = useFieldArray({ control, name: 'experience' });
+  const { fields, append, remove, move } = useFieldArray({ control, name: 'experience' });
 
   useEffect(() => {
     const subscription = watch((value) => {
@@ -62,10 +64,23 @@ const Experience = () => {
 
   const addExperience = () => {
     append({ jobTitle: '', company: '', location: '', startDate: '', endDate: '', description: '' });
+    setActiveIndex(fields.length);
+  };
+
+  const removeExperience = (index: number) => {
+    remove(index);
+    setActiveIndex((prev) => Math.max(0, Math.min(prev, fields.length - 2)));
+  };
+
+  const moveExperience = (offset: number) => {
+    const destination = activeIndex + offset;
+    if (destination < 0 || destination >= fields.length) return;
+    move(activeIndex, destination);
+    setActiveIndex(destination);
   };
 
   return (
-    <Box sx={{ ...experience.root, maxWidth: isMobile ? '90%' : '800px' }}>
+    <Box sx={{ ...experience.root, maxWidth: '100%' }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5" sx={experience.sectionTitle}>
           {t('Work Experience')}
@@ -77,79 +92,151 @@ const Experience = () => {
       </Stack>
 
       <Box sx={experience.entriesBox}>
-        {fields.map((field, index) => (
-          <Box key={field.id} sx={{ mb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6" sx={experience.itemTitle}>
-                {t('Experience')} {index + 1}
-              </Typography>
-              <IconButton onClick={() => remove(index)} sx={experience.deleteButton}>
-                <DeleteIcon />
-              </IconButton>
+        {fields.length > 0 && (
+          <Stack direction="row" spacing={1} sx={{ mb: 2, overflowX: 'auto', pb: 1, pt: 0.5, '::-webkit-scrollbar': { height: 6 } }}>
+            {fields.map((field, index) => {
+              const item = watch(`experience.${index}`);
+              const label = item?.jobTitle || `${t('Experience')} ${index + 1}`;
+              return (
+                <Button
+                  key={field.id}
+                  onClick={() => setActiveIndex(index)}
+                  variant={activeIndex === index ? 'contained' : 'outlined'}
+                  size="small"
+                  sx={{
+                    borderRadius: 20,
+                    textTransform: 'none',
+                    whiteSpace: 'nowrap',
+                    px: 2,
+                    py: 0.5,
+                    bgcolor: activeIndex === index ? COLORS.primary : 'transparent',
+                    color: activeIndex === index ? '#fff' : COLORS.textSecondary,
+                    borderColor: activeIndex === index ? COLORS.primary : COLORS.borderMedium,
+                    '&:hover': {
+                      bgcolor: activeIndex === index ? COLORS.primaryDark : COLORS.primaryAlpha12,
+                      borderColor: COLORS.primary,
+                    }
+                  }}
+                >
+                  {label}
+                </Button>
+              );
+            })}
+          </Stack>
+        )}
+
+        {fields.map((field, index) => {
+          if (index !== activeIndex) return null;
+          return (
+            <Box key={field.id}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" sx={experience.itemTitle}>
+                  {t('Experience')} {index + 1}
+                </Typography>
+                <Stack direction="row" spacing={0.25}>
+                  <Tooltip title={t('Move up')}>
+                    <span>
+                      <IconButton onClick={() => moveExperience(-1)} disabled={index === 0} size="small">
+                        <KeyboardArrowUpIcon />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                  <Tooltip title={t('Move down')}>
+                    <span>
+                      <IconButton onClick={() => moveExperience(1)} disabled={index === fields.length - 1} size="small">
+                        <KeyboardArrowDownIcon />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                  <IconButton onClick={() => removeExperience(index)} sx={experience.deleteButton} aria-label={t('Delete experience')}>
+                    <DeleteIcon />
+                  </IconButton>
+                </Stack>
+              </Box>
+
+              <Box sx={experience.row}>
+                <Box sx={experience.halfWidth}>
+                  <Controller
+                    name={`experience.${index}.jobTitle`}
+                    control={control}
+                    render={({ field: f, fieldState: { error } }) => (
+                      <FormInput {...f} label={t('Job Title')} placeholder={t('Marketing Manager')} error={!!error} helperText={error ? t(error.message ?? '') : ''} required />
+                    )}
+                  />
+                </Box>
+                <Box sx={experience.halfWidth}>
+                  <Controller
+                    name={`experience.${index}.company`}
+                    control={control}
+                    render={({ field: f, fieldState: { error } }) => (
+                      <FormInput {...f} label={t('Company')} placeholder={t('Company Name')} error={!!error} helperText={error ? t(error.message ?? '') : ''} required />
+                    )}
+                  />
+                </Box>
+              </Box>
+
+              <Box sx={experience.row}>
+                <Box sx={experience.fullWidth}>
+                  <Controller
+                    name={`experience.${index}.location`}
+                    control={control}
+                    render={({ field: f, fieldState: { error } }) => (
+                      <FormInput {...f} label={t('Location')} placeholder={t('New York, NY')} error={!!error} helperText={error ? t(error.message ?? '') : ''} required />
+                    )}
+                  />
+                </Box>
+                <Box sx={experience.halfWidth}>
+                  <Controller
+                    name={`experience.${index}.startDate`}
+                    control={control}
+                    render={({ field: f, fieldState: { error } }) => (
+                      <FormInput {...f} label={t('Start Date')} placeholder={t('Jan 2020')} error={!!error} helperText={error ? t(error.message ?? '') : ''} required />
+                    )}
+                  />
+                </Box>
+                <Box sx={experience.halfWidth}>
+                  <Controller
+                    name={`experience.${index}.endDate`}
+                    control={control}
+                    render={({ field: f, fieldState: { error } }) => (
+                      <FormInput {...f} label={t('End Date')} placeholder={t('Present')} error={!!error} helperText={error ? t(error.message ?? '') : ''} required />
+                    )}
+                  />
+                </Box>
+              </Box>
+
+              <Controller
+                name={`experience.${index}.description`}
+                control={control}
+                render={({ field: f, fieldState: { error } }) => (
+                  <FormInput
+                    {...f}
+                    label={t('Description')}
+                    labelAction={
+                      <AIEditInput
+                        section="experience"
+                        currentContent={f.value || ''}
+                        context={{
+                          jobTitle: watch(`experience.${index}.jobTitle`),
+                          company: watch(`experience.${index}.company`),
+                        }}
+                        onResult={(text) => setValue(`experience.${index}.description`, text, { shouldDirty: true })}
+                      />
+                    }
+                    placeholder={t('Jot down rough notes — e.g. "built react dashboard, cut load time 40%" — then hit the AI icon')}
+                    error={!!error}
+                    helperText={error ? t(error.message ?? '') : ''}
+                    multiline
+                    minRows={4}
+                    formatting={{
+                      onValueChange: (text) => setValue(`experience.${index}.description`, text, { shouldDirty: true }),
+                    }}
+                  />
+                )}
+              />
             </Box>
-
-            <Box sx={experience.row}>
-              <Box sx={experience.halfWidth}>
-                <Controller
-                  name={`experience.${index}.jobTitle`}
-                  control={control}
-                  render={({ field: f, fieldState: { error } }) => (
-                    <FormInput {...f} label={t('Job Title')} placeholder={t('Marketing Manager')} error={!!error} helperText={error ? t(error.message ?? '') : ''} required />
-                  )}
-                />
-              </Box>
-              <Box sx={experience.halfWidth}>
-                <Controller
-                  name={`experience.${index}.company`}
-                  control={control}
-                  render={({ field: f, fieldState: { error } }) => (
-                    <FormInput {...f} label={t('Company')} placeholder={t('Company Name')} error={!!error} helperText={error ? t(error.message ?? '') : ''} required />
-                  )}
-                />
-              </Box>
-            </Box>
-
-            <Box sx={experience.row}>
-              <Box sx={experience.fullWidth}>
-                <Controller
-                  name={`experience.${index}.location`}
-                  control={control}
-                  render={({ field: f, fieldState: { error } }) => (
-                    <FormInput {...f} label={t('Location')} placeholder={t('New York, NY')} error={!!error} helperText={error ? t(error.message ?? '') : ''} required />
-                  )}
-                />
-              </Box>
-              <Box sx={experience.halfWidth}>
-                <Controller
-                  name={`experience.${index}.startDate`}
-                  control={control}
-                  render={({ field: f, fieldState: { error } }) => (
-                    <FormInput {...f} label={t('Start Date')} placeholder={t('Jan 2020')} error={!!error} helperText={error ? t(error.message ?? '') : ''} required />
-                  )}
-                />
-              </Box>
-              <Box sx={experience.halfWidth}>
-                <Controller
-                  name={`experience.${index}.endDate`}
-                  control={control}
-                  render={({ field: f, fieldState: { error } }) => (
-                    <FormInput {...f} label={t('End Date')} placeholder={t('Present')} error={!!error} helperText={error ? t(error.message ?? '') : ''} required />
-                  )}
-                />
-              </Box>
-            </Box>
-
-            <Controller
-              name={`experience.${index}.description`}
-              control={control}
-              render={({ field: f, fieldState: { error } }) => (
-                <FormInput {...f} label={t('Description')} placeholder={t('Describe your responsibilities and achievements...')} error={!!error} helperText={error ? t(error.message ?? '') : ''} multiline minRows={4} />
-              )}
-            />
-
-            {index < fields.length - 1 && <Divider sx={{ my: 2 }} />}
-          </Box>
-        ))}
+          );
+        })}
 
         {fields.length === 0 && (
           <Typography sx={experience.emptyText}>

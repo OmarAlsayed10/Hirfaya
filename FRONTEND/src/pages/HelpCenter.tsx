@@ -100,7 +100,7 @@ const HelpCenter = () => {
         </Typography>
         <Typography color="text.secondary" fontSize={15}>
           {t(
-            "Find answers to common questions and learn how to get the most out of Resume-IQ",
+            "Find answers to common questions and learn how to get the most out of Careerak-CV",
           )}
         </Typography>
       </Box>
@@ -189,7 +189,7 @@ const HelpCenter = () => {
         <Button
           variant="contained"
           startIcon={<EmailIcon />}
-          href="mailto:support@Resume-IQ.com"
+          href="mailto:support@Careerak-CV.com"
           sx={{
             backgroundColor: "#2a5c45",
             borderRadius: 2,

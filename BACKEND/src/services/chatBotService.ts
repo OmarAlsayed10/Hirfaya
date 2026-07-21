@@ -1,9 +1,4 @@
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY,
-  baseURL: "https://api.groq.com/openai/v1",
-});
+import { groqChat, MODELS } from "../lib/groqChat";
 
 type PredefinedResponses = {
   [key: string]: string;
@@ -102,8 +97,8 @@ export const generateChatResponse = async (message: string, chatId: string) => {
     return "I am a CV and career development assistant, please ask me something in this field 😊";
   }
 
-  const response = await openai.chat.completions.create({
-    model: "llama-3.1-8b-instant",
+  const response = await groqChat({
+    model: MODELS.fast,
     messages: [
       {
         role: "system",

@@ -5,18 +5,18 @@ import i18n from '../../../../../i18n';
 import { useNavigate } from 'react-router-dom';
 import { MobileMenuProps } from './MobileMenu.types';
 import mobileMenu from './mobileMenu.tokens';
+import { useFeedback } from '../../../../../context/FeedbackContext';
+import { hasPaidAccess } from '../../../../../utils/proAccess';
 
 const MobileMenu = ({ anchorEl, onClose, pages, isAuthenticated, user, onLogout }: MobileMenuProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const currentLang = i18n.language;
   const isRTL = currentLang === 'ar';
+  const { showEntitlement } = useFeedback();
 
-  const isProExpired =
-    user?.role === 'pro user' &&
-    !!user?.proExpiresAt &&
-    new Date(user.proExpiresAt) < new Date();
-  const isActivePro = user?.role === 'pro user' && !isProExpired;
+  const isAdmin = user?.role === 'admin';
+  const isActivePro = hasPaidAccess(user);
 
   const toggleLanguage = () => {
     i18n.changeLanguage(currentLang === 'en' ? 'ar' : 'en');
@@ -42,7 +42,16 @@ const MobileMenu = ({ anchorEl, onClose, pages, isAuthenticated, user, onLogout 
       )}
 
       {pages.map((page) => (
-        <MenuItem key={page.label} onClick={() => { onClose(); navigate(page.href); }}>
+        <MenuItem
+          key={page.label}
+          onClick={() => {
+            onClose();
+            if (page.requiresPaid && !isActivePro) {
+              showEntitlement('PRO_REQUIRED');
+              return;
+            }
+            navigate(page.href);
+          }}>
           <Typography textAlign="center">{page.label}</Typography>
         </MenuItem>
       ))}
@@ -62,7 +71,15 @@ const MobileMenu = ({ anchorEl, onClose, pages, isAuthenticated, user, onLogout 
         </MenuItem>
       )}
 
-      {isActivePro && (
+      {isAdmin && (
+        <MenuItem onClick={() => { onClose(); navigate('/admin'); }}>
+          <Button fullWidth variant="contained">
+            {t('Admin')}
+          </Button>
+        </MenuItem>
+      )}
+
+      {!isAdmin && isActivePro && (
         <MenuItem onClick={() => { onClose(); navigate('/settings?tab=plan'); }}>
           <Button fullWidth variant="contained">
             {t('Pro')}
@@ -70,7 +87,7 @@ const MobileMenu = ({ anchorEl, onClose, pages, isAuthenticated, user, onLogout 
         </MenuItem>
       )}
 
-      {isAuthenticated && !isActivePro && (
+      {isAuthenticated && !isAdmin && !isActivePro && (
         <MenuItem onClick={() => { onClose(); navigate('/payment-check'); }}>
           <Button fullWidth variant="outlined">
             {t('Go Pro')}

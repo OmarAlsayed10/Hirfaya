@@ -1,5 +1,5 @@
 import { Box, Chip, Typography } from '@mui/material';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import { ArrowRight } from "../../../components/icons/MuiIcons";
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { CV_TOOLS } from '../../../constants/homeData';
@@ -30,12 +30,12 @@ function FeaturesSection() {
 
       <Box sx={featuresSection.grid}>
         {CV_TOOLS.map((tool, index) => (
-          <Box key={index}>
-            <Box
-              onClick={() => navigate(tool.to)}
-              sx={featuresSection.card}
-            >
-              <Box sx={featuresSection.iconBadgeRow}>
+          <Box
+            key={index}
+            onClick={() => navigate(tool.to)}
+            sx={featuresSection.card}
+          >
+            <Box sx={featuresSection.iconBadgeRow}>
                 <Box sx={featuresSection.iconBox}>
                   {tool.icon}
                 </Box>
@@ -55,12 +55,11 @@ function FeaturesSection() {
                 </Typography>
               </Box>
 
-              <Box className="arrow-icon" sx={featuresSection.arrowRow}>
-                <Typography sx={featuresSection.arrowLabel}>
-                  {t('Learn more')}
-                </Typography>
-                <ArrowForwardIcon sx={{ fontSize: '0.95rem' }} />
-              </Box>
+            <Box className="arrow-icon" sx={featuresSection.arrowRow}>
+              <Typography sx={featuresSection.arrowLabel}>
+                {t('Learn more')}
+              </Typography>
+              <ArrowRight size={15} />
             </Box>
           </Box>
         ))}

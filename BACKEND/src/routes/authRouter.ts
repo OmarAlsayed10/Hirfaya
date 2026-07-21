@@ -4,11 +4,14 @@ import jwt from "jsonwebtoken";
 import "../config/passportConfig";
 import prisma from "../lib/prisma";
 
-const router = Router();
 import {
+  register,
+  login,
+  verifyOTP,
+  resendOTP,
   logout,
   getCurrentUser,
-  upgradeToPro,
+  issueProToken,
   updateProfile,
   updateProfilePhoto,
   deleteProfilePhoto,
@@ -17,34 +20,48 @@ import {
 } from "../controllers/authController";
 import { authenticateToken } from "../middleware/validateJWTMiddleware";
 import { uploadAvatar } from "../services/importService";
+import { authLimiter, otpLimiter } from "../middleware/rateLimitMiddleware";
 
+const router = Router();
+
+// ─── Email Auth ───────────────────────────────────────────────────────────────
+router.post("/register", authLimiter, register);
+router.post("/login", authLimiter, login);
+router.post("/verify-otp", otpLimiter, verifyOTP);
+router.post("/resend-otp", otpLimiter, resendOTP);
+
+// ─── Session ──────────────────────────────────────────────────────────────────
 router.post("/logout", logout);
 router.get("/verify-token", authenticateToken, getCurrentUser);
-router.post("/upgrade", upgradeToPro);
 
+// ─── Profile ──────────────────────────────────────────────────────────────────
 router.patch("/profile", authenticateToken, updateProfile);
-router.post("/profile/photo", authenticateToken, uploadAvatar.single("photo"), updateProfilePhoto);
+router.post(
+  "/profile/photo",
+  authenticateToken,
+  uploadAvatar.single("photo"),
+  updateProfilePhoto
+);
 router.delete("/profile/photo", authenticateToken, deleteProfilePhoto);
 router.delete("/account", authenticateToken, deleteAccount);
 router.get("/plan", authenticateToken, getPlan);
 
-// Google OAuth routes
+// ─── Google OAuth ─────────────────────────────────────────────────────────────
 router.get(
   "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
+  passport.authenticate("google", { scope: ["profile", "email"], session: false })
 );
 
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    failureRedirect: "http://localhost:5173/login",
+    failureRedirect: `${process.env.CLIENT_URL}/login`,
+  session: false,
   }),
   async (req: any, res) => {
     try {
-      const user = req.user;
-
       const dbUser = await prisma.user.findUnique({
-        where: { id: user.id },
+        where: { id: req.user.id },
       });
 
       if (!dbUser) {
@@ -52,44 +69,13 @@ router.get(
         return;
       }
 
-      const userData = {
-        id: dbUser.id,
-        email: dbUser.email,
-        firstName: dbUser.firstName,
-        lastName: dbUser.lastName,
-        role: dbUser.role,
-        proExpiresAt: dbUser.proExpiresAt
-          ? dbUser.proExpiresAt.getTime()
-          : null,
-      };
+      // Sets the httpOnly auth cookie on the response; the token never travels
+      // in the redirect URL (where it would leak via history / Referer / logs).
+      issueProToken(res, dbUser);
 
-      const token = jwt.sign(
-        {
-          userId: dbUser.id,
-          email: dbUser.email,
-          role: dbUser.role,
-          proExpiresAt: dbUser.proExpiresAt
-            ? dbUser.proExpiresAt.getTime()
-            : null,
-        },
-        process.env.JWT_SECRET_Key || "jwt_secret",
-        { expiresIn: "1d" }
-      );
-
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 24 * 60 * 60 * 1000,
-        sameSite: "strict",
-      });
-
-      res.redirect(
-        `http://localhost:5173/auth/success?token=${token}&user=${encodeURIComponent(
-          JSON.stringify(userData)
-        )}`
-      );
+      res.redirect(`${process.env.CLIENT_URL}/auth/success`);
     } catch (error) {
-      console.error("Error in Google OAuth callback:", error);
+      console.error("Google OAuth callback error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   }

@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { cvTemplateAction } from "../redux/store/slices/cvTemplateSlice";
+import { isProUser } from "../utils/proAccess";
 import { useTemplate } from "../hooks/useTemplate";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -25,7 +26,7 @@ const TemplatesPage = () => {
   const { setChoosenTemp } = useTemplate();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const isPro = user?.role === "pro user";
+  const isPro = isProUser(user);
 
   useEffect(() => {
     dispatch(cvTemplateAction());
@@ -83,7 +84,7 @@ const TemplatesPage = () => {
                 />
                 {template.pro && (
                   <Chip
-                    label="PRO"
+                    label={t("PRO")}
                     size="small"
                     sx={{
                       position: "absolute",
@@ -110,7 +111,7 @@ const TemplatesPage = () => {
                   color="text.secondary"
                   sx={{ mt: 0.5 }}
                 >
-                  {template.disc}
+                  {t(template.disc)}
                 </Typography>
               </CardContent>
               <CardActions sx={{ px: 2, pb: 2 }}>

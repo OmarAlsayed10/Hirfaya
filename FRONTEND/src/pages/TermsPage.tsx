@@ -8,11 +8,11 @@ export default function TermsPage() {
   const SECTIONS = [
     {
       title: "1. Acceptance of Terms",
-      body: `By accessing or using Resume-IQ ("the Service"), you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any part of these terms, you may not use the Service.`,
+      body: `By accessing or using Careerak-CV ("the Service"), you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any part of these terms, you may not use the Service.`,
     },
     {
       title: "2. Description of Service",
-      body: `Resume-IQ provides an AI-powered CV/resume building platform that allows users to create, edit, analyze, and export professional CVs. Premium features are available through a paid subscription ("Pro Plan").`,
+      body: `Careerak-CV provides an AI-powered CV/resume building platform that allows users to create, edit, analyze, and export professional CVs. Premium features are available through a paid subscription ("Pro Plan").`,
     },
     {
       title: "3. User Accounts",
@@ -28,7 +28,7 @@ export default function TermsPage() {
     },
     {
       title: "6. Intellectual Property",
-      body: `The Service, including all software, design, and content created by Resume-IQ, is our exclusive property and is protected by copyright, trademark, and other laws. Your CV data remains yours. By using the Service you grant us a limited licence to process and store your data solely to provide the Service.`,
+      body: `The Service, including all software, design, and content created by Careerak-CV, is our exclusive property and is protected by copyright, trademark, and other laws. Your CV data remains yours. By using the Service you grant us a limited licence to process and store your data solely to provide the Service.`,
     },
     {
       title: "7. Disclaimer of Warranties",
@@ -36,7 +36,7 @@ export default function TermsPage() {
     },
     {
       title: "8. Limitation of Liability",
-      body: `To the fullest extent permitted by law, Resume-IQ and its affiliates shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of — or inability to use — the Service, even if we have been advised of the possibility of such damages.`,
+      body: `To the fullest extent permitted by law, Careerak-CV and its affiliates shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of — or inability to use — the Service, even if we have been advised of the possibility of such damages.`,
     },
     {
       title: "9. Termination",
@@ -48,7 +48,7 @@ export default function TermsPage() {
     },
     {
       title: "11. Governing Law",
-      body: `These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which Resume-IQ operates, without regard to its conflict of law provisions.`,
+      body: `These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which Careerak-CV operates, without regard to its conflict of law provisions.`,
     },
     {
       title: "12. Contact",
@@ -106,7 +106,7 @@ export default function TermsPage() {
             sx={{ color: "#6b6b66", fontSize: "1rem", lineHeight: 1.8, mb: 5 }}
           >
             {t(
-              "Please read these Terms of Service carefully before using Resume-IQ. These terms govern your access to and use of our platform, products, and services.",
+              "Please read these Terms of Service carefully before using Careerak-CV. These terms govern your access to and use of our platform, products, and services.",
             )}
           </Typography>
 

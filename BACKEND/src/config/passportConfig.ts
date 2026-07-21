@@ -35,8 +35,8 @@ passport.use(
             user = await prisma.user.create({
               data: {
                 googleId: profile.id,
-                firstName: profile.name?.givenName || "Unknown",
-                lastName: profile.name?.familyName || "Unknown",
+                firstName: profile.name?.givenName?.trim() || "User",
+                lastName: profile.name?.familyName?.trim() || "",
                 email: profile.emails?.[0].value || "no-email",
                 role: "normal user",
                 proExpiresAt: null,
@@ -52,18 +52,5 @@ passport.use(
     }
   )
 );
-
-passport.serializeUser((user: any, done) => {
-  done(null, user.id);
-});
-
-passport.deserializeUser(async (id: string, done) => {
-  try {
-    const user = await prisma.user.findUnique({ where: { id } });
-    done(null, user);
-  } catch (err) {
-    done(err, null);
-  }
-});
 
 export default passport;

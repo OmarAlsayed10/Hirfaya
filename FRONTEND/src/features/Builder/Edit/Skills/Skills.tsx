@@ -1,45 +1,37 @@
-import { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  Chip,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { useEffect, useRef } from 'react';
+import { Autocomplete, Box, TextField, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../../../hooks/useAuth';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateSection } from '../../../../redux/store/slices/cvBuilderSlice';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import FormInput from '../../../../components/ui/FormInput';
+import AIFieldButton from '../../components/AIFieldButton/AIFieldButton';
+import { SKILL_DICTIONARY } from '../../skillDictionary';
 import skillsTokens from './skills.tokens';
 import type { RootState } from '../../../../redux/store/store';
 import type { SkillsFormData } from './Skills.types';
 
 const skillsSchema = z.object({
   skills: z.array(z.string()),
-  languages: z.string().optional(),
-  certifications: z.string().optional(),
 });
 
 const Skills = () => {
   const { t } = useTranslation();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { user } = useAuth();
   const dispatch = useDispatch();
+  const seededProfileSkills = useRef(false);
   const formDataSkills = useSelector(
     (state: RootState) => state.cvBuilder?.formData?.skills || { skills: [], languages: '', certifications: '' },
   );
+  const professionalTitle = useSelector(
+    (state: RootState) => state.cvBuilder?.formData?.personalInfo?.professionalTitle || '',
+  );
 
-  const [input, setInput] = useState('');
-
-  const { control, watch, setValue, getValues } = useForm<SkillsFormData>({
+  const { watch, setValue, getValues } = useForm<Pick<SkillsFormData, 'skills'>>({
     resolver: zodResolver(skillsSchema),
-    defaultValues: JSON.parse(JSON.stringify(formDataSkills)),
+    defaultValues: { skills: [...formDataSkills.skills] },
     mode: 'onChange',
   });
 
@@ -51,92 +43,53 @@ const Skills = () => {
     return () => subscription.unsubscribe();
   }, [watch, dispatch]);
 
-  const addSkill = () => {
-    const currentSkills = getValues('skills') || [];
-    if (input.trim() && !currentSkills.includes(input.trim())) {
-      setValue('skills', [...currentSkills, input.trim()]);
-      setInput('');
-    }
-  };
+  useEffect(() => {
+    if (seededProfileSkills.current) return;
+    const profileSkills = (user as { skills?: string[] } | null)?.skills;
+    if (!Array.isArray(profileSkills) || profileSkills.length === 0) return;
+    if ((getValues('skills') || []).length > 0) return;
+    seededProfileSkills.current = true;
+    setValue('skills', profileSkills);
+  }, [user, getValues, setValue]);
 
-  const removeSkill = (skillToRemove: string) => {
-    const currentSkills = getValues('skills') || [];
-    setValue('skills', currentSkills.filter((s) => s !== skillToRemove));
+  const addAISkills = (text: string) => {
+    const current = getValues('skills') || [];
+    const suggested = text.split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
+    const merged = [...current];
+    suggested.forEach((s) => { if (!merged.includes(s)) merged.push(s); });
+    setValue('skills', merged);
   };
 
   const skillsArray = watch('skills') || [];
 
   return (
-    <Box sx={{
-      ...skillsTokens.root,
-      maxWidth: isMobile ? '90%' : '800px',
-      padding: isMobile ? '8px' : '12px',
-    }}>
-      <Typography
-        variant="h5"
-        sx={{ ...skillsTokens.sectionTitle, fontSize: isMobile ? '1rem' : '1.1rem' }}
-      >
+    <Box sx={{ ...skillsTokens.root, maxWidth: '100%', padding: '12px' }}>
+      <Typography variant="h6" sx={{ ...skillsTokens.sectionTitle, fontSize: '1.1rem' }}>
         {t('skills')}
       </Typography>
 
-      <Box sx={{ mb: 3 }}>
-        <FormInput
-          label={t('addSkills')}
-          placeholder={t('placeholderSkills')}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              addSkill();
-            }
-          }}
-        />
-        <Button variant="outlined" startIcon={<AddIcon />} onClick={addSkill} sx={skillsTokens.addButton}>
-          {t('add')}
-        </Button>
-      </Box>
+      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2, textAlign: 'start' }}>
+        {t('Skills you mention in your experience are added automatically — add or remove any freely.')}
+      </Typography>
 
       <Box sx={{ mb: 3 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', fontSize: '0.85rem', mb: 1, textAlign: 'start' }}>
-          {t('yourSkills')}
-        </Typography>
-        <Box sx={skillsArray.length ? skillsTokens.skillsAreaFilled : skillsTokens.skillsAreaEmpty}>
-          {skillsArray.length > 0 ? (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {skillsArray.map((skill, index) => (
-                <Chip
-                  key={index}
-                  label={skill}
-                  onDelete={() => removeSkill(skill)}
-                  deleteIcon={<DeleteIcon style={{ fontSize: '0.85rem' }} />}
-                  sx={{ fontSize: '0.85rem', '& .MuiChip-deleteIcon': skillsTokens.chipDeleteIcon }}
-                />
-              ))}
-            </Box>
-          ) : (
-            <Typography variant="body2" sx={skillsTokens.emptyText}>
-              {t('noSkills')}
-            </Typography>
-          )}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', fontSize: '0.85rem', textAlign: 'start' }}>
+            {t('yourSkills')}
+          </Typography>
+          <AIFieldButton section="skills" jobTitle={professionalTitle} onResult={addAISkills} />
         </Box>
+        <Autocomplete
+          multiple
+          freeSolo
+          options={SKILL_DICTIONARY}
+          value={skillsArray}
+          onChange={(_, value) => setValue('skills', value as string[])}
+          renderInput={(params) => (
+            <TextField {...params} size="small" placeholder={t('placeholderSkills')} />
+          )}
+        />
       </Box>
-
-      <Controller
-        name="languages"
-        control={control}
-        render={({ field, fieldState: { error } }) => (
-          <FormInput {...field} label={t('languages')} placeholder={t('placeholderLanguages')} error={!!error} helperText={error ? t(error.message ?? '') : ''} />
-        )}
-      />
-
-      <Controller
-        name="certifications"
-        control={control}
-        render={({ field, fieldState: { error } }) => (
-          <FormInput {...field} label={t('certifications')} placeholder={t('placeholderCertifications')} error={!!error} helperText={error ? t(error.message ?? '') : ''} />
-        )}
-      />
     </Box>
   );
 };

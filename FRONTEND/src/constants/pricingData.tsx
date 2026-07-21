@@ -1,6 +1,4 @@
-import DescriptionIcon from "@mui/icons-material/Description";
-import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
-import EditIcon from "@mui/icons-material/Edit";
+import { FileText, Wand2, Pencil } from "../components/icons/MuiIcons";
 import { ReactNode } from "react";
 
 export interface FeatureHighlight {
@@ -9,50 +7,94 @@ export interface FeatureHighlight {
   text: string;
 }
 
-export const FREE_PLAN_FEATURES: string[] = [
-  "All resume templates",
-  "Basic resume sections",
-  "ResumIq branding",
-  "Maximum 12 section items",
-  "Access to all design tools",
-];
-
-export const PRO_PLAN_FEATURES: string[] = [
-  "150 resumes and cover letters",
-  "All resume templates",
-  "Real-time content suggestions",
-  "ATS check (Applicant Tracking System)",
-  "Pro resume sections",
-  "No branding",
-  "Unlimited section items",
-  "Thousands of design options",
-];
-
-export const BILLING_CYCLES = ["Monthly", "Quarterly", "Semi-Annual"] as const;
+export const BILLING_CYCLES = ["Monthly", "Annual"] as const;
 export type BillingCycle = (typeof BILLING_CYCLES)[number];
+export type PlanTier = "basic" | "pass" | "pro" | "ultra";
 
-export const PRO_PRICE_MAP: Record<
-  BillingCycle,
-  { monthly: string; total: string }
-> = {
-  Monthly: { monthly: "$5", total: "Billed monthly" },
-  Quarterly: { monthly: "$3.85", total: "$11.56 billed every 3 months" },
-  "Semi-Annual": { monthly: "$3.50", total: "$21.00 billed every 6 months" },
+export interface TierInfo {
+  title: string;
+  badge?: string;
+  features: string[];
+  prices?: Record<BillingCycle, { monthly: string; total: string }>;
+  freePrice?: string;
+  freeValidText?: string;
+}
+
+export const PLAN_TIERS: Record<PlanTier, TierInfo> = {
+  basic: {
+    title: "Basic",
+    freePrice: "$0",
+    freeValidText: "Free forever",
+    features: [
+      "200 AI credits — one-time, lifetime",
+      "≈ 1 CV analysis",
+      "2 resume templates",
+      "Basic resume sections",
+      "Careerak-CV branding",
+      "No Job Radar",
+    ],
+  },
+  pass: {
+    title: "7-Day Pass",
+    freePrice: "99 EGP",
+    freeValidText: "7 days full access · no subscription",
+    features: [
+      "1,500 AI credits — power every AI tool",
+      "≈ 12 analyses, or mix across tools",
+      "All Pro features for 7 days",
+      "Job Radar access",
+      "One-time — auto-expires, no renewal",
+    ],
+  },
+  pro: {
+    title: "Pro",
+    badge: "POPULAR",
+    features: [
+      "5,000 AI credits / month",
+      "Analysis, builder, optimizer & chat",
+      "Job Radar access",
+      "ATS check",
+      "All resume templates",
+      "No branding",
+    ],
+    prices: {
+      Monthly: { monthly: "349 EGP", total: "Billed monthly" },
+      Annual: { monthly: "217 EGP", total: "2599 EGP billed yearly" },
+    },
+  },
+  ultra: {
+    title: "Ultra",
+    badge: "BEST VALUE",
+    features: [
+      "15,000 AI credits / month",
+      "Everything in Pro",
+      "Priority Job Radar",
+      "Priority support",
+    ],
+    prices: {
+      Monthly: { monthly: "499 EGP", total: "Billed monthly" },
+      Annual: { monthly: "300 EGP", total: "3599 EGP billed yearly" },
+    },
+  },
 };
+
+export const TOPUP_NOTE = "Out of credits? Buy a top-up (+300 or +1000) anytime — no subscription change.";
+
+export const CREDITS_NOTE = "Context-aware AI actions cost ~12 credits (due to deep CV analysis), a chat message ≈ 1.";
 
 export const FEATURE_HIGHLIGHTS: FeatureHighlight[] = [
   {
-    icon: <DescriptionIcon sx={{ color: "#2a5c45", fontSize: "2rem" }} />,
+    icon: <FileText color="#2a5c45" size={32} />,
     headline: "One builder, hundreds of templates",
     text: "Choose from hundreds of professionally designed and ATS-friendly resume templates, tens of resume sections, and thousands of combinations made to make you stand out.",
   },
   {
-    icon: <AutoFixHighIcon sx={{ color: "#2a5c45", fontSize: "2rem" }} />,
+    icon: <Wand2 color="#2a5c45" size={32} />,
     headline: "AI Grammar & Content Checks",
     text: "Get a powerful AI-powered content analyzing tool. Don't let mistakes and typos cost a potential job. Cut out clichés, repetition, and vague wording.",
   },
   {
-    icon: <EditIcon sx={{ color: "#2a5c45", fontSize: "2rem" }} />,
+    icon: <Pencil color="#2a5c45" size={32} />,
     headline: "Tailor your resume with a single click",
     text: "With our resume tailoring feature you can ensure your resume is relevant to the job you're applying for.",
   },

@@ -42,10 +42,12 @@ const education = {
     gap: '12px',
   },
   halfWidth: {
-    width: '50%',
+    flex: 1,
+    minWidth: 0,
   },
   quarterWidth: {
-    width: '25%',
+    flex: 0.5,
+    minWidth: 0,
   },
 } as const;
 

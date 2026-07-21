@@ -63,7 +63,7 @@ function TestimonialsSection() {
               </Box>
 
               <Typography sx={testimonialsSection.quoteText}>
-                "{item.text}"
+                "{t(item.text)}"
               </Typography>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -75,7 +75,7 @@ function TestimonialsSection() {
                     {item.name}
                   </Typography>
                   <Typography sx={testimonialsSection.authorRole}>
-                    {item.role} · {item.company}
+                    {t(item.role)} · {item.company}
                   </Typography>
                 </Box>
               </Box>

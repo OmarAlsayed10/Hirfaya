@@ -5,28 +5,34 @@ import { useNavigate } from 'react-router-dom';
 import UserMenu from '../UserMenu';
 import { DesktopNavProps } from './DesktopNav.types';
 import desktopNav from './desktopNav.tokens';
+import { useFeedback } from '../../../../../context/FeedbackContext';
+import { hasPaidAccess } from '../../../../../utils/proAccess';
 
 const DesktopNav = ({ pages, isAuthenticated, user, onLogout }: DesktopNavProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const currentLang = i18n.language;
+  const { showEntitlement } = useFeedback();
 
   const toggleLanguage = () => {
     i18n.changeLanguage(currentLang === 'en' ? 'ar' : 'en');
   };
 
-  const isProExpired =
-    user?.role === 'pro user' &&
-    !!user?.proExpiresAt &&
-    new Date(user.proExpiresAt) < new Date();
-  const isActivePro = user?.role === 'pro user' && !isProExpired;
+  const isAdmin = user?.role === 'admin';
+  const isActivePro = hasPaidAccess(user);
 
   return (
     <Box sx={desktopNav.root}>
       {pages.map((page) => (
         <Typography
           key={page.label}
-          onClick={() => navigate(page.href)}
+          onClick={() => {
+            if (page.requiresPaid && !isActivePro) {
+              showEntitlement('PRO_REQUIRED');
+              return;
+            }
+            navigate(page.href);
+          }}
           sx={desktopNav.navLink}
         >
           {page.label}
@@ -50,7 +56,17 @@ const DesktopNav = ({ pages, isAuthenticated, user, onLogout }: DesktopNavProps)
         </MenuItem>
       )}
 
-      {isActivePro && (
+      {isAdmin && (
+        <Button
+          variant="contained"
+          onClick={() => navigate('/admin')}
+          sx={desktopNav.ctaBtn}
+        >
+          {t('Admin')}
+        </Button>
+      )}
+
+      {!isAdmin && isActivePro && (
         <Button
           variant="contained"
           onClick={() => navigate('/settings?tab=plan')}
@@ -60,7 +76,7 @@ const DesktopNav = ({ pages, isAuthenticated, user, onLogout }: DesktopNavProps)
         </Button>
       )}
 
-      {isAuthenticated && !isActivePro && (
+      {isAuthenticated && !isAdmin && !isActivePro && (
         <Button
           variant="outlined"
           onClick={() => navigate('/payment-check')}

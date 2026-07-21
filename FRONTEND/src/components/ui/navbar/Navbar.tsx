@@ -8,7 +8,6 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../hooks/useAuth';
 import { useSelector } from 'react-redux';
 import { useEffect } from 'react';
-import Cookies from 'js-cookie';
 import { AUTH_ENDPOINTS } from '../../../constants/endpoints';
 import { useNavigate } from 'react-router-dom';
 import MobileMenu from './components/MobileMenu';
@@ -26,7 +25,7 @@ function Navbar() {
 
   useEffect(() => {
     if (paymentState.success && paymentState.user) {
-      updateUserFromPayment(paymentState.user, Cookies.get('token') || '');
+      updateUserFromPayment(paymentState.user);
     }
   }, [paymentState.success, paymentState.user, updateUserFromPayment]);
 
@@ -44,6 +43,8 @@ function Navbar() {
 
   const pages = [
     { label: t('Home'), href: '/' },
+    { label: t('Career Match'), href: '/career-match' },
+    { label: t('Job Radar'), href: '/job-radar' },
     { label: t('Blogs'), href: '/Blogs' },
     { label: t('Pricing'), href: '/pricing' },
   ];
@@ -54,7 +55,7 @@ function Navbar() {
         <Toolbar disableGutters>
           <Typography variant="h6" noWrap onClick={() => navigate('/')} sx={navbar.logoDesktop}>
             <DescriptionIcon sx={navbar.brandIcon} />
-            Resume-IQ
+            Careerak-CV
           </Typography>
 
           <Box sx={navbar.mobileMenuBox}>
@@ -63,7 +64,7 @@ function Navbar() {
             </IconButton>
             <Typography variant="h5" noWrap onClick={() => navigate('/')} sx={navbar.logoMobile}>
               <DescriptionIcon sx={navbar.brandIconSmall} />
-              Resume-IQ
+              Careerak-CV
             </Typography>
           </Box>
 

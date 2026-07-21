@@ -4,7 +4,7 @@ const getStart = {
   root: {
     bgcolor: COLORS.bgLight,
     minHeight: '100vh',
-    py: { xs: 6, md: 10 },
+    py: { xs: 4, md: 6 },
   },
   contentWrapper: {
     maxWidth: '1100px',

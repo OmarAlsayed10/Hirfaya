@@ -6,6 +6,8 @@ import {
   getCVById,
   updateCV,
   deleteCV,
+  setPrimaryCV,
+  getPrimaryCV,
 } from "../services/cvBuilderService";
 
 // Create CV
@@ -16,7 +18,7 @@ export const saveCV = async (
 ) => {
   try {
     const customReq = req as CustomRequest;
-    const { personalInfo, experience, education, skills } = customReq.body;
+    const { personalInfo, experience, education, projects, skills } = customReq.body;
     const userId = customReq.user?.userId;
     const userRole = customReq.user?.role;
 
@@ -44,6 +46,7 @@ export const saveCV = async (
       personalInfo,
       experience,
       education,
+      projects,
       skills,
     });
 
@@ -83,8 +86,13 @@ export const getCV = async (
   next: NextFunction
 ) => {
   try {
+    const userId = (req as CustomRequest).user?.userId;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
     const { cvId } = req.params;
-    const result = await getCVById(cvId);
+    const result = await getCVById(cvId, userId);
     res.status(result.status).json(result);
   } catch (error) {
     next(error);
@@ -98,9 +106,14 @@ export const editCV = async (
   next: NextFunction
 ) => {
   try {
+    const userId = (req as CustomRequest).user?.userId;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
     const { cvId } = req.params;
     const cvData = req.body;
-    const result = await updateCV(cvId, cvData);
+    const result = await updateCV(cvId, userId, cvData);
     res.status(result.status).json(result);
   } catch (error) {
     next(error);
@@ -114,8 +127,52 @@ export const removeCV = async (
   next: NextFunction
 ) => {
   try {
+    const userId = (req as CustomRequest).user?.userId;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
     const { cvId } = req.params;
-    const result = await deleteCV(cvId);
+    const result = await deleteCV(cvId, userId);
+    res.status(result.status).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// The user's primary CV (used by "pick from profile" flows).
+export const getPrimary = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = (req as CustomRequest).user?.userId;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+    const cv = await getPrimaryCV(userId);
+    res.status(200).json({ cv: cv ?? null });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Set a CV as the user's primary (used by Job Radar).
+export const makePrimaryCV = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = (req as CustomRequest).user?.userId;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+    const { cvId } = req.params;
+    const result = await setPrimaryCV(cvId, userId);
     res.status(result.status).json(result);
   } catch (error) {
     next(error);

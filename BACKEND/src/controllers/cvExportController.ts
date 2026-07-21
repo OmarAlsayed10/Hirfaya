@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import exportWordCV from "../services/exportDocxService";
 import prisma from "../lib/prisma";
+import { CustomRequest } from "../middleware/validateJWTMiddleware";
 
 
 type CVData = {
@@ -12,6 +13,9 @@ type CVData = {
         location: string;
         professionalTitle: string;
         ProfessionalSummary: string;
+        linkedin?: string;
+        github?: string;
+        portfolio?: string;
     };
     experience: {
         jobTitle: string;
@@ -38,11 +42,13 @@ type CVData = {
 
 export const exportCVController = async (req: Request, res: Response) => {
     try {
+        const userId = (req as CustomRequest).user!.userId;
+
         const cv = await prisma.cV.findUnique({
             where: { id: req.params.cvId },
         });
 
-        if (!cv) {
+        if (!cv || cv.userId !== userId) {
             res.status(404).json({ message: "CV not found!" });
             return;
         }
@@ -67,7 +73,7 @@ export const exportCVController = async (req: Request, res: Response) => {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Export failed!", error });
+        res.status(500).json({ message: "Export failed!" });
         return;
     }
 };

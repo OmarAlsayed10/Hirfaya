@@ -65,7 +65,7 @@ export const useGrammarCheck = () => {
           setGrammarResult("");
         }
       } else {
-        setError("Error: " + error.message);
+        setError(t("Error:") + " " + error.message);
         setGrammarResult("");
       }
     } finally {
