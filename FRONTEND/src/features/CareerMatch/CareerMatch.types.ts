@@ -40,6 +40,9 @@ export interface VacancyRequirement {
   requirement: string;
   cvEvidence: string;
   explanation: string;
+  priority: "must_have" | "preferred";
+  category: "skill" | "experience" | "education" | "certification" | "eligibility" | "responsibility";
+  evidenceLevel: "professional" | "project" | "training" | "skills_only";
 }
 
 export interface VacancyMatch {
@@ -47,6 +50,8 @@ export interface VacancyMatch {
   inferredJobTitle: string;
   cvQualityScore: number;
   jobMatchScore: number;
+  screeningRisk: "low" | "medium" | "high";
+  scoreLabel: "strong_evidence_match" | "partial_evidence_match" | "low_evidence_match";
   matchBreakdown: {
     requirementsMatch: number;
     relevantExperience: number;
@@ -56,7 +61,12 @@ export interface VacancyMatch {
   summary: string;
   matchedRequirements: VacancyRequirement[];
   partialRequirements: VacancyRequirement[];
-  missingRequirements: Array<{ requirement: string; explanation: string }>;
+  missingRequirements: Array<{
+    requirement: string;
+    explanation: string;
+    priority: "must_have" | "preferred";
+    category: VacancyRequirement["category"];
+  }>;
   recommendations: Array<{
     action: string;
     evidence: { cvExcerpt: string; jobRequirement: string; rationale: string };

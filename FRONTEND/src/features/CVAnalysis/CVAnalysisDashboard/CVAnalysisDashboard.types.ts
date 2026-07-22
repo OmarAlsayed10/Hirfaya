@@ -55,6 +55,7 @@ export interface CVAnalysisResult {
   interviewQuestions: string[];
   matchJobTitle: string;
   extractedText: string;
+  pageCount?: number;
   targetRole?: string;
   level?: string;
   levelContext?: LevelContext;

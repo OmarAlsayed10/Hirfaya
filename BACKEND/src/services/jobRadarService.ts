@@ -25,12 +25,41 @@ export interface Preference {
 
 const STOPWORDS = new Set(["the", "and", "for", "with", "you", "your", "our", "are", "will", "job", "role", "developer", "engineer", "artist"]);
 
-const tokenize = (text: string): string[] =>
+const ROLE_ALIASES: Record<string, string[]> = {
+  "frontend developer": ["frontend", "front-end", "front end", "ui engineer", "web engineer", "react", "next.js", "vue", "angular"],
+  "full stack developer": ["full stack", "full-stack", "fullstack"],
+  "mobile developer": ["mobile", "ios", "android", "react native", "flutter"],
+  "backend developer": ["backend", "back-end", "back end", "api developer", "platform engineer"],
+};
+
+const normalizeRoleTerms = (text: string): string =>
   text
     .toLowerCase()
+    .replace(/\bfront[\s-]?end\b/g, "frontend")
+    .replace(/\bback[\s-]?end\b/g, "backend")
+    .replace(/\bfull[\s-]?stack\b/g, "fullstack")
+    .replace(/\breact[\s-]?native\b/g, "reactnative");
+
+const tokenize = (text: string): string[] =>
+  normalizeRoleTerms(text)
     .split(/[^a-z0-9+#.]+/)
     .map((word) => word === "3ds" ? "3d" : word)
     .filter((word) => (word.length > 2 || word === "3d") && !STOPWORDS.has(word));
+
+const roleVariants = (role: string): string[] => [
+  role,
+  ...(ROLE_ALIASES[role.toLowerCase()] ?? []),
+];
+
+const scoreTerms = (terms: string[], inTitle: Set<string>, inBody: Set<string>, bodyWeight: number): number => {
+  if (terms.length === 0) return 0;
+  let hits = 0;
+  for (const term of terms) {
+    if (inTitle.has(term)) hits += 2;
+    else if (inBody.has(term)) hits += bodyWeight;
+  }
+  return (hits / (terms.length * 2)) * 100;
+};
 
 // Level keywords that conflict with each selected level.
 // If the user picks "Junior", any job title containing "senior", "lead", etc. is penalized.
@@ -42,46 +71,21 @@ const LEVEL_CONFLICTS: Record<string, string[]> = {
   Lead:   ["junior", "jr", "intern", "trainee", "fresh", "entry"],
 };
 
-// Deterministic fit — token overlap between what the user wants and the job. Title hits weigh
+// Deterministic fit uses role and skill terms. Title hits weigh
 // double. No LLM, so ranking every job costs nothing.
 export function fitScore(pref: Preference, job: RawJob): number {
-  const roleTerms = tokenize(pref.role);
   const keywordTerms = tokenize(pref.keywords ?? "");
-  if (roleTerms.length === 0 && keywordTerms.length === 0) return 50;
   const inTitle = new Set(tokenize(job.title));
   const inBody = new Set(tokenize(`${job.title} ${job.description}`));
-  let roleHit = 0;
-  for (const r of roleTerms) {
-    if (inTitle.has(r)) roleHit += 2;
-    else if (inBody.has(r)) roleHit += 0.4;
-  }
+  const roleScore = Math.max(
+    ...roleVariants(pref.role).map((variant) => scoreTerms(tokenize(variant), inTitle, inBody, 0.75)),
+  );
+  const keywordScore = keywordTerms.length ? scoreTerms(keywordTerms, inTitle, inBody, 1) : 100;
+  const score = keywordTerms.length
+    ? Math.round(roleScore * 0.6 + keywordScore * 0.4)
+    : Math.round(roleScore);
 
-  const roleScore = roleTerms.length > 0 ? (roleHit/(roleTerms.length * 2))*100:100;
-
-  let keywordHit=0;
-
-  for(const k of keywordTerms){
-    if(inTitle.has(k)) keywordHit+=2;
-    else if(inBody.has(k)) keywordHit+=1;
-  }
-
-  const keywordScore = keywordTerms.length > 0 ? (keywordHit/(keywordTerms.length * 2))*100:100;
-
-  let score: number;
-  if(roleTerms.length>0 && keywordTerms.length>0){
-    score = Math.round((roleScore * 0.6 + keywordScore * 0.4));
-  } else {
-    score = Math.round(roleScore);
-  }
-
-  // Exclude jobs whose title contains a seniority level that conflicts with the user's selection.
-  if (pref.level && LEVEL_CONFLICTS[pref.level]) {
-    const conflicts = LEVEL_CONFLICTS[pref.level];
-    if (conflicts.some((term) => inTitle.has(term))) {
-      return 0;
-    }
-  }
-
+  if (pref.level && LEVEL_CONFLICTS[pref.level]?.some((term) => inTitle.has(term))) return 0;
   return Math.min(100, score);
 }
 
@@ -276,7 +280,7 @@ export async function fetchCareerjet(pref: Preference): Promise<RawJob[]> {
   }
 }
 
-const MIN_FIT = 30;
+const MIN_FIT = 50;
 const EARLY_BIRD_DAYS = 3;
 const CANDIDATES_PER_ROLE = 200;
 const MAX_TERMS_PER_ROLE = 8;
@@ -317,7 +321,9 @@ const runWithRefreshSlot = async (refresh: () => Promise<number>): Promise<numbe
 };
 
 const candidateTerms = (roleName: string): string[] =>
-  [...new Set(tokenize(roleName))].slice(0, MAX_TERMS_PER_ROLE);
+  [...new Set(roleVariants(roleName).map((variant) => variant.toLowerCase()))]
+    .filter((variant) => variant.length > 2)
+    .slice(0, MAX_TERMS_PER_ROLE);
 
 const candidateFilters = (
   pref: { remote: boolean; location: string | null },
@@ -462,7 +468,7 @@ const countryOf = (location: string | null): string | null => {
 };
 
 export async function listMatches(userId: string, page = 1, country?: string) {
-  const base = { userId, status: { not: "dismissed" } };
+  const base = { userId, status: { not: "dismissed" }, fitScore: { gte: MIN_FIT } };
   const where = country
     ? { ...base, location: { contains: country, mode: "insensitive" as const } }
     : base;

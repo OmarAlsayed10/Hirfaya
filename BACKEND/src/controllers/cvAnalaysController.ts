@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { extractText } from "../services/extractTextService";
+import { estimateTextPageCount, extractText } from "../services/extractTextService";
 import { aiResponse, hasAiResponse } from "../services/aiService";
 import { scoreCVWithBreakdown, hasScore } from "../services/cvScoring";
 import { canSpend, canAnonAnalyze, consumeAnonAnalyze } from "../services/quotaService";
@@ -32,9 +32,11 @@ export const analyzeCVController = async (req: Request, res: Response) => {
   ).slice(0, 20);
 
   try {
-    const extractedText = (
-      file ? (await extractText(file.buffer, file.mimetype)).text : cvText
-    ).slice(0, 30000);
+    const extracted = file
+      ? await extractText(file.buffer, file.mimetype)
+      : { text: cvText, pageCount: estimateTextPageCount(cvText) };
+    const extractedText = extracted.text.slice(0, 30000);
+    const pageCount = extracted.pageCount;
 
     if (file && extractedText.trim().length < 100) {
       res.status(400).json({
@@ -130,6 +132,7 @@ export const analyzeCVController = async (req: Request, res: Response) => {
             size: extractedText.length,
           },
       extractedText,
+      pageCount,
       level,
       qualityScore,
       scoreBreakdown,

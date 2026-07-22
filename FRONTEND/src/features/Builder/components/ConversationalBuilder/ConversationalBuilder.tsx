@@ -16,7 +16,7 @@ import { COLORS } from '../../../../theme/tokens';
 
 interface Msg { role: 'user' | 'assistant'; content: string; }
 
-const GREETING = "how can we help you with ur cv today ?";
+const GREETING = "how can we help you with your cv today ?";
 
 interface Props { open: boolean; onClose: () => void; onUpdate?: () => void; }
 

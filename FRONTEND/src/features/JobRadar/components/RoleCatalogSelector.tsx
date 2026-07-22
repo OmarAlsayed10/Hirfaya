@@ -132,7 +132,7 @@ const RoleCatalogSelector = ({ categories, selectedRoleIds, onChange }: RoleCata
                 key={category.id}
                 onClick={() => setActiveCategoryId(category.id)}
                 startIcon={<CategoryRoundedIcon />}
-                endIcon={selectedCount ? <Chip size="small" label={selectedCount} /> : undefined}
+                endIcon={selectedCount ? <Chip size="small" label={selectedCount} sx={{ color: "white", bgcolor: "rgba(0,0,0,0.18)", fontWeight: 800, "& .MuiChip-label": { color: "white" } }} /> : undefined}
                 sx={{
                   minWidth: { xs: "max-content", md: "100%" },
                   justifyContent: "flex-start",

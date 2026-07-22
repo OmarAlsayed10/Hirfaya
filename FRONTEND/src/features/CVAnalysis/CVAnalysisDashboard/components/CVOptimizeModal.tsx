@@ -17,7 +17,7 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import axios from 'axios';
 import { pdf } from '@react-pdf/renderer';
 import PdfPlainCV from '../../../../templates/pdf/PdfPlainCV';
-import { updateFormData } from '../../../../redux/store/slices/cvBuilderSlice';
+import { setPageCount, updateFormData } from '../../../../redux/store/slices/cvBuilderSlice';
 import { COLORS, TYPOGRAPHY } from '../../../../theme/tokens';
 import { AI_ENDPOINTS } from '../../../../constants/endpoints';
 import { roundScore } from '../../../../utils/scoreDisplay';
@@ -305,10 +305,11 @@ interface CVOptimizeModalProps {
   newScore: number | null;
   newBreakdown: ScoreCategory[];
   originalScore: number;
+  pageCount: number;
 }
 
 const CVOptimizeModal = ({
-  open, onClose, loading, error, adjustedCV, changes, newScore, newBreakdown, originalScore,
+  open, onClose, loading, error, adjustedCV, changes, newScore, newBreakdown, originalScore, pageCount,
 }: CVOptimizeModalProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -333,6 +334,7 @@ const CVOptimizeModal = ({
     try {
       const formData = await ensureFormData();
       dispatch(updateFormData(formData));
+      dispatch(setPageCount(pageCount));
       navigate('/builder');
     } catch {
       // leave the modal open on failure

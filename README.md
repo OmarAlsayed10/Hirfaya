@@ -89,6 +89,10 @@ GROQ_API_KEY=replace_me
 # GROQ_API_KEY_2=replace_me
 # GROQ_API_KEY_3=replace_me
 
+# Optional job sources. Format: visible company name:public board name, comma-separated.
+GREENHOUSE_BOARDS=Company:board_token
+LEVER_SITES=Company:site_name
+X_API_BEARER_TOKEN=replace_me
 GOOGLE_CLIENT_ID=replace_me
 GOOGLE_CLIENT_SECRET=replace_me
 GOOGLE_CALLBACK_URL=http://localhost:3001/auth/google/callback

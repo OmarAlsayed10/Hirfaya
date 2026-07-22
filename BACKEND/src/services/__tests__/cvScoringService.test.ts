@@ -1,4 +1,5 @@
 import { contentLines, experienceObjective } from "../cvScoring";
+import { suspiciousColumnLines } from "../cvScoring/textParse";
 
 const UNWRAPPED_RESUME = `
 Contact
@@ -81,6 +82,22 @@ describe("contentLines — wrapped vs unwrapped bullets", () => {
   });
 });
 
+describe("suspiciousColumnLines", () => {
+  it("does not flag short pipe-separated technology lists as columns", () => {
+    const cvText = `
+PROFILE
+Backend Developer
+
+PROJECTS
+LoanGuard
+Laravel | PHP | MySQL
+Healthy Food Brand
+Digital Marketing | Market Research | Target Audience Analysis
+`;
+
+    expect(suspiciousColumnLines(cvText)).toEqual([]);
+  });
+});
 describe("experienceObjective — wrapped vs unwrapped scoring", () => {
   it("yields identical verb scores", () => {
     const unwrapped = experienceObjective(UNWRAPPED_RESUME);

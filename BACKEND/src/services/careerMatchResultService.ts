@@ -63,8 +63,60 @@ function requireVacancyEvidence(analysis: VacancyMatchAi, cvText: string, jobDes
   });
 }
 
-function vacancyMatchScore(analysis: VacancyMatchAi): number {
-  return Object.values(analysis.matchBreakdown).reduce((sum, point) => sum + point, 0);
+type VacancyRequirement = VacancyMatchAi["matchedRequirements"][number];
+type RequirementCategory = VacancyRequirement["category"];
+
+const requirementWeight = (priority: VacancyRequirement["priority"]): number =>
+  priority === "must_have" ? 2 : 1;
+
+function requirementRatio(analysis: VacancyMatchAi, category?: RequirementCategory): number {
+  const matched = analysis.matchedRequirements.filter((entry) => !category || entry.category === category);
+  const partial = analysis.partialRequirements.filter((entry) => !category || entry.category === category);
+  const missing = analysis.missingRequirements.filter((entry) => !category || entry.category === category);
+  const possible = [...matched, ...partial, ...missing]
+    .reduce((sum, entry) => sum + requirementWeight(entry.priority), 0);
+  if (!possible) return category ? requirementRatio(analysis) : 0;
+  const earned = matched.reduce((sum, entry) => sum + requirementWeight(entry.priority), 0)
+    + partial.reduce((sum, entry) => sum + requirementWeight(entry.priority) * 0.5, 0);
+  return earned / possible;
+}
+
+function evidenceRatio(analysis: VacancyMatchAi): number {
+  const strength = { professional: 1, project: 0.8, training: 0.6, skills_only: 0.35 } as const;
+  const evidenced = [...analysis.matchedRequirements, ...analysis.partialRequirements];
+  if (!evidenced.length) return 0;
+  return evidenced.reduce((sum, entry) => sum + strength[entry.evidenceLevel], 0) / evidenced.length;
+}
+
+function vacancyMatchBreakdown(analysis: VacancyMatchAi): VacancyMatch["matchBreakdown"] {
+  return {
+    requirementsMatch: Math.round(requirementRatio(analysis) * 45),
+    relevantExperience: Math.round(requirementRatio(analysis, "experience") * 25),
+    demonstratedSkills: Math.round(requirementRatio(analysis, "skill") * 20),
+    evidenceQuality: Math.round(evidenceRatio(analysis) * 10),
+  };
+}
+
+function screeningRisk(analysis: VacancyMatchAi): VacancyMatch["screeningRisk"] {
+  if (analysis.missingRequirements.some((entry) => entry.priority === "must_have")) return "high";
+  if (analysis.partialRequirements.some((entry) => entry.priority === "must_have")) return "medium";
+  return "low";
+}
+
+function vacancyMatchScore(analysis: VacancyMatchAi, breakdown: VacancyMatch["matchBreakdown"]): number {
+  const rawScore = Object.values(breakdown).reduce((sum, point) => sum + point, 0);
+  const missingEligibility = analysis.missingRequirements.some(
+    (entry) => entry.priority === "must_have" && entry.category === "eligibility",
+  );
+  if (missingEligibility) return Math.min(rawScore, 49);
+  if (screeningRisk(analysis) === "high") return Math.min(rawScore, 69);
+  return rawScore;
+}
+
+function scoreLabel(score: number): VacancyMatch["scoreLabel"] {
+  if (score >= 80) return "strong_evidence_match";
+  if (score >= 55) return "partial_evidence_match";
+  return "low_evidence_match";
 }
 
 export function finalizeRoleDiscovery(
@@ -89,10 +141,15 @@ export function finalizeVacancyMatch(
   jobDescription: string,
 ): VacancyMatch {
   requireVacancyEvidence(analysis, cvText, jobDescription);
+  const matchBreakdown = vacancyMatchBreakdown(analysis);
+  const jobMatchScore = vacancyMatchScore(analysis, matchBreakdown);
   const parsed = vacancyMatchSchema.safeParse({
     ...analysis,
     cvQualityScore,
-    jobMatchScore: vacancyMatchScore(analysis),
+    jobMatchScore,
+    matchBreakdown,
+    screeningRisk: screeningRisk(analysis),
+    scoreLabel: scoreLabel(jobMatchScore),
   });
   if (!parsed.success) throw new InvalidAiResponseError("The AI returned an uncalibrated vacancy score.");
   return parsed.data;

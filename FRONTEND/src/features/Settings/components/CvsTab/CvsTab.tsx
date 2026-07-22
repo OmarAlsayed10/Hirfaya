@@ -7,7 +7,7 @@ import {
   CardActionArea,
   CardContent,
 } from '@mui/material';
-import { FileText, Plus, Star } from "../../../../components/icons/MuiIcons";
+import { FileText, Plus, Star, Trash2 } from "../../../../components/icons/MuiIcons";
 import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
 import axios from 'axios';
@@ -19,11 +19,13 @@ import { CV_ENDPOINTS } from '../../../../constants/endpoints';
 import { COLORS } from '../../../../theme/tokens';
 import cvsTab from './cvsTab.tokens';
 import type { CV } from './CvsTab.types';
+import { useFeedback } from '../../../../context/FeedbackContext';
 
 const CvsTab = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { notify } = useFeedback();
   const [cvs, setCvs] = useState<CV[]>([]);
 
   useEffect(() => {
@@ -46,6 +48,17 @@ const CvsTab = () => {
     }
   };
 
+  const remove = async (cv: CV) => {
+    const id = cvKey(cv);
+    if (!id || !window.confirm(t('This permanently deletes "{{title}}". You cannot undo this action.', { title: cv.title || t('Untitled CV') }))) return;
+    try {
+      await axios.delete(CV_ENDPOINTS.delete(id), { withCredentials: true });
+      setCvs((prev) => prev.filter((item) => cvKey(item) !== id));
+      notify(t('CV deleted successfully!'), 'success');
+    } catch {
+      notify(t('Could not delete this CV. Please try again.'));
+    }
+  };
   return (
     <Box>
       <Typography sx={cvsTab.sectionTitle}>{t('My CVs')}</Typography>
@@ -62,7 +75,16 @@ const CvsTab = () => {
                   <Star size={18} fill={cv.isPrimary ? 'currentColor' : 'none'} />
                 </IconButton>
               </Tooltip>
-              <CardActionArea
+              <Tooltip title={t('Delete CV')}>
+                <IconButton
+                  size="small"
+                  aria-label={t('Delete CV')}
+                  onClick={(event) => { event.stopPropagation(); remove(cv); }}
+                  sx={{ position: 'absolute', top: 4, right: 36, zIndex: 3, color: 'error.main' }}
+                >
+                  <Trash2 size={18} />
+                </IconButton>
+              </Tooltip>              <CardActionArea
                 onClick={() => {
                   dispatch(updateFormData(cv));
                   navigate('/builder');

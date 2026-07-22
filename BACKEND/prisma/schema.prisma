@@ -50,6 +50,7 @@ model User {
   jobPreference      JobPreference?
   jobMatches         JobMatch[]
   jobRoleSuggestions JobRoleSuggestion[]
+  jobSubmissions     JobSubmission[]
   variants           CVVariant[]
   documents          Document[]
   careerMatchCaches  CareerMatchCache[]
@@ -129,6 +130,31 @@ model Job {
   @@index([postedAt])
 }
 
+enum JobSubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model JobSubmission {
+  id          String              @id @default(uuid())
+  userId      String
+  title       String
+  company     String
+  location    String?
+  remote      Boolean             @default(false)
+  url         String
+  description String              @db.Text
+  status      JobSubmissionStatus @default(PENDING)
+  reviewedAt  DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+}
 model JobCategory {
   id        String    @id @default(uuid())
   name      String    @unique

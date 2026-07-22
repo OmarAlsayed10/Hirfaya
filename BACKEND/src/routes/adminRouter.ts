@@ -31,6 +31,10 @@ import {
   adminUpdateJobCategoryController,
   adminUpdateJobRoleController,
 } from "../controllers/jobCatalogController";
+import {
+  adminJobSubmissionsController,
+  adminReviewJobSubmissionController,
+} from "../controllers/jobSubmissionController";
 
 const router = Router();
 
@@ -60,6 +64,8 @@ router.post("/job-categories/:categoryId/roles", adminCreateJobRoleController);
 router.patch("/job-roles/:id", adminUpdateJobRoleController);
 router.get("/job-role-suggestions", adminRoleSuggestionsController);
 router.patch("/job-role-suggestions/:id", adminReviewRoleSuggestionController);
+router.get("/job-submissions", adminJobSubmissionsController);
+router.patch("/job-submissions/:id", adminReviewJobSubmissionController);
 
 router.get("/blogs", adminListBlogsController);
 router.post("/blogs", createBlogController);

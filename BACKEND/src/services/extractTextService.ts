@@ -4,6 +4,11 @@ const pdfParse = require("pdf-parse/lib/pdf-parse");
 import fs from "fs";
 import axios from "axios";
 
+export const estimateTextPageCount = (text: string): number => {
+    const wordCount = text.split(/\s+/).filter(Boolean).length;
+    return Math.max(1, Math.ceil(wordCount / 400));
+};
+
 export const extractText = async (fileInput: string | Buffer, mimeType: string): Promise<{ text: string; pageCount: number }> => {
     let buffer: Buffer;
 
@@ -36,8 +41,7 @@ export const extractText = async (fileInput: string | Buffer, mimeType: string):
         if (!isZip && !isOle) throw new Error("File is not a valid Word document.");
         const result = await mammoth.extractRawText({ buffer });
         text = result.value;
-        const wordCount = text.split(/\s+/).filter(Boolean).length;
-        pageCount = Math.max(1, Math.ceil(wordCount / 400));
+        pageCount = estimateTextPageCount(text);
     } else {
         throw new Error("This file is unsupported, please upload PDF/Word");
     }

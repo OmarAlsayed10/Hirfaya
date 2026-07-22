@@ -17,7 +17,7 @@ const normalize = (value: string) => value.trim().replace(/\s+/g, " ");
 
 export function careerMatchCacheKey(input: CacheInput): string {
   const canonical = JSON.stringify({
-    contractVersion: 2,
+    contractVersion: 3,
     cvText: normalize(input.cvText),
     targetJobTitle: normalize(input.targetJobTitle).toLowerCase(),
     experienceLevel: normalize(input.experienceLevel).toLowerCase(),

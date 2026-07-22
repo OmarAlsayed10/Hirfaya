@@ -43,6 +43,7 @@ export const CV_ENDPOINTS = {
   userCvs: `${API_BASE_URL}/cvbuilder/user`,
   primary: `${API_BASE_URL}/cvbuilder/primary`,
   save: `${API_BASE_URL}/cvbuilder/save`,
+  delete: (id: string) => `${API_BASE_URL}/cvbuilder/${id}`,
   setPrimary: (id: string) => `${API_BASE_URL}/cvbuilder/${id}/primary`,
 };
 
@@ -68,6 +69,7 @@ export const USER_ENDPOINTS = {
 export const JOB_ENDPOINTS = {
   catalog: `${API_BASE_URL}/job-radar/catalog`,
   suggestions: `${API_BASE_URL}/job-radar/role-suggestions`,
+  submissions: `${API_BASE_URL}/job-radar/submissions`,
   preference: `${API_BASE_URL}/job-radar/preference`,
   matches: `${API_BASE_URL}/job-radar/matches`,
   refresh: `${API_BASE_URL}/job-radar/refresh`,
@@ -100,6 +102,8 @@ export const ADMIN_ENDPOINTS = {
   jobRole: (id: string) => `${API_BASE_URL}/admin/job-roles/${id}`,
   jobRoleSuggestions: `${API_BASE_URL}/admin/job-role-suggestions`,
   jobRoleSuggestion: (id: string) => `${API_BASE_URL}/admin/job-role-suggestions/${id}`,
+  jobSubmissions: `${API_BASE_URL}/admin/job-submissions`,
+  jobSubmission: (id: string) => `${API_BASE_URL}/admin/job-submissions/${id}`,
   users: `${API_BASE_URL}/admin/users`,
   user: (id: string) => `${API_BASE_URL}/admin/users/${id}`,
   banUser: (id: string) => `${API_BASE_URL}/admin/users/${id}/ban`,

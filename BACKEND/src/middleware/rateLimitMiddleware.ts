@@ -1,4 +1,18 @@
+import { Request } from "express";
 import rateLimit from "express-rate-limit";
+import jwt from "jsonwebtoken";
+const isAdminRequest = (req: Request): boolean => {
+  const token = req.cookies?.token || req.headers.authorization?.split(" ")[1];
+  if (!token) return false;
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_Key!) as { role?: string };
+    return decoded.role === "admin";
+  } catch {
+    return false;
+  }
+};
+
 
 // In a multi-node deployment swap MemoryStore for a Redis store here.
 const json = (message: string) => ({ message });
@@ -6,6 +20,7 @@ const json = (message: string) => ({ message });
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
+  skip: isAdminRequest,
   standardHeaders: true,
   legacyHeaders: false,
   message: json("Too many auth attempts. Try again in 15 minutes."),

@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { DOCUMENT_ENDPOINTS } from '../../../../constants/endpoints';
+import { useFeedback } from '../../../../context/FeedbackContext';
 
 interface DocItem {
   id: string;
@@ -23,6 +24,7 @@ const TYPE_LABEL: Record<string, string> = {
 const DocumentsTab = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { notify } = useFeedback();
   const [docs, setDocs] = useState<DocItem[]>([]);
 
   const load = () => {
@@ -45,11 +47,13 @@ const DocumentsTab = () => {
   };
 
   const remove = async (doc: DocItem) => {
-    setDocs((prev) => prev.filter((d) => d.id !== doc.id));
+    if (!window.confirm(t('This permanently deletes "{{title}}". You cannot undo this action.', { title: doc.title }))) return;
     try {
       await axios.delete(DOCUMENT_ENDPOINTS.delete(doc.id), { withCredentials: true });
+      setDocs((prev) => prev.filter((item) => item.id !== doc.id));
+      notify(t('Document deleted successfully.'), 'success');
     } catch {
-      load();
+      notify(t('Could not delete this document. Please try again.'));
     }
   };
 
@@ -90,8 +94,8 @@ const DocumentsTab = () => {
                       <Star size={18} fill={doc.isPrimary ? 'currentColor' : 'none'} />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title={t('Delete')}>
-                    <IconButton size="small" onClick={() => remove(doc)} sx={{ color: 'action.disabled' }}>
+                  <Tooltip title={t('Delete document')}>
+                    <IconButton aria-label={t('Delete document')} size="small" onClick={() => remove(doc)} sx={{ color: 'action.disabled', '&:hover': { color: 'error.main' } }}>
                       <Trash2 size={18} />
                     </IconButton>
                   </Tooltip>

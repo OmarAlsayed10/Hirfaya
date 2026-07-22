@@ -1,14 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import axios from "axios";
 import {
-  Box, Button, Chip, CircularProgress, Container, FormControlLabel,
-  MenuItem, Paper, Stack, Switch, TextField, Typography,
+  Box, Button, Chip, CircularProgress, Container,
+  MenuItem, Paper, Stack, TextField, Typography,
 } from "@mui/material";
 import { BriefcaseBusiness, Compass, FileText, Radar, UploadCloud } from "../components/icons/MuiIcons";
 import { useTranslation } from "react-i18next";
 import { AI_ENDPOINTS, CV_ENDPOINTS } from "../constants/endpoints";
 import CareerMatchResults from "../features/CareerMatch/CareerMatchResults";
-import type { CareerMatchResponse, LiveMarketStatus } from "../features/CareerMatch/CareerMatch.types";
+import type { CareerMatchResponse,LiveMarketStatus } from "../features/CareerMatch/CareerMatch.types";
 import { cvToText } from "../utils/cvToText";
 import { useFeedback } from "../context/FeedbackContext";
 
@@ -24,18 +24,10 @@ export default function CareerMatchPage() {
   const [targetTitle, setTargetTitle] = useState("");
   const [experienceLevel, setExperienceLevel] = useState("");
   const [jobDescription, setJobDescription] = useState("");
-  const [useLiveMarket, setUseLiveMarket] = useState(false);
-  const [status, setStatus] = useState<LiveMarketStatus | null>(null);
   const [result, setResult] = useState<CareerMatchResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingPrimary, setLoadingPrimary] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    axios.get(AI_ENDPOINTS.careerMatchLimits, { withCredentials: true })
-      .then(({ data }) => setStatus(data))
-      .catch(() => setStatus(null));
-  }, []);
 
   const selectFile = (selected: File | undefined) => {
     if (!selected) return;
@@ -69,10 +61,6 @@ export default function CareerMatchPage() {
       notify(t("Paste the actual vacancy description so the match can be evidence-based."));
       return;
     }
-    if (mode === "discovery" && useLiveMarket && (status?.remaining ?? 0) <= 0) {
-      notify(t("Your plan has no live market searches remaining. Turn live search off or change plan."));
-      return;
-    }
 
     const form = new FormData();
     if (file) form.append("cv", file);
@@ -80,7 +68,7 @@ export default function CareerMatchPage() {
     if (targetTitle.trim()) form.append("targetJobTitle", targetTitle.trim());
     if (experienceLevel) form.append("experienceLevel", experienceLevel);
     if (mode === "vacancy") form.append("jobDescription", jobDescription.trim());
-    form.append("useLiveMarket", String(mode === "discovery" && useLiveMarket));
+    form.append("useLiveMarket", "false");
 
     setLoading(true);
     try {
@@ -89,12 +77,12 @@ export default function CareerMatchPage() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setResult(data);
-      setStatus(data.liveMarketStatus);
+
       window.dispatchEvent(new Event("quota:refresh"));
     } catch (requestError) {
       if (axios.isAxiosError(requestError)) {
         const data = requestError.response?.data as { code?: string; message?: string; liveMarketStatus?: LiveMarketStatus } | undefined;
-        if (data?.liveMarketStatus) setStatus(data.liveMarketStatus);
+
         if (data?.code === "CREDITS_EXHAUSTED") {
           showEntitlement("CREDITS_EXHAUSTED");
         } else {
@@ -108,7 +96,6 @@ export default function CareerMatchPage() {
     }
   };
 
-  const liveUnavailable = (status?.remaining ?? 0) <= 0;
   const selectedCv = file?.name || (primaryText ? t("Primary CV") : t("No CV selected"));
 
   return (
@@ -143,12 +130,14 @@ export default function CareerMatchPage() {
                 {['Fresh', 'Junior', 'Mid', 'Senior', 'Lead'].map((level) => <MenuItem key={level} value={level}>{t(level)}</MenuItem>)}
               </TextField>
               {mode === "vacancy" && <TextField label={t("Actual job description")} value={jobDescription} onChange={(event) => setJobDescription(event.target.value.slice(0, 20000))} placeholder={t("Paste responsibilities, requirements, and preferred skills…")} multiline minRows={8} required helperText={`${jobDescription.length.toLocaleString()} / 20,000 characters`} />}
-              {mode === "discovery" && <Paper elevation={0} sx={{ p: 2.5, bgcolor: "#f1f5f2", borderRadius: 3, border: "1px solid #dce5df" }}><FormControlLabel control={<Switch checked={useLiveMarket} onChange={(event) => setUseLiveMarket(event.target.checked)} disabled={liveUnavailable} />} label={<Box><Typography sx={{ fontWeight: 800 }}>{t("Search the live job market")}</Typography><Typography sx={{ color: palette.muted, fontSize: 13 }}>{t("Uses AI web search for current evidence. Your CV is not sent to web search—only the inferred role titles.")}</Typography></Box>} /><Stack direction="row" gap={1} mt={1.5} flexWrap="wrap"><Chip size="small" label={`${status?.remaining ?? "—"} ${t("remaining")}`} color={liveUnavailable ? "default" : "primary"} /><Chip size="small" variant="outlined" label={t("Identical repeats are free for 7 days")} /></Stack></Paper>}
             </Stack>
 
             <Paper elevation={0} sx={{ p: 3, borderRadius: 4, border: "1.5px dashed #aec3b6", bgcolor: "#fbfcfb", alignSelf: "start" }}>
-              <Box sx={{ width: 52, height: 52, display: "grid", placeItems: "center", borderRadius: 3, bgcolor: "#e5efe9", color: palette.primary }}><FileText size={25} /></Box>
-              <Typography sx={{ fontWeight: 850, mt: 2 }}>{t("Your CV")}</Typography><Typography sx={{ color: selectedCv === t("No CV selected") ? palette.muted : palette.primary, fontSize: 14, mt: .5, wordBreak: "break-word" }}>{selectedCv}</Typography>
+              <Box sx={{ display: "grid", justifyItems: "center", textAlign: "center" }}>
+                <Box sx={{ width: 52, height: 52, display: "grid", placeItems: "center", borderRadius: 3, bgcolor: "#e5efe9", color: palette.primary }}><FileText size={25} /></Box>
+                <Typography sx={{ fontWeight: 850, mt: 2 }}>{t("Your CV")}</Typography>
+                <Typography sx={{ color: selectedCv === t("No CV selected") ? palette.muted : palette.primary, fontSize: 14, mt: .5, wordBreak: "break-word" }}>{selectedCv}</Typography>
+              </Box>
               <Button fullWidth variant="outlined" startIcon={<UploadCloud size={18} />} onClick={() => fileInput.current?.click()} sx={{ mt: 2.5, py: 1.2, textTransform: "none", borderRadius: 2.5, fontWeight: 800 }}>{t("Upload PDF or DOCX")}</Button>
               <input ref={fileInput} hidden type="file" accept=".pdf,.doc,.docx" onChange={(event) => selectFile(event.target.files?.[0])} />
               <Button fullWidth onClick={loadPrimaryCV} disabled={loadingPrimary} sx={{ mt: 1, textTransform: "none", fontWeight: 800 }}>{loadingPrimary ? t("Loading…") : t("Use my primary CV")}</Button>

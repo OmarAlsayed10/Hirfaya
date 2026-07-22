@@ -3,19 +3,18 @@ import prisma from "../lib/prisma";
 import {
   RawJob,
   Preference,
-  fetchAdzuna,
   fetchRemotive,
   fetchRemoteOK,
   fetchTheMuse,
   fetchJooble,
-  fetchJSearch,
   fetchCareerjet,
 } from "./jobRadarService";
+import { fetchGreenhouseJobs, fetchLeverJobs, fetchXJobs } from "./jobSourceService";
 
 const DESC_CAP = 6000;
 const REMOTE_HINT = /\bremote\b/i;
 
-// Egypt/MENA-first seeds for the query-based sources (Jooble/Adzuna/Remotive/TheMuse).
+// Egypt/MENA-first seeds for the query-based sources (Jooble, Remotive, and The Muse).
 // Global sources (Greenhouse/Lever/RemoteOK) ignore the query and return their whole board.
 const FALLBACK_ROLES = [
   "software engineer", "frontend developer", "backend developer", "full stack developer",
@@ -42,7 +41,6 @@ const seedPref = (role: string, location: string): Preference => ({
 });
 
 const MAX_JOB_AGE_DAYS = 90;
-const JSEARCH_COOLDOWN_H = 20;
 const ROLE_BATCH_SIZE = 4;
 const INGESTION_INTERVAL_HOURS = 6;
 
@@ -62,21 +60,6 @@ const currentRoleBatch = (roles: string[]): string[] => {
     roles[(start + offset) % roles.length],
   );
 };
-
-const dayOfYear = (): number =>
-  Math.floor((Date.now() - Date.UTC(new Date().getUTCFullYear(), 0, 0)) / 86_400_000);
-
-// JSearch is the only budgeted source (RapidAPI free tier). Gate it to one call per ~day and
-// rotate through one role at a time, so the cron's several daily runs can't drain the quota.
-async function jsearchDue(): Promise<boolean> {
-  const last = await prisma.job.findFirst({
-    where: { source: "jsearch" },
-    orderBy: { createdAt: "desc" },
-    select: { createdAt: true },
-  });
-  return !last || Date.now() - last.createdAt.getTime() > JSEARCH_COOLDOWN_H * 3_600_000;
-}
-
 // De-dupe on source+externalId and insert-only (skip existing on the unique). One round-trip.
 async function persistRaw(jobs: RawJob[]): Promise<number> {
   const seen = new Map<string, RawJob>();
@@ -105,30 +88,30 @@ export async function ingestJobs(): Promise<number> {
   const roles = await activeRoleNames();
   const roleBatch = currentRoleBatch(roles);
   const global = (
-    await Promise.all([fetchRemoteOK(), fetchTheMuse(seedPref("", ""))])
+    await Promise.all([
+    fetchRemoteOK(),
+    fetchTheMuse(seedPref("", "")),
+    fetchGreenhouseJobs(),
+    fetchLeverJobs(),
+    fetchXJobs(),
+  ])
   ).flat();
 
   const seeded = (
     await Promise.all(
-      roleBatch.map((role) => {
+      roleBatch.map((role:any) => {
         const pref = seedPref(role, "Egypt");
         return Promise.all([
           fetchJooble(pref),
           fetchRemotive(pref),
-          fetchAdzuna(pref),
           fetchCareerjet(pref),
         ]).then((r) => r.flat());
       })
     )
   ).flat();
 
-  let jsearch: RawJob[] = [];
-  if (await jsearchDue()) {
-    const dailyRole = roles[dayOfYear() % roles.length];
-    jsearch = await fetchJSearch(seedPref(dailyRole, "Egypt"));
-  }
 
-  const count = await persistRaw([...global, ...seeded, ...jsearch]);
+  const count = await persistRaw([...global, ...seeded]);
 
   // Drop postings older than 90 days. Null postedAt stays (age unknown) — prune those by createdAt if needed.
   await prisma.job.deleteMany({
@@ -137,4 +120,3 @@ export async function ingestJobs(): Promise<number> {
 
   return count;
 }
-

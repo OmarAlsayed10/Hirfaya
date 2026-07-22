@@ -41,6 +41,7 @@ export function useCVAdjust(cvAnalyze: CVAnalysisResult | null) {
     newBreakdown: adjustState.newBreakdown,
     loading: adjustState.loading,
     error: adjustState.error,
+    pageCount: adjustState.appliedJake ? 1 : Math.max(1, cvAnalyze?.pageCount ?? 1),
     // prefer the rule-based original score returned by the API so both scores use the same scale
     originalScore: adjustState.originalScore ?? cvAnalyze?.qualityScore ?? 0,
   };

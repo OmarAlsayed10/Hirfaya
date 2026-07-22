@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import {
   Box, Container, Typography, Paper, TextField, MenuItem, Button,
-  Chip, CircularProgress, Divider, Link, Pagination,
+  Chip, CircularProgress, Divider, Link, Pagination, Dialog, DialogContent, DialogTitle,
 } from "@mui/material";
 import RadarIcon from "@mui/icons-material/Radar";
+import AddBusinessRoundedIcon from "@mui/icons-material/AddBusinessRounded";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import DescriptionIcon from "@mui/icons-material/Description";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
@@ -16,6 +17,7 @@ import ABVariantsModal from "../features/JobRadar/components/ABVariantsModal";
 import JobAnalytics from "../features/JobRadar/components/JobAnalytics";
 import JobRadarTargetsPanel, { JobRadarPreference } from "../features/JobRadar/components/JobRadarTargetsPanel";
 import { JobCategoryOption } from "../features/JobRadar/components/RoleCatalogSelector";
+import JobSubmissionForm from "../features/JobRadar/components/JobSubmissionForm";
 
 const PRIMARY = "#2a5c45";
 
@@ -49,6 +51,7 @@ const JobRadarPage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [coverLetterMatch, setCoverLetterMatch] = useState<JobMatch | null>(null);
   const [variantsMatch, setVariantsMatch] = useState<JobMatch | null>(null);
+  const [shareJobOpen, setShareJobOpen] = useState(false);
 
   const notifyJobRequestError = (error: unknown, fallback: string) => {
     const code = axios.isAxiosError(error) ? error.response?.data?.code : undefined;
@@ -149,15 +152,24 @@ const JobRadarPage = () => {
 
   return (
     <Box sx={{ bgcolor: "#f5f4ef", minHeight: "100vh", py: { xs: 5, md: 8 } }}>
-      <Container maxWidth="lg">
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
-          <RadarIcon sx={{ color: PRIMARY, fontSize: 34 }} />
-          <Typography variant="h4" sx={{ fontWeight: "bold", color: "#1a1a18" }}>{t("Job Radar")}</Typography>
+      <Container maxWidth={false} disableGutters sx={{ px: { xs: 2, sm: 4, lg: 6 } }}>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mb: 1, flexWrap: "wrap" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <RadarIcon sx={{ color: PRIMARY, fontSize: 34 }} />
+            <Typography variant="h4" sx={{ fontWeight: "bold", color: "#1a1a18" }}>{t("Job Radar")}</Typography>
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={<AddBusinessRoundedIcon />}
+            onClick={() => setShareJobOpen(true)}
+            sx={{ bgcolor: PRIMARY, textTransform: "none", fontWeight: 800, borderRadius: "10px", px: 2, "&:hover": { bgcolor: "#1e4332" } }}
+          >
+            {t("Share a job")}
+          </Button>
         </Box>
         <Typography sx={{ color: "#6b6b66", mb: 4 }}>
-          {t("We find fresh, low-competition jobs matched to your CV — apply before the crowd.")}
+          {t("We find fresh, low-competition jobs matched to your CV \u2014 apply before the crowd.")}
         </Typography>
-
         <JobRadarTargetsPanel
           preference={pref}
           categories={categories}
@@ -166,10 +178,12 @@ const JobRadarPage = () => {
           onSave={savePref}
           onRefresh={refresh}
         />
-        <Typography variant="h6" sx={{ fontWeight: "bold", mb: 2 }}>{t("Your progress")}</Typography>
-        <Box sx={{ mb: 4 }}><JobAnalytics key={total} /></Box>
 
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mb: 2, flexWrap: "wrap" }}>
+        <Box component="section" aria-labelledby="job-radar-progress" sx={{ mb: 4 }}>
+          <Typography id="job-radar-progress" variant="h6" sx={{ fontWeight: "bold", mb: 2 }}>{t("Your progress")}</Typography>
+          <JobAnalytics key={total} />
+        </Box>
+<Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mb: 2, flexWrap: "wrap" }}>
           <Typography variant="h6" sx={{ fontWeight: "bold" }}>
             {t("Matches")} {total > 0 && <Chip label={total} size="small" sx={{ ml: 1, bgcolor: "rgba(42,92,69,0.12)", color: PRIMARY, fontWeight: 700 }} />}
           </Typography>
@@ -208,7 +222,7 @@ const JobRadarPage = () => {
                     {m.status === "applied" && <Chip label={t("Applied")} size="small" variant="outlined" sx={{ height: 20, borderColor: PRIMARY, color: PRIMARY }} />}
                   </Box>
                   <Typography sx={{ color: "#6b6b66", fontSize: "0.85rem" }}>
-                    {m.company}{m.location ? ` · ${m.location}` : ""} · {m.source} · <b style={{ color: PRIMARY }}>{m.fitScore}% {t("match")}</b>
+                    {m.company}{m.location ? ` \u00b7 ${m.location}` : ""}{" \u00b7 "}{m.source}{" \u00b7 "}<b style={{ color: PRIMARY }}>{m.fitScore}% {t("match")}</b>
                   </Typography>
                 </Box>
                 <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
@@ -259,6 +273,12 @@ const JobRadarPage = () => {
         matchTitle={variantsMatch?.title ?? ""}
         matchCompany={variantsMatch?.company ?? ""}
       />
+      <Dialog open={shareJobOpen} onClose={() => setShareJobOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ fontWeight: 800, pb: 1 }}>{t("Share a job")}</DialogTitle>
+        <DialogContent dividers sx={{ p: { xs: 2.5, sm: 3 } }}>
+          <JobSubmissionForm onSubmitted={() => setShareJobOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };

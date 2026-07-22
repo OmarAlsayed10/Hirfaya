@@ -4,6 +4,7 @@ import { LEVELS, Level, ScoreBreakdown } from "./constants";
 // ponytail: in-memory cache, per instance, lost on restart. Move to a DB table if
 // you need scores durable across restarts or shared across multiple instances.
 export const CACHE_MAX = 500;
+const SCORING_CACHE_VERSION = "2026-07-pipe-list";
 export const scoreCache = new Map<string, ScoreBreakdown>();
 export function clearScoreCache(): void {
   scoreCache.clear();
@@ -11,7 +12,9 @@ export function clearScoreCache(): void {
 
 
 export const hashCV = (text: string, jd: string) =>
-  createHash("sha256").update(`${text.trim()} ${jd.trim()}`).digest("hex");
+  createHash("sha256")
+    .update(`${SCORING_CACHE_VERSION} ${text.trim()} ${jd.trim()}`)
+    .digest("hex");
 
 const normLevel = (level: string) =>
   LEVELS.includes(level.trim() as Level) ? level.trim() : "";

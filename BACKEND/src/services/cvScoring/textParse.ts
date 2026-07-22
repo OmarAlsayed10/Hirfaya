@@ -70,9 +70,16 @@ export function suspiciousColumnLines(text: string): string[] {
       inHeaderBlock ||
       /@|linkedin|github|portfolio|https?:\/\//i.test(line) ||
       /(\+?\d[\d\s\-()/.]{6,}\d)/.test(line);
+    const isShortPipeSeparatedList =
+      pipeCount >= 2 &&
+      line.length <= 120 &&
+      line.split("|").every((part) =>
+        /^[\p{L}\p{N}+#./&+\- ]{1,40}$/u.test(part.trim()),
+      );
 
     if (/\t/.test(line)) return true;
-    if (pipeCount >= 2 && !isLikelyContactLine) return true;
+    if (pipeCount >= 2 && !isLikelyContactLine && !isShortPipeSeparatedList)
+      return true;
     if (/^\|.+\|$/.test(line) && !isLikelyContactLine) return true;
     return false;
   });

@@ -50,14 +50,21 @@ const vacancyAnalysis: VacancyMatchAi = {
   mode: "vacancy_match",
   inferredJobTitle: "Full Stack Developer",
   summary: "Strong match",
-  matchBreakdown: { requirementsMatch: 35, relevantExperience: 20, demonstratedSkills: 17, evidenceQuality: 8 },
   matchedRequirements: [{
     requirement: "Build scalable REST APIs",
     cvEvidence: "Built scalable REST APIs for authentication.",
     explanation: "Direct API evidence",
+    priority: "must_have",
+    category: "skill",
+    evidenceLevel: "professional",
   }],
   partialRequirements: [],
-  missingRequirements: [{ requirement: "Operate Kubernetes clusters", explanation: "Not shown in the CV" }],
+  missingRequirements: [{
+    requirement: "Operate Kubernetes clusters",
+    explanation: "Not shown in the CV",
+    priority: "preferred",
+    category: "skill",
+  }],
   recommendations: [{
     action: "Clarify infrastructure ownership.",
     evidence: {
@@ -122,10 +129,35 @@ describe("Career Match score calibration", () => {
     expect(() => finalizeRoleDiscovery(inventedEvidence, 78, cvText)).toThrow(InvalidAiResponseError);
   });
 
-  test("vacancy score is the bounded breakdown total", () => {
+  test("vacancy score is calculated from requirement status and evidence", () => {
     const jobDescription = "Build scalable REST APIs. Operate Kubernetes clusters.";
     const finalized = finalizeVacancyMatch(vacancyAnalysis, 78, cvText, jobDescription);
-    expect(finalized.jobMatchScore).toBe(80);
+    expect(finalized.jobMatchScore).toBe(70);
+    expect(finalized.matchBreakdown).toEqual({
+      requirementsMatch: 30,
+      relevantExperience: 17,
+      demonstratedSkills: 13,
+      evidenceQuality: 10,
+    });
+    expect(finalized.screeningRisk).toBe("low");
     expect(finalized.cvQualityScore).toBe(78);
+  });
+
+  test("missing must-have requirement raises screening risk", () => {
+    const mustHaveMissing: VacancyMatchAi = {
+      ...vacancyAnalysis,
+      missingRequirements: vacancyAnalysis.missingRequirements.map((entry) => ({
+        ...entry,
+        priority: "must_have",
+      })),
+    };
+    const finalized = finalizeVacancyMatch(
+      mustHaveMissing,
+      78,
+      cvText,
+      "Build scalable REST APIs. Operate Kubernetes clusters.",
+    );
+    expect(finalized.screeningRisk).toBe("high");
+    expect(finalized.jobMatchScore).toBe(56);
   });
 });

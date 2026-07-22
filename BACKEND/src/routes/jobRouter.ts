@@ -16,6 +16,7 @@ import {
   getJobCatalogController,
   submitRoleSuggestionController,
 } from "../controllers/jobCatalogController";
+import { submitJobController } from "../controllers/jobSubmissionController";
 
 const recalculationLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
@@ -32,6 +33,7 @@ router.use(authenticateToken);
 
 router.get("/catalog", getJobCatalogController);
 router.post("/role-suggestions", submitRoleSuggestionController);
+router.post("/submissions", submitJobController);
 
 router.get("/preference", getPreferenceController);
 router.post("/preference", recalculationLimiter, setPreferenceController);

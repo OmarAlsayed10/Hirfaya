@@ -70,6 +70,16 @@ const requirementSchema = z.object({
   requirement: nonEmpty,
   cvEvidence: nonEmpty,
   explanation: nonEmpty,
+  priority: z.enum(["must_have", "preferred"]),
+  category: z.enum(["skill", "experience", "education", "certification", "eligibility", "responsibility"]),
+  evidenceLevel: z.enum(["professional", "project", "training", "skills_only"]),
+}).strip();
+
+const missingRequirementSchema = z.object({
+  requirement: nonEmpty,
+  explanation: nonEmpty,
+  priority: z.enum(["must_have", "preferred"]),
+  category: z.enum(["skill", "experience", "education", "certification", "eligibility", "responsibility"]),
 }).strip();
 
 const vacancyRecommendationSchema = z.object({
@@ -92,10 +102,9 @@ const vacancyShape = {
   mode: z.literal("vacancy_match"),
   inferredJobTitle: nonEmpty,
   summary: nonEmpty,
-  matchBreakdown: vacancyMatchBreakdownSchema,
   matchedRequirements: z.array(requirementSchema),
   partialRequirements: z.array(requirementSchema),
-  missingRequirements: z.array(z.object({ requirement: nonEmpty, explanation: nonEmpty }).strip()),
+  missingRequirements: z.array(missingRequirementSchema),
   recommendations: z.array(vacancyRecommendationSchema),
   alternativeRoles: z.array(nonEmpty),
 };
@@ -105,6 +114,9 @@ export const vacancyMatchSchema = z.object({
   ...vacancyShape,
   cvQualityScore: score,
   jobMatchScore: score,
+  matchBreakdown: vacancyMatchBreakdownSchema,
+  screeningRisk: z.enum(["low", "medium", "high"]),
+  scoreLabel: z.enum(["strong_evidence_match", "partial_evidence_match", "low_evidence_match"]),
 }).strict();
 
 const marketSourceSchema = z.object({

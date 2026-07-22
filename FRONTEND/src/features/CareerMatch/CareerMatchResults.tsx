@@ -4,6 +4,11 @@ import { useTranslation } from "react-i18next";
 import type { CareerMatchResponse, RoleDiscovery, VacancyMatch } from "./CareerMatch.types";
 
 const colors = { primary: "#2a5c45", ink: "#18221d", muted: "#68736d", sand: "#f5f4ef", amber: "#bb6b25" };
+const vacancyScoreLabels: Record<VacancyMatch["scoreLabel"], string> = {
+  strong_evidence_match: "Strong evidence match",
+  partial_evidence_match: "Partial evidence match",
+  low_evidence_match: "Limited evidence match",
+};
 
 const Score = ({ label, value }: { label: string; value: number }) => {
   const { t } = useTranslation();
@@ -120,13 +125,17 @@ const VacancyResults = ({ analysis }: { analysis: VacancyMatch }) => {
     <>
       <Stack direction={{ xs: "column", md: "row" }} gap={2} justifyContent="space-between">
         <Box sx={{ maxWidth: 700 }}><Typography variant="overline" sx={{ color: colors.primary, fontWeight: 900 }}>{t("Vacancy match")}</Typography><Typography variant="h4" sx={{ fontWeight: 850 }}>{analysis.inferredJobTitle}</Typography><Typography sx={{ color: colors.muted, mt: 1 }}>{analysis.summary}</Typography></Box>
-        <Stack direction="row" gap={1.5}><Score label="CV Quality" value={analysis.cvQualityScore} /><Score label="Job Match" value={analysis.jobMatchScore} /></Stack>
+        <Stack direction="row" gap={1.5}><Score label="CV Quality" value={analysis.cvQualityScore} /><Score label="Job requirement match" value={analysis.jobMatchScore} /></Stack>
+      </Stack>
+      <Stack direction="row" gap={1} mt={2} alignItems="center" flexWrap="wrap">
+        <Chip label={t(vacancyScoreLabels[analysis.scoreLabel])} sx={{ fontWeight: 800, textTransform: "capitalize" }} />
+        <Chip label={`${t("Screening risk")}: ${t(analysis.screeningRisk)}`} variant="outlined" sx={{ fontWeight: 700, textTransform: "capitalize" }} />
       </Stack>
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(2, 1fr)" }, gap: 3, mt: 4 }}>
         <RequirementList title="Matched requirements" items={analysis.matchedRequirements} tone={colors.primary} />
         <RequirementList title="Partial requirements" items={analysis.partialRequirements} tone={colors.amber} />
       </Box>
-      {analysis.missingRequirements.length > 0 && <Paper elevation={0} sx={{ mt: 3, p: 2.5, borderRadius: 3, bgcolor: "#fff4ed" }}><Typography sx={{ fontWeight: 800, color: colors.amber, mb: 1 }}>{t("Missing from the CV")}</Typography>{analysis.missingRequirements.map((item) => <Box key={item.requirement} sx={{ mb: 1.5 }}><Typography sx={{ fontWeight: 700 }}>{item.requirement}</Typography><Typography sx={{ color: colors.muted, fontSize: 14 }}>{item.explanation}</Typography></Box>)}</Paper>}
+      {analysis.missingRequirements.length > 0 && <Paper elevation={0} sx={{ mt: 3, p: 2.5, borderRadius: 3, bgcolor: "#fff4ed" }}><Typography sx={{ fontWeight: 800, color: colors.amber, mb: 1 }}>{t("Not evidenced in the CV")}</Typography>{analysis.missingRequirements.map((item) => <Box key={item.requirement} sx={{ mb: 1.5 }}><Stack direction="row" gap={1} alignItems="center"><Typography sx={{ fontWeight: 700 }}>{item.requirement}</Typography><Chip size="small" label={t(item.priority === "must_have" ? "Must-have" : "Preferred")} /></Stack><Typography sx={{ color: colors.muted, fontSize: 14 }}>{item.explanation}</Typography></Box>)}</Paper>}
       {analysis.alternativeRoles.length > 0 && <Stack direction="row" gap={1} flexWrap="wrap" mt={3} alignItems="center"><Target size={18} /><Typography sx={{ fontWeight: 800 }}>{t("Also consider:")}</Typography>{analysis.alternativeRoles.map((role) => <Chip key={role} label={role} />)}</Stack>}
       <Recommendations analysis={analysis} />
     </>
@@ -139,6 +148,10 @@ export default function CareerMatchResults({ result }: { result: CareerMatchResp
     <Stack direction="row" gap={1} alignItems="center" mb={3}><CheckCircle2 size={18} color={colors.primary} /><Typography sx={{ fontSize: 13, color: colors.muted }}>{result.cached ? t("Loaded from your private 7-day cache — no new live search used.") : t("New analysis completed.")}</Typography></Stack>
     <Divider sx={{ mb: 3 }} />
     {result.analysis.mode === "role_discovery" ? <DiscoveryResults analysis={result.analysis} result={result} /> : <VacancyResults analysis={result.analysis} />}
-    <Typography sx={{ color: colors.muted, fontSize: 12, mt: 4 }}>{t("Scores are AI estimates based on the documents provided. They are not real ATS scores, hiring predictions, or guarantees.")}</Typography>
+    <Typography sx={{ color: colors.muted, fontSize: 12, mt: 4 }}>
+      {result.analysis.mode === "vacancy_match"
+        ? t("Job requirement scores are calculated from evidence found in the supplied CV and vacancy. They are not hiring predictions or guarantees.")
+        : t("Scores are AI estimates based on the documents provided. They are not real ATS scores, hiring predictions, or guarantees.")}
+    </Typography>
   </Paper>;
 }
