@@ -124,6 +124,14 @@ const appRoutes = [
         ),
       },
       {
+        path: "buy-credits",
+        element: (
+          <ProtectedRoute>
+            <ProPaymentForm purchaseMode="credits" />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "chatbot",
         element: (
           <ProtectedRoute>

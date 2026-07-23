@@ -57,7 +57,7 @@ const SignedInCredits = ({ status }: { status: UserQuotaStatus }) => {
                 : t("Credits remain available until used.")}
           </Typography>
         </Box>
-        <Button variant="outlined" onClick={() => navigate("/payment-check?purchase=credits")}>
+        <Button variant="outlined" onClick={() => navigate("/buy-credits")}>
           {t("Buy credits")}
         </Button>
       </Stack>

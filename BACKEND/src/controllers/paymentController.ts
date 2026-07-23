@@ -52,16 +52,7 @@ export const instapayDetailsController = async (
     return;
   }
 
-  try {
-    if (plan.kind === "topup") assertCommercialPriceIsSafe();
-    res.status(200).json(buildInstapayDetails(plan));
-  } catch (err) {
-    if (err instanceof PricingConfigurationError) {
-      res.status(503).json({ code: "PRICING_UNAVAILABLE", message: "Credit purchasing is temporarily unavailable." });
-      return;
-    }
-    throw err;
-  }
+  res.status(200).json(buildInstapayDetails(plan));
 };
 
 export const creditQuoteController = async (

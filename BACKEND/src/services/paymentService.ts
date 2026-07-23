@@ -1,7 +1,6 @@
 import prisma from "../lib/prisma";
 import { PaymentStatus } from "@prisma/client";
 import { fixedTopupSnapshot } from "./creditPurchaseService";
-import { assertCommercialPriceIsSafe } from "./creditPricingService";
 
 // ─── Plans ────────────────────────────────────────────────────────────────────
 
@@ -84,7 +83,6 @@ export const submitPaymentRequest = async (
 
   if (pending) throw new Error("PENDING_EXISTS");
   if (!plan) throw new Error("PLAN_NOT_FOUND");
-  if (plan.kind === "topup") assertCommercialPriceIsSafe();
 
   return prisma.paymentRequest.create({
     data: {

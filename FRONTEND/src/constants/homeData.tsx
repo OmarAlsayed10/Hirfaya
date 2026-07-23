@@ -119,36 +119,3 @@ export const HOW_IT_WORKS_STEPS = [
   },
 ];
 
-export const TESTIMONIALS_DATA = [
-  {
-    name: "Sarah M.",
-    role: "Software Engineer",
-    company: "Google",
-    avatar: "S",
-    rating: 5,
-    text: "Careerak-CV transformed my job search. The AI analysis pointed out exactly what recruiters look for and helped me land interviews at top tech companies.",
-  },
-  {
-    name: "James K.",
-    role: "Product Manager",
-    company: "Microsoft",
-    avatar: "J",
-    rating: 5,
-    text: "The CV builder is incredibly intuitive. I went from a blank page to a polished, ATS-optimized resume in under 30 minutes. Got hired within 3 weeks!",
-  },
-  {
-    name: "Amira B.",
-    role: "Data Scientist",
-    company: "Meta",
-    avatar: "A",
-    rating: 5,
-    text: "The grammar checker and smart feedback caught issues I'd been overlooking for years. My application rate jumped by 60% after using Careerak-CV.",
-  },
-];
-
-export const STATS_DATA = [
-  { value: "50K+", labelKey: "CVs Created" },
-  { value: "92%", labelKey: "Interview Rate" },
-  { value: "4.9★", labelKey: "User Rating" },
-  { value: "120+", labelKey: "Countries" },
-];

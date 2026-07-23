@@ -117,6 +117,19 @@ export const ADMIN_ENDPOINTS = {
   payments: `${API_BASE_URL}/admin/payments`,
   blogs: `${API_BASE_URL}/admin/blogs`,
   blog: (id: string) => `${API_BASE_URL}/admin/blogs/${id}`,
+  pendingReviews: `${API_BASE_URL}/admin/reviews/pending`,
+  allReviews: `${API_BASE_URL}/admin/reviews`,
+  reviewAction: (id: string) => `${API_BASE_URL}/admin/reviews/${id}`,
+  deleteReview: (id: string) => `${API_BASE_URL}/admin/reviews/${id}`,
+};
+
+export const REVIEW_ENDPOINTS = {
+  create: `${API_BASE_URL}/reviews`,
+  me: `${API_BASE_URL}/reviews/me`,
+};
+
+export const COMMUNITY_ENDPOINTS = {
+  metrics: `${API_BASE_URL}/community`,
 };
 
 export const BLOG_ENDPOINTS = {

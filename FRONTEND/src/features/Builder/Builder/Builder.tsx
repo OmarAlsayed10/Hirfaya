@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -16,7 +16,7 @@ import { PDFDownloadLink } from '@react-pdf/renderer';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AI_ENDPOINTS, BUILDER_ENDPOINTS } from '../../../constants/endpoints';
 import { updateFormData, setPageCount } from '../../../redux/store/slices/cvBuilderSlice';
 import type { RootState } from '../../../redux/store/store';
@@ -58,6 +58,9 @@ const Builder = () => {
   const { choosenTemp } = useTemplate();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const analyzedFile = (location.state as { analyzedFile?: File } | null)?.analyzedFile;
+  const importedAnalysisFileRef = useRef<File | null>(null);
   const [workspaceKey, setWorkspaceKey] = useState(0);
   useSkillAutoExtract();
 
@@ -86,7 +89,7 @@ const Builder = () => {
     window.setTimeout(() => setNotice(null), 3000);
   };
 
-  const importCV = async (file?: File) => {
+  const importCV = useCallback(async (file?: File) => {
     if (!file) return;
     setImporting(true);
     const upload = new FormData();
@@ -106,7 +109,14 @@ const Builder = () => {
       setImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
-  };
+  }, [dispatch, t]);
+
+  useEffect(() => {
+    if (!analyzedFile || importedAnalysisFileRef.current === analyzedFile) return;
+
+    importedAnalysisFileRef.current = analyzedFile;
+    void importCV(analyzedFile);
+  }, [analyzedFile, importCV]);
 
   const saveCV = async () => {
     try {

@@ -117,6 +117,18 @@ export const analyzeCVController = async (req: Request, res: Response) => {
         null,
     });
 
+    // Record analysis event for home page live metrics
+    try {
+      await prisma.analysisEvent.create({
+        data: {
+          userId: userId ?? null,
+          ip,
+        },
+      });
+    } catch (e) {
+      console.error("[cv-analyze] failed to record AnalysisEvent", e);
+    }
+
     // Per-dimension details are a Pro perk — free users see the scores, not the fixes.
     const gatedDimensions = dimensions.map((d) =>
       isPro ? d : { name: d.name, score: d.score, details: [] as string[] },

@@ -18,7 +18,8 @@ import { PaymentStatusCard } from "../components/PaymentStatusCard";
 import { COLORS, RADIUS, TYPOGRAPHY } from "../../../theme/tokens";
 
 import { useFeedback } from "../../../context/FeedbackContext";
-const STEPS = ["Select Purchase", "Payment Details", "Submit Proof", "Status"];
+const PLAN_STEPS = ["Select Plan", "Payment Details", "Submit Proof", "Status"];
+const CREDIT_STEPS = ["Select Credits", "Payment Details", "Submit Proof", "Status"];
 const STEP_INDEX: Record<string, number> = {
   "select-plan": 0,
   "instapay-details": 1,
@@ -26,7 +27,11 @@ const STEP_INDEX: Record<string, number> = {
   status: 3,
 };
 
-const Payment = () => {
+interface PaymentProps {
+  purchaseMode?: "plan" | "credits";
+}
+
+const Payment = ({ purchaseMode = "plan" }: PaymentProps) => {
   const { t } = useTranslation();
   const { notify } = useFeedback();
   const {
@@ -58,6 +63,8 @@ const Payment = () => {
   }, [error, notify]);
 
 
+  const isCreditPurchase = purchaseMode === "credits";
+  const steps = isCreditPurchase ? CREDIT_STEPS : PLAN_STEPS;
   const activeStep = STEP_INDEX[step];
 
   return (
@@ -83,10 +90,10 @@ const Payment = () => {
                 mb: 1,
               }}
             >
-              {t('Plans & Credits')}
+              {t(isCreditPurchase ? 'Buy credits' : 'Choose a plan')}
             </Typography>
             <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
-              {STEPS.map((label) => (
+              {steps.map((label) => (
                 <Step key={label}>
                   <StepLabel
                     sx={{
@@ -105,30 +112,34 @@ const Payment = () => {
           {/* Body */}
           <Box sx={{ p: 4 }}>
             {step === "select-plan" && (
-              <>
-                <Typography
-                  variant="body2"
-                  sx={{ color: COLORS.textSecondary, mb: 2 }}
-                >
-                  {t('Choose the plan that fits your job search timeline.')}
-                </Typography>
-                <PlanSummaryCards
-                  plans={plans.filter((plan) => plan.kind !== "topup")}
-                  loading={plansLoading}
-                  selectedPlanId={selectedPlan?.id ?? null}
-                  onSelect={handleSelectPlan}
-                />
-              </>
-            )}
-
-            {step === "instapay-details" && (
-              <>
+              isCreditPurchase ? (
                 <CreditPurchaseCards
                   plans={plans}
                   selectedPlanId={selectedPlan?.id ?? null}
                   onSelectPlan={handleSelectPlan}
                   onSelectCustom={handleSelectCustomQuote}
                 />
+              ) : (
+                <>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: COLORS.textSecondary, mb: 2 }}
+                  >
+                    {t('Choose the plan that fits your job search timeline.')}
+                  </Typography>
+                  <PlanSummaryCards
+                    plans={plans.filter((plan) => plan.kind !== "topup")}
+                    loading={plansLoading}
+                    selectedPlanId={selectedPlan?.id ?? null}
+                    onSelect={handleSelectPlan}
+                  />
+                </>
+              )
+            )}
+
+            {step === "instapay-details" && (
+              <>
+
                 <Typography
                   variant="body2"
                   sx={{ color: COLORS.textSecondary, mb: 2 }}

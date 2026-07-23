@@ -95,7 +95,7 @@ export const FeedbackProvider = ({ children }: { children: React.ReactNode }) =>
         return {
           title: "You are out of credits",
           body: "Your Ultra plan is still active. Add a credit pack to continue now.",
-          primary: { label: "Buy more credits", to: "/payment-check?purchase=credits" },
+          primary: { label: "Buy more credits", to: "/buy-credits" },
           secondary: null,
         };
       }
@@ -104,14 +104,14 @@ export const FeedbackProvider = ({ children }: { children: React.ReactNode }) =>
           title: "You are out of credits",
           body: "Upgrade to Ultra for a larger allowance, or add a credit pack.",
           primary: { label: "Upgrade to Ultra", to: "/payment-check" },
-          secondary: { label: "Buy credits", to: "/payment-check?purchase=credits" },
+          secondary: { label: "Buy credits", to: "/buy-credits" },
         };
       }
       return {
         title: "Your free credits are used",
         body: "Upgrade to Pro for a monthly allowance, or add a credit pack.",
         primary: { label: "Upgrade to Pro", to: "/payment-check" },
-        secondary: { label: "Buy credits", to: "/payment-check?purchase=credits" },
+        secondary: { label: "Buy credits", to: "/buy-credits" },
       };
     }
     return null;

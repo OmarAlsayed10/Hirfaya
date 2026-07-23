@@ -134,7 +134,10 @@ export const fetchPaymentStatus = createAsyncThunk(
       withCredentials: true,
     });
     return data.paymentRequest as PaymentRequestStatus | null;
-  }
+  },
+  {
+    condition: (_, { getState }) => !((getState() as { payment: PaymentState }).payment.statusLoading),
+  },
 );
 
 const paymentSlice = createSlice({

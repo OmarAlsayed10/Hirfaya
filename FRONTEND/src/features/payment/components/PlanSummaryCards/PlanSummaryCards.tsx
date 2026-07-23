@@ -9,8 +9,6 @@ import {
   Chip,
   ToggleButton,
   ToggleButtonGroup,
-  Divider,
-  Radio,
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { useTranslation } from "react-i18next";
@@ -48,9 +46,8 @@ export const PlanSummaryCards = ({ plans, loading, selectedPlanId, onSelect }: P
     );
   }
 
-  const subs = plans.filter((p) => p.kind !== "topup");
-  const credits = plans.filter((p) => p.kind === "topup");
-  const cycleSubs = subs.filter((p) => cycleOf(p) === cycle);
+  const subs = plans.filter((plan) => plan.kind !== "topup");
+  const cycleSubs = subs.filter((plan) => cycleOf(plan) === cycle);
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -150,64 +147,6 @@ export const PlanSummaryCards = ({ plans, loading, selectedPlanId, onSelect }: P
           </Card>
         );
       })}
-
-      {credits.length > 0 && (
-        <>
-          <Divider sx={{ mt: 1 }} />
-          <Box>
-            <Typography
-              sx={{ fontWeight: 600, color: COLORS.textPrimary, fontSize: TYPOGRAPHY.sizeMd }}
-            >
-              {t('Add credits')}
-            </Typography>
-            <Typography variant="body2" sx={{ color: COLORS.textSecondary, mb: 1 }}>
-              {t('One-time top-up added to your balance — no change to your plan.')}
-            </Typography>
-          </Box>
-
-          {credits.map((plan) => {
-            const selected = plan.id === selectedPlanId;
-            return (
-              <Card
-                key={plan.id}
-                elevation={0}
-                sx={{
-                  border: `2px solid ${selected ? COLORS.primary : COLORS.borderLight}`,
-                  borderRadius: RADIUS.lg,
-                  boxShadow: selected ? SHADOWS.lg : "none",
-                  transition: "border-color 0.2s, box-shadow 0.2s",
-                }}
-              >
-                <CardActionArea onClick={() => onSelect(plan)} sx={{ p: 0 }}>
-                  <CardContent sx={{ display: "flex", alignItems: "center", gap: 1, py: 1.5 }}>
-                    <Radio checked={selected} sx={{ color: COLORS.borderLight, "&.Mui-checked": { color: COLORS.primary } }} />
-                    <Box sx={{ flex: 1 }}>
-                      <Typography sx={{ fontWeight: 600, color: COLORS.textPrimary }}>
-                        {plan.displayName}
-                      </Typography>
-                      {plan.grantCredits > 0 && (
-                        <Typography variant="body2" sx={{ color: COLORS.textSecondary }}>
-                          +{plan.grantCredits} {t('credits')}
-                        </Typography>
-                      )}
-                    </Box>
-                    <Typography
-                      sx={{
-                        fontWeight: 700,
-                        fontSize: TYPOGRAPHY.sizeLg,
-                        color: COLORS.primary,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {plan.priceEGP} EGP
-                    </Typography>
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            );
-          })}
-        </>
-      )}
     </Box>
   );
 };

@@ -49,7 +49,7 @@ const CreditPurchaseCards = ({
   const [quoting, setQuoting] = useState(false);
   const amountNumber = Number(amount);
   const localAmountError = amount && (
-    !/^d+(?:.d{1,2})?$/.test(amount) || amountNumber < 25 || amountNumber > 5000
+    !/^\d+(?:\.\d{1,2})?$/.test(amount) || amountNumber < 25 || amountNumber > 5000
   ) ? t("Enter an amount from 25 to 5,000 EGP with at most two decimals.") : null;
 
 

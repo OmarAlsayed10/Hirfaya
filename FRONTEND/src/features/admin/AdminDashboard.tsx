@@ -11,8 +11,9 @@ import BannedIpsTab from "./BannedIpsTab";
 import AiStatusTab from "./AiStatusTab";
 import JobCatalogTab from "./JobCatalogTab";
 import JobSubmissionsTab from "./JobSubmissionsTab";
+import ReviewsTab from "./ReviewsTab";
 
-const TABS = ["Users", "Payments", "AI Status", "Job Radar", "Job review", "Blogs", "Banned IPs"] as const;
+const TABS = ["Users", "Payments", "AI Status", "Job Radar", "Job review", "Reviews", "Blogs", "Banned IPs"] as const;
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -55,8 +56,9 @@ const AdminDashboard = () => {
         {tab === 2 && <AiStatusTab />}
         {tab === 3 && <JobCatalogTab />}
         {tab === 4 && <JobSubmissionsTab />}
-        {tab === 5 && <BlogsTab />}
-        {tab === 6 && <BannedIpsTab />}
+        {tab === 5 && <ReviewsTab />}
+        {tab === 6 && <BlogsTab />}
+        {tab === 7 && <BannedIpsTab />}
       </Box>
     </Box>
   );

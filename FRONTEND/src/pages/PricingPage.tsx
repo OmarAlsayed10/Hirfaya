@@ -1,4 +1,4 @@
-import { Box, Container, Typography } from "@mui/material";
+import { Box, Button, Container, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ContentBlock from "../components/ui/ContentBlock";
@@ -94,9 +94,27 @@ const PricingPage = () => {
           />
         </Box>
 
-        <Typography sx={{ textAlign: "center", color: "#6b6b66", mt: 6, mb: 12 }}>
-          {t(TOPUP_NOTE)}
-        </Typography>
+        <Box sx={{ textAlign: "center", mt: 6, mb: 12 }}>
+          <Typography sx={{ color: "#6b6b66", mb: 2 }}>
+            {t(TOPUP_NOTE)}
+          </Typography>
+          <Button
+            variant="outlined"
+            onClick={() => navigate("/buy-credits")}
+            sx={{
+              borderColor: "#2a5c45",
+              color: "#2a5c45",
+              borderRadius: "12px",
+              px: 3,
+              py: 1,
+              textTransform: "none",
+              fontWeight: "bold",
+              "&:hover": { borderColor: "#1e4332", bgcolor: "rgba(42, 92, 69, 0.08)" },
+            }}
+          >
+            {t("Buy more credits")}
+          </Button>
+        </Box>
 
         {/* Feature Highlights */}
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 6, mb: 10 }}>
@@ -111,48 +129,7 @@ const PricingPage = () => {
           ))}
         </Box>
 
-        {/* Testimonial Section */}
-        <Box
-          sx={{
-            bgcolor: "#ffffff",
-            borderRadius: "10px",
-            border: "1px solid rgba(26,26,24,0.1)",
-            p: { xs: 4, md: 6 },
-            textAlign: "center",
-            maxWidth: "800px",
-            mx: "auto",
-          }}
-        >
-          <Typography
-            sx={{
-              color: "#2a5c45",
-              fontWeight: "bold",
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-              mb: 2,
-              fontSize: "0.85rem",
-            }}
-          >
-            {t("What do people say about us?")}
-          </Typography>
-          <Typography
-            sx={{
-              fontFamily: '"DM Serif Display", serif',
-              fontSize: { xs: "1.2rem", md: "1.5rem" },
-              color: "#1a1a18",
-              fontStyle: "italic",
-              mb: 4,
-            }}
-          >
-            {t("pricing.testimonial.text")}
-          </Typography>
-          <Typography sx={{ fontWeight: "bold", color: "#1a1a18" }}>
-            {t("Joshua Perk")}
-          </Typography>
-          <Typography sx={{ color: "#6b6b66" }}>
-            {t("Account Manager, OpenNest")}
-          </Typography>
-        </Box>
+
       </Container>
     </Box>
   );

@@ -4,8 +4,13 @@ import { pdf } from '@react-pdf/renderer';
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 import AnalysisReportPdf from './AnalysisReportPdf';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import EditRoundedIcon from '@mui/icons-material/EditRounded';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import ReviewDialog from '../../Home/ReviewDialog';
+import { REVIEW_ENDPOINTS } from '../../../constants/endpoints';
+import axios from 'axios';
 import { AuthContext } from '../../../context/Auth/AuthContext';
 import { useFeedback } from '../../../context/FeedbackContext';
 import { useCVAnalysis } from './hooks/useCVAnalysis';
@@ -35,10 +40,39 @@ const CVAnalysisDashboard = ({ uploadedFile, cvText, level }: CVAnalysisDashboar
   const { notify, showEntitlement } = useFeedback();
   const [chatOpen, setChatOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
 
+  // Hooks — must be called before any code that references their return values
   const { cvAnalyze, loading, error, errorCode } = useCVAnalysis(uploadedFile, cvText, level);
   const adjustProps = useCVAdjust(cvAnalyze);
   const chatProps = useCVChat(cvAnalyze?.extractedText);
+
+  // Prompt review after successful analysis
+  useEffect(() => {
+    if (!cvAnalyze || loading || !user) return;
+
+    const cooldown = localStorage.getItem('review_cooldown');
+    if (cooldown) {
+      const cooldownDate = new Date(cooldown);
+      const daysSince = (Date.now() - cooldownDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSince < 90) return;
+    }
+
+    axios
+      .get(REVIEW_ENDPOINTS.me, { withCredentials: true })
+      .then((res) => {
+        const review = res.data?.review;
+        if (!review || review.status === 'REJECTED') {
+          setReviewDialogOpen(true);
+        }
+      })
+      .catch(() => {});
+  }, [cvAnalyze, loading, user]);
+
+  const handleReviewDismiss = () => {
+    localStorage.setItem('review_cooldown', new Date().toISOString());
+    setReviewDialogOpen(false);
+  };
 
   const visibleQuestions = isPro
     ? (cvAnalyze?.interviewQuestions || [])
@@ -132,18 +166,47 @@ const CVAnalysisDashboard = ({ uploadedFile, cvText, level }: CVAnalysisDashboar
     </Button>
   );
 
+  const leaveReviewButton = (
+    <Button
+      variant="outlined"
+      startIcon={<StarBorderIcon sx={{ fontSize: 18 }} />}
+      onClick={() => setReviewDialogOpen(true)}
+      sx={{ borderColor: COLORS.primary, color: COLORS.primary, borderRadius: '12px', textTransform: 'none', fontWeight: 'bold', py: 1.25, '&:hover': { borderColor: COLORS.primaryDark, bgcolor: COLORS.primaryAlpha12 } }}
+    >
+      {t('Leave a Review')}
+    </Button>
+  );
+
+  const editInBuilderButton = (
+    <Button
+      variant="outlined"
+      startIcon={<EditRoundedIcon sx={{ fontSize: 18 }} />}
+      onClick={() => navigate('/builder', { state: { analyzedFile: uploadedFile } })}
+      sx={{ borderColor: COLORS.primary, color: COLORS.primary, borderRadius: '12px', textTransform: 'none', fontWeight: 'bold', py: 1.25, '&:hover': { borderColor: COLORS.primaryDark, bgcolor: COLORS.primaryAlpha12 } }}
+    >
+      {t('Edit in CV Builder')}
+    </Button>
+  );
+
   if (isPerfect) {
     return (
       <Box sx={cvAnalysisDashboard.root}>
         <ScoreCard score={cvAnalyze.qualityScore} matchJobTitle={cvAnalyze.matchJobTitle} />
-        {(askAiButton || downloadButton) && (
-          <Box sx={{ mb: 4, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            {downloadButton}
-            {askAiButton}
-          </Box>
-        )}
+        <Box sx={{ mb: 4, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          {downloadButton}
+          {editInBuilderButton}
+          {leaveReviewButton}
+          {askAiButton}
+        </Box>
         {interviewSection}
         {chatModal}
+        <ReviewDialog
+          open={reviewDialogOpen}
+          onClose={handleReviewDismiss}
+          onSubmitted={() => {
+            localStorage.removeItem('review_cooldown');
+          }}
+        />
       </Box>
     );
   }
@@ -152,7 +215,11 @@ const CVAnalysisDashboard = ({ uploadedFile, cvText, level }: CVAnalysisDashboar
     <Box sx={cvAnalysisDashboard.root}>
       <ScoreCard score={cvAnalyze.qualityScore} matchJobTitle={cvAnalyze.matchJobTitle} />
 
-      {downloadButton && <Box sx={{ mb: 4 }}>{downloadButton}</Box>}
+      <Box sx={{ mb: 4, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        {downloadButton}
+        {editInBuilderButton}
+        {leaveReviewButton}
+      </Box>
 
       {cvAnalyze.levelContext && (
         <LevelContextCard levelContext={cvAnalyze.levelContext} />
@@ -182,6 +249,13 @@ const CVAnalysisDashboard = ({ uploadedFile, cvText, level }: CVAnalysisDashboar
       </Grid>
 
       {chatModal}
+      <ReviewDialog
+        open={reviewDialogOpen}
+        onClose={handleReviewDismiss}
+        onSubmitted={() => {
+          localStorage.removeItem('review_cooldown');
+        }}
+      />
     </Box>
   );
 };

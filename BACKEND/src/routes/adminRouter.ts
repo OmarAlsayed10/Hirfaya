@@ -35,6 +35,12 @@ import {
   adminJobSubmissionsController,
   adminReviewJobSubmissionController,
 } from "../controllers/jobSubmissionController";
+import {
+  adminPendingReviewsController,
+  adminAllReviewsController,
+  adminReviewActionController,
+  adminDeleteReviewController,
+} from "../controllers/reviewController";
 
 const router = Router();
 
@@ -71,5 +77,10 @@ router.get("/blogs", adminListBlogsController);
 router.post("/blogs", createBlogController);
 router.patch("/blogs/:id", updateBlogController);
 router.delete("/blogs/:id", deleteBlogController);
+
+router.get("/reviews/pending", adminPendingReviewsController);
+router.get("/reviews", adminAllReviewsController);
+router.patch("/reviews/:id", adminReviewActionController);
+router.delete("/reviews/:id", adminDeleteReviewController);
 
 export default router;

@@ -54,6 +54,7 @@ model User {
   variants           CVVariant[]
   documents          Document[]
   careerMatchCaches  CareerMatchCache[]
+  reviews            Review[]
 }
 
 model CareerMatchCache {
@@ -128,6 +129,38 @@ model Job {
 
   @@unique([source, externalId])
   @@index([postedAt])
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Review {
+  id              String       @id @default(uuid())
+  userId          String
+  displayName     String
+  rating          Int
+  description     String       @db.Text
+  status          ReviewStatus @default(PENDING)
+  reviewedAt      DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+model AnalysisEvent {
+  id        String   @id @default(uuid())
+  userId    String?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 enum JobSubmissionStatus {
