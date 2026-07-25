@@ -18,9 +18,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import FormInput from '../../../../components/ui/FormInput';
 import AIEditInput from '../../components/AIEditInput/AIEditInput';
+import UndoButton from '../../../../components/ui/UndoButton/UndoButton';
 import { useEffect, useState } from 'react';
 import type { RootState } from '../../../../redux/store/store';
+import type { Control, UseFormSetValue } from 'react-hook-form';
 import { COLORS, RADIUS } from '../../../../theme/tokens';
+import { useFieldUndo } from '../../../../hooks/useFieldUndo';
+import type { useTranslation as useTranslationType } from 'react-i18next';
 
 const projectsSchema = z.object({
   projects: z.array(
@@ -35,6 +39,76 @@ const projectsSchema = z.object({
 });
 
 type ProjectsFormData = z.infer<typeof projectsSchema>;
+
+interface ProjectDescriptionFieldProps {
+  control: Control<ProjectsFormData>;
+  index: number;
+  rowId: string;
+  setValue: UseFormSetValue<ProjectsFormData>;
+  projectName?: string;
+  technologies?: string;
+  t: ReturnType<typeof useTranslationType>['t'];
+}
+
+const ProjectDescriptionField = ({
+  control,
+  index,
+  rowId,
+  setValue,
+  projectName,
+  technologies,
+  t,
+}: ProjectDescriptionFieldProps) => {
+  const descUndo = useFieldUndo<string>(`projects.${rowId}.description`, (v) =>
+    setValue(`projects.${index}.description`, v, { shouldDirty: true }),
+  );
+
+  return (
+    <Controller
+      name={`projects.${index}.description`}
+      control={control}
+      render={({ field: f }) => (
+        <FormInput
+          {...f}
+          onChange={(e) => {
+            descUndo.onTypingChange(f.value || '');
+            f.onChange(e);
+          }}
+          onBlur={() => {
+            descUndo.commitTyping();
+            f.onBlur();
+          }}
+          label={t('Description')}
+          labelAction={
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <UndoButton disabled={!descUndo.canUndo} onUndo={descUndo.undo} />
+              <AIEditInput
+                section="projects"
+                currentContent={f.value || ''}
+                context={{ projectName, technologies }}
+                onResult={(text) => {
+                  descUndo.pushChange(f.value || '');
+                  setValue(`projects.${index}.description`, text, { shouldDirty: true });
+                }}
+              />
+            </Stack>
+          }
+          placeholder={t(
+            'Describe the problem you solved, your role, and the impact — then hit the AI icon to polish it',
+          )}
+          multiline
+          minRows={3}
+          formatting={{
+            onValueChange: (text) => {
+              descUndo.pushChange(f.value || '');
+              setValue(`projects.${index}.description`, text, { shouldDirty: true });
+            },
+          }}
+        />
+      )}
+    />
+  );
+};
 
 const tokens = {
   root: {
@@ -299,36 +373,14 @@ const Projects = () => {
               </Box>
 
               {/* Description with AI */}
-              <Controller
-                name={`projects.${index}.description`}
+              <ProjectDescriptionField
                 control={control}
-                render={({ field: f }) => (
-                  <FormInput
-                    {...f}
-                    label={t('Description')}
-                    labelAction={
-                      <AIEditInput
-                        section="projects"
-                        currentContent={f.value || ''}
-                        context={{
-                          projectName: watch(`projects.${index}.name`),
-                          technologies: watch(`projects.${index}.technologies`),
-                        }}
-                        onResult={(text) =>
-                          setValue(`projects.${index}.description`, text, { shouldDirty: true })
-                        }
-                      />
-                    }
-                    placeholder={t(
-                      'Describe the problem you solved, your role, and the impact — then hit the AI icon to polish it',
-                    )}
-                    multiline
-                    minRows={3}
-                    formatting={{
-                      onValueChange: (text) => setValue(`projects.${index}.description`, text, { shouldDirty: true }),
-                    }}
-                  />
-                )}
+                index={index}
+                rowId={field.id}
+                setValue={setValue}
+                projectName={watch(`projects.${index}.name`)}
+                technologies={watch(`projects.${index}.technologies`)}
+                t={t}
               />
             </Box>
           );

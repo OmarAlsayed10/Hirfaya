@@ -168,7 +168,7 @@ const JobRadarPage = () => {
           </Button>
         </Box>
         <Typography sx={{ color: "#6b6b66", mb: 4 }}>
-          {t("We find fresh, low-competition jobs matched to your CV \u2014 apply before the crowd.")}
+          {t("We find fresh, low-competition jobs matched to your CV")}
         </Typography>
         <JobRadarTargetsPanel
           preference={pref}

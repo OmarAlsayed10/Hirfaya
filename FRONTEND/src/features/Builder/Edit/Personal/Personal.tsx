@@ -12,10 +12,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import FormInput from '../../../../components/ui/FormInput';
 import AIEditInput from '../../components/AIEditInput/AIEditInput';
+import UndoButton from '../../../../components/ui/UndoButton/UndoButton';
 import PhoneInput from '../../../../components/ui/PhoneInput';
 import LocationInput from '../../../../components/ui/LocationInput';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../../../hooks/useAuth';
+import { useFieldUndo } from '../../../../hooks/useFieldUndo';
 import personal from './personal.tokens';
 import type { RootState } from '../../../../redux/store/store';
 import type { PersonalFormData } from './Personal.types';
@@ -52,6 +54,10 @@ const Personal = () => {
     defaultValues: personalInfo,
     mode: 'onChange',
   });
+
+  const summaryUndo = useFieldUndo<string>('personalInfo.ProfessionalSummary', (v) =>
+    setValue('ProfessionalSummary', v, { shouldDirty: true }),
+  );
 
   useEffect(() => {
     const subscription = watch((value) => {
@@ -283,16 +289,30 @@ const Personal = () => {
           render={({ field, fieldState: { error } }) => (
             <FormInput
               {...field}
+              onChange={(e) => {
+                summaryUndo.onTypingChange(field.value || '');
+                field.onChange(e);
+              }}
+              onBlur={() => {
+                summaryUndo.commitTyping();
+                field.onBlur();
+              }}
               label={t('Professional Summary')}
               labelAction={
-                <AIEditInput
-                  section="summary"
-                  currentContent={field.value || ''}
-                  context={{
-                    jobTitle: watch('professionalTitle'),
-                  }}
-                  onResult={(text) => setValue('ProfessionalSummary', text, { shouldDirty: true })}
-                />
+                <Stack direction="row" spacing={0.5} alignItems="center">
+                  <UndoButton disabled={!summaryUndo.canUndo} onUndo={summaryUndo.undo} />
+                  <AIEditInput
+                    section="summary"
+                    currentContent={field.value || ''}
+                    context={{
+                      jobTitle: watch('professionalTitle'),
+                    }}
+                    onResult={(text) => {
+                      summaryUndo.pushChange(field.value || '');
+                      setValue('ProfessionalSummary', text, { shouldDirty: true });
+                    }}
+                  />
+                </Stack>
               }
               placeholder={t('Write your professional summary here...')}
               error={!!error}
@@ -300,7 +320,10 @@ const Personal = () => {
               multiline
               minRows={5}
               formatting={{
-                onValueChange: (text) => setValue('ProfessionalSummary', text, { shouldDirty: true }),
+                onValueChange: (text) => {
+                  summaryUndo.pushChange(field.value || '');
+                  setValue('ProfessionalSummary', text, { shouldDirty: true });
+                },
               }}
             />
           )}

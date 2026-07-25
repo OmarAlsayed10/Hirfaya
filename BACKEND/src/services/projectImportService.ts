@@ -98,8 +98,10 @@ export async function fetchReadmeFromRepo(repoUrl: string): Promise<{ text: stri
 
   const branches = ["main", "master", "HEAD"];
   const filenames = ["README.md", "readme.md", "README.markdown", "Readme.md"];
+  const pkgPaths = ["package.json", "FRONTEND/package.json", "BACKEND/package.json", "frontend/package.json", "backend/package.json"];
 
   let rawContent: string | null = null;
+  let pkgContent: string = "";
 
   for (const branch of branches) {
     for (const filename of filenames) {
@@ -123,14 +125,35 @@ export async function fetchReadmeFromRepo(repoUrl: string): Promise<{ text: stri
         // Try next candidate branch/filename
       }
     }
-    if (rawContent) break;
+    if (rawContent) {
+      // Attempt to fetch package.json to detect actual project dependencies
+      for (const pkgPath of pkgPaths) {
+        try {
+          const pkgUrl =
+            platform === "github"
+              ? `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${pkgPath}`
+              : `https://gitlab.com/${owner}/${repo}/-/raw/${branch}/${pkgPath}`;
+          const pkgRes = await axios.get(pkgUrl, { timeout: 3000, responseType: "text" });
+          if (pkgRes.data && typeof pkgRes.data === "string") {
+            pkgContent += `\n--- ${pkgPath} ---\n` + pkgRes.data;
+          }
+        } catch {
+          // ignore if package.json does not exist in that path
+        }
+      }
+      break;
+    }
   }
 
   if (!rawContent) {
     throw new Error("No README.md file found in repository. Try uploading a .md file directly.");
   }
 
-  return { text: rawContent, cleanUrl: cleanRepoUrl };
+  const combinedText = pkgContent
+    ? `${rawContent}\n\n<package_json_dependencies>\n${pkgContent}\n</package_json_dependencies>`
+    : rawContent;
+
+  return { text: combinedText, cleanUrl: cleanRepoUrl };
 }
 
 /**
@@ -148,11 +171,14 @@ export async function generateProjectsFromReadme(
   }
 
   const prompt = `You are an expert ATS Resume Specialist and Tech Lead.
-Your job is to analyze project documentation (README.md) and generate an ATS-optimized, high-impact resume project entry following the gold-standard Jake Resume Template format.
+Your job is to analyze project documentation (README.md and package.json if present) and generate an ATS-optimized, high-impact resume project entry following the gold-standard Jake Resume Template format.
 
 STRICT ATS & FORMATTING RULES:
 1. **Name**: Clean, standard title of the project.
-2. **Technologies**: A comma-separated list of languages, frameworks, libraries, databases, and tools used (e.g. "React, Node.js, TypeScript, PostgreSQL, Docker").
+2. **Technologies**: A comma-separated list of ONLY the TOP 5 to 6 core, highest-priority technologies (e.g. main language, main frontend framework, main backend runtime, primary database, key AI/API service, primary UI library).
+   - Maximum 5 to 6 core technologies total! Do NOT output 10+ items or minor helper packages.
+   - Select ONLY technologies explicitly present in the README or package.json dependencies.
+   - Never infer, guess, or add unmentioned tools like Docker, AWS, or Kubernetes unless explicitly stated in the input text or package.json.
 3. **Links**: Include the repository link in githubUrl if available: "${publicRepoUrl || ""}". Leave demoUrl empty unless a live demo URL is explicitly mentioned in the text.
 4. **Description Bullets**:
    - Write 2 to 3 concise, high-impact bullet points separated by bullet points ("• ").
@@ -166,7 +192,7 @@ Return your response strictly as valid JSON matching this schema:
   "projects": [
     {
       "name": "Project Name",
-      "technologies": "React, TypeScript, Node.js",
+      "technologies": "React, TypeScript, Node.js, PostgreSQL, Groq AI, Material-UI",
       "demoUrl": "https://demo.example.com",
       "githubUrl": "${publicRepoUrl || ""}",
       "description": "• Built a full-stack application using React and Node.js with authenticated user workflows.\\n• Designed the PostgreSQL schema and caching layer documented by the project."

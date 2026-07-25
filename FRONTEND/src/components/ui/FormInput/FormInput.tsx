@@ -10,6 +10,7 @@ const FormInput = ({
   name,
   value,
   onChange,
+  onBlur,
   onKeyDown,
   error,
   helperText,
@@ -44,6 +45,7 @@ const FormInput = ({
           name={name}
           value={value || ''}
           onChange={onChange}
+          onBlur={onBlur}
           onKeyDown={onKeyDown}
           error={error}
           helperText={helperText}

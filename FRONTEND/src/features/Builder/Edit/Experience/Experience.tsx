@@ -18,11 +18,85 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import FormInput from '../../../../components/ui/FormInput';
 import AIEditInput from '../../components/AIEditInput/AIEditInput';
+import UndoButton from '../../../../components/ui/UndoButton/UndoButton';
 import { useEffect, useState } from 'react';
 import experience from './experience.tokens';
 import type { RootState } from '../../../../redux/store/store';
+import type { Control, UseFormSetValue } from 'react-hook-form';
 import type { ExperienceFormData } from './Experience.types';
 import { COLORS } from '../../../../theme/tokens';
+import { useFieldUndo } from '../../../../hooks/useFieldUndo';
+import { useTranslation as useTranslationType } from 'react-i18next';
+
+interface ExperienceDescriptionFieldProps {
+  control: Control<ExperienceFormData>;
+  index: number;
+  rowId: string;
+  setValue: UseFormSetValue<ExperienceFormData>;
+  jobTitle?: string;
+  company?: string;
+  t: ReturnType<typeof useTranslationType>['t'];
+}
+
+const ExperienceDescriptionField = ({
+  control,
+  index,
+  rowId,
+  setValue,
+  jobTitle,
+  company,
+  t,
+}: ExperienceDescriptionFieldProps) => {
+  const descUndo = useFieldUndo<string>(`experience.${rowId}.description`, (v) =>
+    setValue(`experience.${index}.description`, v, { shouldDirty: true }),
+  );
+
+  return (
+    <Controller
+      name={`experience.${index}.description`}
+      control={control}
+      render={({ field: f, fieldState: { error } }) => (
+        <FormInput
+          {...f}
+          onChange={(e) => {
+            descUndo.onTypingChange(f.value || '');
+            f.onChange(e);
+          }}
+          onBlur={() => {
+            descUndo.commitTyping();
+            f.onBlur();
+          }}
+          label={t('Description')}
+          labelAction={
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <UndoButton disabled={!descUndo.canUndo} onUndo={descUndo.undo} />
+              <AIEditInput
+                section="experience"
+                currentContent={f.value || ''}
+                context={{ jobTitle, company }}
+                onResult={(text) => {
+                  descUndo.pushChange(f.value || '');
+                  setValue(`experience.${index}.description`, text, { shouldDirty: true });
+                }}
+              />
+            </Stack>
+          }
+          placeholder={t('Jot down rough notes — e.g. "built react dashboard, cut load time 40%" — then hit the AI icon')}
+          error={!!error}
+          helperText={error ? t(error.message ?? '') : ''}
+          multiline
+          minRows={4}
+          formatting={{
+            onValueChange: (text) => {
+              descUndo.pushChange(f.value || '');
+              setValue(`experience.${index}.description`, text, { shouldDirty: true });
+            },
+          }}
+        />
+      )}
+    />
+  );
+};
 
 const experienceSchema = z.object({
   experience: z.array(
@@ -205,34 +279,14 @@ const Experience = () => {
                 </Box>
               </Box>
 
-              <Controller
-                name={`experience.${index}.description`}
+              <ExperienceDescriptionField
                 control={control}
-                render={({ field: f, fieldState: { error } }) => (
-                  <FormInput
-                    {...f}
-                    label={t('Description')}
-                    labelAction={
-                      <AIEditInput
-                        section="experience"
-                        currentContent={f.value || ''}
-                        context={{
-                          jobTitle: watch(`experience.${index}.jobTitle`),
-                          company: watch(`experience.${index}.company`),
-                        }}
-                        onResult={(text) => setValue(`experience.${index}.description`, text, { shouldDirty: true })}
-                      />
-                    }
-                    placeholder={t('Jot down rough notes — e.g. "built react dashboard, cut load time 40%" — then hit the AI icon')}
-                    error={!!error}
-                    helperText={error ? t(error.message ?? '') : ''}
-                    multiline
-                    minRows={4}
-                    formatting={{
-                      onValueChange: (text) => setValue(`experience.${index}.description`, text, { shouldDirty: true }),
-                    }}
-                  />
-                )}
+                index={index}
+                rowId={field.id}
+                setValue={setValue}
+                jobTitle={watch(`experience.${index}.jobTitle`)}
+                company={watch(`experience.${index}.company`)}
+                t={t}
               />
             </Box>
           );

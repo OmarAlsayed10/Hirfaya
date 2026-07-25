@@ -11,6 +11,7 @@ import { cvAnalyzeSlice } from "./slices/cvAnalyzeSlice";
 import { paymentSlice } from "./slices/paymentSlice";
 import cvBuilderReducer from "./slices/cvBuilderSlice";
 import cvAdjustReducer from "./slices/cvAdjustSlice";
+import fieldHistoryReducer from "./slices/fieldHistorySlice";
 
 export const resetStore = createAction("app/reset");
 
@@ -23,6 +24,7 @@ const appReducer = combineReducers({
   payment: paymentSlice.reducer,
   cvBuilder: cvBuilderReducer,
   cvAdjust: cvAdjustReducer,
+  fieldHistory: fieldHistoryReducer,
 });
 
 const rootReducer: typeof appReducer = (state, action) =>

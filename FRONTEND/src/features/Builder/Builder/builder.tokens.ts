@@ -101,6 +101,17 @@ const builder = {
     boxShadow: 'none',
     '&:hover': { bgcolor: COLORS.primaryDark },
   },
+  secondaryButton: {
+    borderColor: COLORS.primary,
+    color: COLORS.primary,
+    textTransform: 'none',
+    px: 3,
+    borderRadius: 2,
+    '&:hover': {
+      borderColor: COLORS.primaryDark,
+      bgcolor: COLORS.primaryAlpha12,
+    },
+  },
   ghostButton: { textTransform: 'none', px: 3, borderRadius: 2, color: COLORS.textSecondary },
   homeButton: {
     position: 'absolute',

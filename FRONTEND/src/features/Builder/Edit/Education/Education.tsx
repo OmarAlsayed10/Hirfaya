@@ -15,11 +15,85 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import FormInput from '../../../../components/ui/FormInput';
 import AIEditInput from '../../components/AIEditInput/AIEditInput';
+import UndoButton from '../../../../components/ui/UndoButton/UndoButton';
 import { useEffect, useState } from 'react';
 import education from './education.tokens';
 import type { RootState } from '../../../../redux/store/store';
+import type { Control, UseFormSetValue } from 'react-hook-form';
 import type { EducationFormData } from './Education.types';
 import { COLORS } from '../../../../theme/tokens';
+import { useFieldUndo } from '../../../../hooks/useFieldUndo';
+import type { useTranslation as useTranslationType } from 'react-i18next';
+
+interface EducationDescriptionFieldProps {
+  control: Control<EducationFormData>;
+  index: number;
+  rowId: string;
+  setValue: UseFormSetValue<EducationFormData>;
+  institution?: string;
+  degree?: string;
+  t: ReturnType<typeof useTranslationType>['t'];
+}
+
+const EducationDescriptionField = ({
+  control,
+  index,
+  rowId,
+  setValue,
+  institution,
+  degree,
+  t,
+}: EducationDescriptionFieldProps) => {
+  const descUndo = useFieldUndo<string>(`education.${rowId}.description`, (v) =>
+    setValue(`education.${index}.description`, v, { shouldDirty: true }),
+  );
+
+  return (
+    <Controller
+      name={`education.${index}.description`}
+      control={control}
+      render={({ field: f, fieldState: { error } }) => (
+        <FormInput
+          {...f}
+          onChange={(e) => {
+            descUndo.onTypingChange(f.value || '');
+            f.onChange(e);
+          }}
+          onBlur={() => {
+            descUndo.commitTyping();
+            f.onBlur();
+          }}
+          label={t('Description (Optional)')}
+          labelAction={
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <UndoButton disabled={!descUndo.canUndo} onUndo={descUndo.undo} />
+              <AIEditInput
+                section="education"
+                currentContent={f.value || ''}
+                context={{ institution, degree }}
+                onResult={(text) => {
+                  descUndo.pushChange(f.value || '');
+                  setValue(`education.${index}.description`, text, { shouldDirty: true });
+                }}
+              />
+            </Stack>
+          }
+          placeholder={t('Describe your education experience here...')}
+          error={!!error}
+          helperText={error ? t(error.message ?? '') : ''}
+          multiline
+          minRows={3}
+          formatting={{
+            onValueChange: (text) => {
+              descUndo.pushChange(f.value || '');
+              setValue(`education.${index}.description`, text, { shouldDirty: true });
+            },
+          }}
+        />
+      )}
+    />
+  );
+};
 
 const educationSchema = z.object({
   education: z.array(
@@ -178,41 +252,21 @@ const Education = () => {
                 </Box>
               </Box>
 
-               <Controller
-                 name={`education.${index}.description`}
+               <EducationDescriptionField
                  control={control}
-                 render={({ field: f, fieldState: { error } }) => (
-                   <FormInput
-                     {...f}
-                     label={t('Description (Optional)')}
-                     labelAction={
-                       <AIEditInput
-                         section="education"
-                         currentContent={f.value || ''}
-                         context={{
-                           institution: watch(`education.${index}.institution`),
-                           degree: watch(`education.${index}.degree`),
-                         }}
-                         onResult={(text) => setValue(`education.${index}.description`, text, { shouldDirty: true })}
-                       />
-                     }
-                     placeholder={t('Describe your education experience here...')}
-                     error={!!error}
-                     helperText={error ? t(error.message ?? '') : ''}
-                     multiline
-                     minRows={3}
-                     formatting={{
-                       onValueChange: (text) => setValue(`education.${index}.description`, text, { shouldDirty: true }),
-                     }}
-                   />
-                 )}
+                 index={index}
+                 rowId={field.id}
+                 setValue={setValue}
+                 institution={watch(`education.${index}.institution`)}
+                 degree={watch(`education.${index}.degree`)}
+                 t={t}
                />
             </Box>
           );
         })}
 
         {fields.length === 0 && (
-          <Typography sx={education.emptyText}>
+          <Typography>
             {t('No educations added yet')}
           </Typography>
         )}

@@ -48,6 +48,7 @@ const Builder = () => {
   const [templateOpen, setTemplateOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dispatch = useDispatch();
@@ -119,11 +120,14 @@ const Builder = () => {
   }, [analyzedFile, importCV]);
 
   const saveCV = async () => {
+    setSaving(true);
     try {
       await axios.post(BUILDER_ENDPOINTS.save, formData, { withCredentials: true });
       flashNotice('success', t('CV saved successfully!'));
     } catch {
       flashNotice('error', t('Error saving CV'));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -195,6 +199,15 @@ const Builder = () => {
           <Box sx={builder.doneBar}>
             <Button startIcon={<ArrowLeft size={18} />} onClick={() => setDone(false)} sx={builder.ghostButton}>
               {t('Back')}
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={saving ? <CircularProgress size={18} color="inherit" /> : <Save size={18} />}
+              onClick={saveCV}
+              disabled={saving}
+              sx={builder.secondaryButton}
+            >
+              {saving ? t('Saving...') : t('Save to Profile')}
             </Button>
             <PDFDownloadLink
               document={choosenTemp === 'jake-cv' ? <PdfJakeCV {...pdfProps} /> : choosenTemp === 'harvard-cv' ? <PdfHarvardCV {...pdfProps} /> : <PdfClassicCV {...pdfProps} />}
@@ -287,8 +300,8 @@ const Builder = () => {
 
             <Box sx={builder.dockItem}>
               <Tooltip title={t('Save')}>
-                <IconButton onClick={saveCV} sx={builder.dockButton}>
-                  <Save size={22} />
+                <IconButton onClick={saveCV} disabled={saving} sx={builder.dockButton}>
+                  {saving ? <CircularProgress size={20} /> : <Save size={22} />}
                 </IconButton>
               </Tooltip>
               <Typography sx={builder.dockLabel}>{t('Save')}</Typography>

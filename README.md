@@ -6,6 +6,8 @@ The application includes a browser-based CV builder with live templates and PDF 
 
 ## Main features
 
+For a detailed, user-friendly guide explaining every feature of the website, please see [ABOUT.md](./ABOUT.md).
+
 - CV builder with live previews, multiple templates, section ordering, entry ordering, and PDF export.
 - Resume import and analysis for supported document uploads.
 - Vacancy matching and CV tailoring tools.

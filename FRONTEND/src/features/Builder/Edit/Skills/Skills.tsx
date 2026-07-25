@@ -8,10 +8,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import AIFieldButton from '../../components/AIFieldButton/AIFieldButton';
+import UndoButton from '../../../../components/ui/UndoButton/UndoButton';
 import { SKILL_DICTIONARY } from '../../skillDictionary';
 import skillsTokens from './skills.tokens';
 import type { RootState } from '../../../../redux/store/store';
 import type { SkillsFormData } from './Skills.types';
+import { useFieldUndo } from '../../../../hooks/useFieldUndo';
 
 const skillsSchema = z.object({
   skills: z.array(z.string()),
@@ -35,6 +37,8 @@ const Skills = () => {
     mode: 'onChange',
   });
 
+  const skillsUndo = useFieldUndo<string[]>('skills.skills', (v) => setValue('skills', v));
+
   useEffect(() => {
     const subscription = watch((value) => {
       const clonedData = value ? JSON.parse(JSON.stringify(value)) : {};
@@ -57,6 +61,7 @@ const Skills = () => {
     const suggested = text.split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
     const merged = [...current];
     suggested.forEach((s) => { if (!merged.includes(s)) merged.push(s); });
+    skillsUndo.pushChange(current);
     setValue('skills', merged);
   };
 
@@ -77,14 +82,20 @@ const Skills = () => {
           <Typography variant="subtitle1" sx={{ fontWeight: 'bold', fontSize: '0.85rem', textAlign: 'start' }}>
             {t('yourSkills')}
           </Typography>
-          <AIFieldButton section="skills" jobTitle={professionalTitle} onResult={addAISkills} />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <UndoButton disabled={!skillsUndo.canUndo} onUndo={skillsUndo.undo} />
+            <AIFieldButton section="skills" jobTitle={professionalTitle} onResult={addAISkills} />
+          </Box>
         </Box>
         <Autocomplete
           multiple
           freeSolo
           options={SKILL_DICTIONARY}
           value={skillsArray}
-          onChange={(_, value) => setValue('skills', value as string[])}
+          onChange={(_, value) => {
+            skillsUndo.pushChange(skillsArray);
+            setValue('skills', value as string[]);
+          }}
           renderInput={(params) => (
             <TextField {...params} size="small" placeholder={t('placeholderSkills')} />
           )}

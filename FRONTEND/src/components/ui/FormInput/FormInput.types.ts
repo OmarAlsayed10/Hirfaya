@@ -10,6 +10,7 @@ export interface FormInputProps {
   name?: string;
   value: string;
   onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onBlur?: () => void;
   onKeyDown?: KeyboardEventHandler<HTMLDivElement>;
   error?: boolean;
   helperText?: string;

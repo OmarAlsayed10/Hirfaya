@@ -84,7 +84,7 @@ export const HOW_IT_WORKS_STEPS = [
     titleKey: "Build or Upload Your CV",
     descriptionKey:
       "Start from scratch with our AI-powered builder or upload your existing CV. Choose from premium templates designed to impress recruiters.",
-    badges: ["50+ Templates", "PDF Import", "DOCX Support", "Auto-Save"],
+    badges: ["Templates", "PDF Import", "DOCX Support", "Auto-Save"],
     detailPoints: [
       "Pick a blank template or upload your existing CV",
       "AI pre-fills sections from your uploaded file",
