@@ -120,10 +120,15 @@ export const generateCoverLetterController = async (req: Request, res: Response)
     return;
   }
 
+  const job = await prisma.job.findFirst({
+    where: { source: match.source, externalId: match.externalId },
+    select: { description: true },
+  });
+
   const coverLetter = await generateCoverLetter(cvText.slice(0, MAX_CV_TEXT), {
     title: match.title,
     company: match.company,
-    description: "",
+    description: job?.description ?? "",
   });
 
   const updated = await prisma.jobMatch.update({ where: { id }, data: { coverLetter } });

@@ -45,6 +45,7 @@ export const createGeneratedDocument = async (req: Request, res: Response): Prom
 
   const role = cap(req.body.targetRole, 100);
   const company = cap(req.body.targetCompany, 100);
+  const jobDescription = cap(req.body.targetJobDescription, 4000);
   if (type === "cover-letter" && !role) {
     res.status(400).json({ message: "targetRole is required for a cover letter." });
     return;
@@ -64,7 +65,7 @@ export const createGeneratedDocument = async (req: Request, res: Response): Prom
 
   const content =
     type === "cover-letter"
-      ? await generateCoverLetter(cvText, { title: role, company, description: "" })
+      ? await generateCoverLetter(cvText, { title: role, company, description: jobDescription })
       : await generateLinkedInBio(cvText);
 
   if (!content) {

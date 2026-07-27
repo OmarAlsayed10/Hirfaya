@@ -35,6 +35,7 @@ const ProseDocumentEditor = () => {
 
   const [role, setRole] = useState('');
   const [company, setCompany] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [docId, setDocId] = useState<string | null>(null);
@@ -49,7 +50,7 @@ const ProseDocumentEditor = () => {
     try {
       const { data } = await axios.post(
         DOCUMENT_ENDPOINTS.generate,
-        { type, targetRole: role, targetCompany: company },
+        { type, targetRole: role, targetCompany: company, targetJobDescription: jobDescription },
         { withCredentials: true }
       );
       setDocId(data.document.id);
@@ -95,6 +96,19 @@ const ProseDocumentEditor = () => {
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth size="small" label={t('Company (optional)')} value={company} onChange={(e) => setCompany(e.target.value)} inputProps={{ maxLength: 100 }} />
+              </Grid>
+              <Grid size={12}>
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={4}
+                  size="small"
+                  label={t('Job description (optional, but recommended)')}
+                  placeholder={t('Paste the job posting text here for a letter tailored to this specific role')}
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  inputProps={{ maxLength: 4000 }}
+                />
               </Grid>
             </Grid>
           )}
