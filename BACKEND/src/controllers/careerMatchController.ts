@@ -18,6 +18,7 @@ import {
 } from "../services/liveMarketQuotaService";
 import { InvalidAiResponseError } from "../lib/aiResponseValidation";
 import { isGroqRateLimit } from "../lib/groqChat";
+import { normalizeJobDescription } from "../lib/jobDescriptionNormalizer";
 
 const inputSchema = z.object({
   cvText: z.string().trim().min(100).max(30000),
@@ -25,9 +26,11 @@ const inputSchema = z.object({
   experienceLevel: z.enum(["", "Fresh", "Junior", "Mid", "Senior", "Lead"]),
   jobDescription: z.string().trim().max(20000),
   useLiveMarket: z.boolean(),
+  language: z.enum(["en", "ar"]),
 }).strict();
 
 const bodyString = (value: unknown, max: number) => typeof value === "string" ? value.slice(0, max) : "";
+const bodyLanguage = (value: unknown): "en" | "ar" => value === "ar" ? "ar" : "en";
 
 export async function careerMatchLimitsController(req: Request, res: Response): Promise<void> {
   const userId = (req as CustomRequest).user?.userId;
@@ -59,8 +62,9 @@ export async function careerMatchController(req: Request, res: Response): Promis
       cvText,
       targetJobTitle: bodyString(req.body?.targetJobTitle, 100),
       experienceLevel: bodyString(req.body?.experienceLevel, 20),
-      jobDescription: bodyString(req.body?.jobDescription, 20000),
+      jobDescription: normalizeJobDescription(bodyString(req.body?.jobDescription, 20000)).plainText,
       useLiveMarket: req.body?.useLiveMarket === true || req.body?.useLiveMarket === "true",
+      language: bodyLanguage(req.body?.language),
     });
     if (!parsed.success) {
       res.status(400).json({ message: "Provide a readable CV and valid Career Match options." });
@@ -90,7 +94,7 @@ export async function careerMatchController(req: Request, res: Response): Promis
 
     const analysis = await analyzeCareerMatch(input);
     const marketSnapshot = useLiveMarket && analysis.mode === "role_discovery"
-      ? await searchLiveMarket(analysis.roles.map((role) => role.title))
+      ? await searchLiveMarket(analysis.roles.map((role) => role.title), input.language)
       : null;
     const payload = { analysis, marketSnapshot };
     await saveCareerMatchCache(userId, key, payload, useLiveMarket);
@@ -104,7 +108,12 @@ export async function careerMatchController(req: Request, res: Response): Promis
       return;
     }
     if (error instanceof InvalidAiResponseError) {
-      res.status(502).json({ code: "PROVIDER_INVALID_RESPONSE", message: "The AI returned an invalid Career Match result. No live-search allowance was used; please retry." });
+      console.warn("[career-match] invalid AI response", { reason: error.reason, mode: req.body?.jobDescription ? "vacancy_match" : "role_discovery" });
+      res.status(502).json({
+        code: "PROVIDER_INVALID_RESPONSE",
+        reason: error.reason,
+        message: "Career Match could not verify the AI result. Please try again. No live-search allowance was used.",
+      });
       return;
     }
     if (isGroqRateLimit(error)) {

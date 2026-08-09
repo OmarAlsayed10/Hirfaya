@@ -2,16 +2,6 @@ import { z } from "zod";
 
 const score = z.number().int().min(0).max(100);
 const nonEmpty = z.string().trim().min(1);
-const ROLE_SCORE_BANDS = {
-  primary: { min: 60, max: 100 },
-  adjacent: { min: 55, max: 100 },
-  stretch: { min: 25, max: 54 },
-} as const;
-
-const roleScoreFitsBand = (fitType: keyof typeof ROLE_SCORE_BANDS, fitScore: number): boolean => {
-  const band = ROLE_SCORE_BANDS[fitType];
-  return fitScore >= band.min && fitScore <= band.max;
-};
 
 const roleFitBreakdownSchema = z.object({
   professionalExperience: z.number().int().min(0).max(40),
@@ -47,26 +37,21 @@ export const roleDiscoveryAiSchema = z.object(discoveryShape).strip();
 export const roleDiscoverySchema = z.object({
   ...discoveryShape,
   cvQualityScore: score,
+  recommendations: z.array(discoveryRecommendationSchema).max(6),
   roles: z.array(roleCandidateSchema.extend({
     fitScore: score,
     fitType: z.enum(["primary", "adjacent", "stretch"]),
   }).strict()).min(3).max(5),
 }).strict().superRefine((analysis, context) => {
-  const primaryCount = analysis.roles.filter((role) => role.fitType === "primary").length;
-  if (primaryCount !== 1) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ["roles"], message: "Exactly one primary role is required." });
-  }
   if (analysis.roles[0]?.fitType !== "primary") {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["roles", 0, "fitType"], message: "The highest-ranked role must be primary." });
   }
-  analysis.roles.forEach((role, index) => {
-    if (!roleScoreFitsBand(role.fitType, role.fitScore)) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ["roles", index, "fitScore"], message: "Role score does not match its evidence band." });
-    }
-  });
+  if (analysis.roles.filter((role) => role.fitType === "primary").length !== 1) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["roles"], message: "Exactly one primary role is required." });
+  }
 });
 
-const requirementSchema = z.object({
+export const vacancyRequirementSchema = z.object({
   requirement: nonEmpty,
   cvEvidence: nonEmpty,
   explanation: nonEmpty,
@@ -75,14 +60,14 @@ const requirementSchema = z.object({
   evidenceLevel: z.enum(["professional", "project", "training", "skills_only"]),
 }).strip();
 
-const missingRequirementSchema = z.object({
+export const missingRequirementSchema = z.object({
   requirement: nonEmpty,
   explanation: nonEmpty,
   priority: z.enum(["must_have", "preferred"]),
   category: z.enum(["skill", "experience", "education", "certification", "eligibility", "responsibility"]),
 }).strip();
 
-const vacancyRecommendationSchema = z.object({
+export const vacancyRecommendationSchema = z.object({
   action: nonEmpty,
   evidence: z.object({
     cvExcerpt: nonEmpty,
@@ -102,8 +87,8 @@ const vacancyShape = {
   mode: z.literal("vacancy_match"),
   inferredJobTitle: nonEmpty,
   summary: nonEmpty,
-  matchedRequirements: z.array(requirementSchema),
-  partialRequirements: z.array(requirementSchema),
+  matchedRequirements: z.array(vacancyRequirementSchema),
+  partialRequirements: z.array(vacancyRequirementSchema),
   missingRequirements: z.array(missingRequirementSchema),
   recommendations: z.array(vacancyRecommendationSchema),
   alternativeRoles: z.array(nonEmpty),
@@ -112,6 +97,7 @@ const vacancyShape = {
 export const vacancyMatchAiSchema = z.object(vacancyShape).strip();
 export const vacancyMatchSchema = z.object({
   ...vacancyShape,
+  reviewNeededRequirements: z.array(z.object({ requirement: nonEmpty, note: nonEmpty }).strict()).max(20),
   cvQualityScore: score,
   jobMatchScore: score,
   matchBreakdown: vacancyMatchBreakdownSchema,

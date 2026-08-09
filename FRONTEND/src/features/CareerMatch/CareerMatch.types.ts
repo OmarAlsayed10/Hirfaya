@@ -67,6 +67,10 @@ export interface VacancyMatch {
     priority: "must_have" | "preferred";
     category: VacancyRequirement["category"];
   }>;
+  reviewNeededRequirements: Array<{
+    requirement: string;
+    note: string;
+  }>;
   recommendations: Array<{
     action: string;
     evidence: { cvExcerpt: string; jobRequirement: string; rationale: string };

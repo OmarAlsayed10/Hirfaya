@@ -11,18 +11,20 @@ interface CacheInput {
   experienceLevel: string;
   jobDescription: string;
   useLiveMarket: boolean;
+  language: "en" | "ar";
 }
 
 const normalize = (value: string) => value.trim().replace(/\s+/g, " ");
 
 export function careerMatchCacheKey(input: CacheInput): string {
   const canonical = JSON.stringify({
-    contractVersion: 3,
+    contractVersion: 4,
     cvText: normalize(input.cvText),
     targetJobTitle: normalize(input.targetJobTitle).toLowerCase(),
     experienceLevel: normalize(input.experienceLevel).toLowerCase(),
     jobDescription: normalize(input.jobDescription),
     useLiveMarket: input.useLiveMarket,
+    language: input.language,
   });
   return createHash("sha256").update(canonical).digest("hex");
 }

@@ -4,7 +4,9 @@ import {
   RoleDiscoveryAi,
   VacancyMatch,
   VacancyMatchAi,
+  missingRequirementSchema,
   roleDiscoverySchema,
+  vacancyRequirementSchema,
   vacancyMatchSchema,
 } from "./careerMatchSchemas";
 
@@ -24,18 +26,20 @@ const normalizedEvidence = (text: string): string => text
   .trim();
 
 function requireSourceEvidence(source: string, excerpt: string): void {
+  if (sourceIncludesEvidence(source, excerpt)) return;
+  throw new InvalidAiResponseError("source_evidence_mismatch", "The AI cited evidence that is absent from the source document.");
+}
+
+export function sourceIncludesEvidence(source: string, excerpt: string): boolean {
   const normalizedSource = normalizedEvidence(source);
   const normalizedExcerpt = normalizedEvidence(excerpt);
-  if (normalizedExcerpt && normalizedSource.includes(normalizedExcerpt)) return;
+  if (normalizedExcerpt && normalizedSource.includes(normalizedExcerpt)) return true;
 
   const sourceWords = new Set(normalizedSource.split(" ").filter(Boolean));
   const excerptWords = normalizedExcerpt.split(" ").filter(Boolean);
   const matchedWords = excerptWords.filter((word) => sourceWords.has(word)).length;
-  if (!excerptWords.length || matchedWords / excerptWords.length < 0.7) {
-    throw new InvalidAiResponseError("The AI cited evidence that is absent from the source document.");
-  }
+  return Boolean(excerptWords.length) && matchedWords / excerptWords.length >= 0.7;
 }
-
 function roleFitScore(role: RoleDiscoveryAi["roles"][number]): number {
   const points = Object.values(role.fitBreakdown).reduce((sum, point) => sum + point, 0);
   return Math.min(points, EVIDENCE_SCORE_CAP[role.evidenceLevel]);
@@ -46,9 +50,15 @@ function roleFitType(index: number, fitScore: number): "primary" | "adjacent" | 
   return fitScore >= 55 ? "adjacent" : "stretch";
 }
 
-function requireRoleEvidence(analysis: RoleDiscoveryAi, cvText: string): void {
-  analysis.roles.forEach((role) => role.cvEvidence.forEach((excerpt) => requireSourceEvidence(cvText, excerpt)));
-  analysis.recommendations.forEach(({ evidence }) => requireSourceEvidence(cvText, evidence.cvExcerpt));
+function pruneRoleEvidence(analysis: RoleDiscoveryAi, cvText: string): RoleDiscoveryAi {
+  const roles = analysis.roles
+    .map((role) => ({ ...role, cvEvidence: role.cvEvidence.filter((excerpt) => sourceIncludesEvidence(cvText, excerpt)) }))
+    .filter((role) => role.cvEvidence.length);
+  const recommendations = analysis.recommendations.filter(({ evidence }) => sourceIncludesEvidence(cvText, evidence.cvExcerpt));
+  if (roles.length < 3) {
+    throw new InvalidAiResponseError("source_evidence_mismatch", "The AI cited evidence that is absent from the source document.");
+  }
+  return { ...analysis, roles, recommendations };
 }
 
 function requireVacancyEvidence(analysis: VacancyMatchAi, cvText: string, jobDescription: string): void {
@@ -120,17 +130,23 @@ function scoreLabel(score: number): VacancyMatch["scoreLabel"] {
 }
 
 export function finalizeRoleDiscovery(
-  analysis: RoleDiscoveryAi,
+  rawAnalysis: RoleDiscoveryAi,
   cvQualityScore: number,
   cvText: string,
 ): RoleDiscovery {
-  requireRoleEvidence(analysis, cvText);
+  const analysis = pruneRoleEvidence(rawAnalysis, cvText);
   const rankedRoles = analysis.roles
     .map((role) => ({ ...role, fitScore: roleFitScore(role) }))
     .sort((left, right) => right.fitScore - left.fitScore)
     .map((role, index) => ({ ...role, fitType: roleFitType(index, role.fitScore) }));
   const parsed = roleDiscoverySchema.safeParse({ ...analysis, roles: rankedRoles, cvQualityScore });
-  if (!parsed.success) throw new InvalidAiResponseError("The AI returned uncalibrated role scores.");
+  if (!parsed.success) {
+    console.error("[career-match] role discovery calibration failed:", {
+      cvQualityScore,
+      issues: parsed.error.issues.map((issue) => ({ path: issue.path.join("."), code: issue.code, message: issue.message })),
+    });
+    throw new InvalidAiResponseError("uncalibrated_result", "The AI returned uncalibrated role scores.");
+  }
   return parsed.data;
 }
 
@@ -145,12 +161,83 @@ export function finalizeVacancyMatch(
   const jobMatchScore = vacancyMatchScore(analysis, matchBreakdown);
   const parsed = vacancyMatchSchema.safeParse({
     ...analysis,
+    reviewNeededRequirements: [],
     cvQualityScore,
     jobMatchScore,
     matchBreakdown,
     screeningRisk: screeningRisk(analysis),
     scoreLabel: scoreLabel(jobMatchScore),
   });
-  if (!parsed.success) throw new InvalidAiResponseError("The AI returned an uncalibrated vacancy score.");
+  if (!parsed.success) {
+    console.error("[career-match] vacancy calibration failed:", {
+      cvQualityScore,
+      jobMatchScore,
+      issues: parsed.error.issues.map((issue) => ({ path: issue.path.join("."), code: issue.code, message: issue.message })),
+    });
+    throw new InvalidAiResponseError("uncalibrated_result", "The AI returned an uncalibrated vacancy score.");
+  }
   return parsed.data;
+}
+type ReviewNeededRequirement = VacancyMatch["reviewNeededRequirements"][number];
+
+const objectRecord = (value: unknown): Record<string, unknown> | null =>
+  value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+
+const objectEntries = (value: unknown): unknown[] => Array.isArray(value) ? value : [];
+
+const nonEmptyText = (value: unknown): string | null =>
+  typeof value === "string" && value.trim() ? value.trim() : null;
+
+function recoverVerifiedRequirement(entry: unknown, cvText: string, jobDescription: string) {
+  const parsed = vacancyRequirementSchema.safeParse(entry);
+  if (!parsed.success) return null;
+  const requirement = parsed.data;
+  return sourceIncludesEvidence(cvText, requirement.cvEvidence)
+    && sourceIncludesEvidence(jobDescription, requirement.requirement) ? requirement : null;
+}
+
+function recoverMissingRequirement(entry: unknown, jobDescription: string) {
+  const parsed = missingRequirementSchema.safeParse(entry);
+  return parsed.success && sourceIncludesEvidence(jobDescription, parsed.data.requirement) ? parsed.data : null;
+}
+
+function recoverReviewNeededRequirement(entry: unknown, jobDescription: string): ReviewNeededRequirement | null {
+  const requirement = nonEmptyText(objectRecord(entry)?.requirement);
+  return requirement && sourceIncludesEvidence(jobDescription, requirement)
+    ? { requirement, note: "The AI did not provide verifiable CV evidence for this requirement." } : null;
+}
+
+export function recoverVacancyMatch(
+  providerResponse: unknown,
+  cvQualityScore: number,
+  cvText: string,
+  jobDescription: string,
+  targetJobTitle: string,
+): VacancyMatch {
+  const rawAnalysis = objectRecord(providerResponse);
+  if (!rawAnalysis) throw new InvalidAiResponseError("invalid_shape");
+  const matchedSource = objectEntries(rawAnalysis.matchedRequirements);
+  const partialSource = objectEntries(rawAnalysis.partialRequirements);
+  const matchedRequirements = matchedSource.flatMap((entry) => recoverVerifiedRequirement(entry, cvText, jobDescription) || []);
+  const partialRequirements = partialSource.flatMap((entry) => recoverVerifiedRequirement(entry, cvText, jobDescription) || []);
+  const missingRequirements = objectEntries(rawAnalysis.missingRequirements)
+    .flatMap((entry) => recoverMissingRequirement(entry, jobDescription) || []);
+  const reviewNeededRequirements = [...matchedSource, ...partialSource]
+    .filter((entry) => !recoverVerifiedRequirement(entry, cvText, jobDescription))
+    .flatMap((entry) => recoverReviewNeededRequirement(entry, jobDescription) || []);
+  if (!matchedRequirements.length && !partialRequirements.length && !missingRequirements.length && !reviewNeededRequirements.length) {
+    throw new InvalidAiResponseError("invalid_shape");
+  }
+  const recoveredAnalysis: VacancyMatchAi = {
+    mode: "vacancy_match",
+    inferredJobTitle: targetJobTitle || "Vacancy comparison",
+    summary: "This is a best-effort comparison based only on verified evidence.",
+    matchedRequirements,
+    partialRequirements,
+    missingRequirements,
+    recommendations: [],
+    alternativeRoles: [],
+  };
+  const finalized = finalizeVacancyMatch(recoveredAnalysis, cvQualityScore, cvText, jobDescription);
+  return { ...finalized, reviewNeededRequirements };
 }
