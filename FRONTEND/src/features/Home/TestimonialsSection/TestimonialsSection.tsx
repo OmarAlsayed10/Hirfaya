@@ -10,6 +10,7 @@ import { AuthContext } from '../../../context/Auth/AuthContext';
 import { useFeedback } from '../../../context/FeedbackContext';
 import ReviewDialog from '../ReviewDialog';
 import testimonialsSection from './testimonialsSection.tokens';
+import { COLORS } from "../../../theme/tokens";
 
 interface CommunityData {
   cvsCreated: number;
@@ -26,6 +27,19 @@ interface CommunityData {
   }[];
 }
 
+const METRICS_CACHE_KEY = 'community_metrics_cache';
+
+const readCachedMetrics = (): CommunityData | null => {
+  try {
+    const raw = localStorage.getItem(METRICS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return typeof parsed?.cvsCreated === 'number' ? (parsed as CommunityData) : null;
+  } catch {
+    return null;
+  }
+};
+
 function TestimonialsSection() {
   const { t } = useTranslation();
   const { user } = useContext(AuthContext);
@@ -34,12 +48,22 @@ function TestimonialsSection() {
   const [loading, setLoading] = useState(true);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
 
+  // The server cache cannot help when the backend is unreachable, and an empty stats row
+  // reads as "this product has no users". The last numbers this browser saw are kept and
+  // shown instead — they are public counters that move slowly, so stale is harmless.
   const fetchMetrics = () => {
     setLoading(true);
     axios
       .get(COMMUNITY_ENDPOINTS.metrics, { withCredentials: true })
-      .then((res) => setData(res.data))
-      .catch(() => {})
+      .then((res) => {
+        setData(res.data);
+        try {
+          localStorage.setItem(METRICS_CACHE_KEY, JSON.stringify(res.data));
+        } catch {
+          // Private mode or a full quota — the live fetch already worked.
+        }
+      })
+      .catch(() => setData((current) => current ?? readCachedMetrics()))
       .finally(() => setLoading(false));
   };
 
@@ -145,14 +169,14 @@ function TestimonialsSection() {
           sx={{
             mt: 2,
             borderRadius: '24px',
-            borderColor: '#1a1a18',
-            color: '#1a1a18',
+            borderColor: COLORS.textPrimary,
+            color: COLORS.textPrimary,
             textTransform: 'none',
             fontWeight: 600,
             px: 3,
             '&:hover': {
-              borderColor: '#000',
-              bgcolor: 'rgba(0,0,0,0.04)',
+              borderColor: COLORS.borderDark,
+              bgcolor: COLORS.bgHover,
             },
           }}
         >
@@ -191,7 +215,7 @@ function TestimonialsSection() {
                   {Array.from({ length: review.rating }).map((_, j) => (
                     <StarIcon
                       key={j}
-                      sx={{ color: '#f59e0b', fontSize: '1rem' }}
+                      sx={{ color: COLORS.warning, fontSize: '1rem' }}
                     />
                   ))}
                 </Box>
@@ -219,7 +243,7 @@ function TestimonialsSection() {
         </Grid>
       ) : (
         <Box sx={{ textAlign: 'center', py: 6, px: 2 }}>
-          <Typography sx={{ color: '#6b6b66', fontSize: '0.95rem', mb: 2 }}>
+          <Typography sx={{ color: COLORS.textSecondary, fontSize: '0.95rem', mb: 2 }}>
             {t('No reviews yet. Be the first to share your experience!')}
           </Typography>
         </Box>

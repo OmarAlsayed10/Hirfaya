@@ -20,7 +20,7 @@ const grammarCheckResults = {
     minHeight: '40px',
     mb: 3,
     borderBottom: '1px solid rgba(0,0,0,0.05)',
-    '& .MuiTabs-indicator': { backgroundColor: COLORS.primary, height: '3px', borderRadius: '3px 3px 0 0' },
+    '& .MuiTabs-indicator': { backgroundColor: COLORS.primarySurface, height: '3px', borderRadius: '3px 3px 0 0' },
     '& .MuiTab-root': {
       textTransform: 'none',
       fontWeight: 'bold',
@@ -32,7 +32,7 @@ const grammarCheckResults = {
   },
   issueCard: {
     mb: 2,
-    backgroundColor: '#fdfbf7',
+    backgroundColor: COLORS.surfaceSubtle,
     border: '1px solid rgba(26,26,24,0.08)',
     borderRadius: '16px',
     transition: '0.2s',

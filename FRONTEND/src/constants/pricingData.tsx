@@ -1,5 +1,6 @@
 import { FileText, Wand2, Pencil } from "../components/icons/MuiIcons";
 import { ReactNode } from "react";
+import { COLORS } from "../theme/tokens";
 
 export interface FeatureHighlight {
   icon: ReactNode;
@@ -30,7 +31,7 @@ export const PLAN_TIERS: Record<PlanTier, TierInfo> = {
       "≈ 1 CV analysis",
       "2 resume templates",
       "Basic resume sections",
-      "Careerak-CV branding",
+      "Hirfaya branding",
       "No Job Radar",
     ],
   },
@@ -84,17 +85,17 @@ export const CREDITS_NOTE = "Context-aware AI actions cost ~12 credits (due to d
 
 export const FEATURE_HIGHLIGHTS: FeatureHighlight[] = [
   {
-    icon: <FileText color="#2a5c45" size={32} />,
+    icon: <FileText color={COLORS.primary} size={32} />,
     headline: "One builder, hundreds of templates",
     text: "Choose from hundreds of professionally designed and ATS-friendly resume templates, tens of resume sections, and thousands of combinations made to make you stand out.",
   },
   {
-    icon: <Wand2 color="#2a5c45" size={32} />,
+    icon: <Wand2 color={COLORS.primary} size={32} />,
     headline: "AI Grammar & Content Checks",
     text: "Get a powerful AI-powered content analyzing tool. Don't let mistakes and typos cost a potential job. Cut out clichés, repetition, and vague wording.",
   },
   {
-    icon: <Pencil color="#2a5c45" size={32} />,
+    icon: <Pencil color={COLORS.primary} size={32} />,
     headline: "Tailor your resume with a single click",
     text: "With our resume tailoring feature you can ensure your resume is relevant to the job you're applying for.",
   },

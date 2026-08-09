@@ -1,6 +1,6 @@
-# Resume-IQ
+# Hirfaya
 
-Resume-IQ is a full-stack resume and career-assistance platform. It helps users build structured CVs, import existing resume content, analyze resumes, compare a CV with a vacancy, improve written content with AI, and track relevant job opportunities.
+Hirfaya is a full-stack resume and career-assistance platform. It helps users build structured CVs, import existing resume content, analyze resumes, compare a CV with a vacancy, improve written content with AI, and track relevant job opportunities.
 
 The application includes a browser-based CV builder with live templates and PDF export, an Express API for authentication and career tools, and PostgreSQL storage for users, CVs, documents, job matches, plans, and payments.
 
@@ -51,7 +51,7 @@ For a detailed, user-friendly guide explaining every feature of the website, ple
 ## Repository structure
 
 ```text
-Resume-IQ/
+Hirfaya/
 |-- FRONTEND/   React application, CV builder, templates, pages, and state
 |-- BACKEND/    Express API, Prisma schema, services, routes, and middleware
 `-- README.md
@@ -107,6 +107,13 @@ EMAIL_HOST=replace_me
 EMAIL_PORT=587
 EMAIL_USER=replace_me
 EMAIL_PASS=replace_me
+# Optional. Set when the SMTP login is not the sending identity (SES, Resend,
+# Postmark). The From domain must match the DKIM-signing domain or DMARC fails.
+# EMAIL_FROM="Hirfaya <no-reply@yourdomain.com>"
+# Optional. Only for a self-hosted SMTP host that does not sign for you.
+# EMAIL_DKIM_DOMAIN=yourdomain.com
+# EMAIL_DKIM_SELECTOR=mail
+# EMAIL_DKIM_PRIVATE_KEY=replace_me
 
 ADMIN_EMAIL=admin@example.com
 ADMIN_SECRET=replace_me
@@ -130,6 +137,14 @@ The frontend defaults to `http://localhost:3001`. To use another API origin, cre
 
 ```dotenv
 VITE_API_BASE_URL=http://localhost:3001
+
+# Production origin of the site itself. Without it the build skips robots.txt,
+# sitemap.xml, canonical and og:image rather than emitting a wrong domain.
+VITE_SITE_URL=https://yourdomain.com
+
+# Product analytics. Without a key the tracking calls are no-ops.
+VITE_POSTHOG_KEY=replace_me
+VITE_POSTHOG_HOST=https://eu.i.posthog.com
 ```
 
 Vite serves the frontend on `http://localhost:5173` by default.

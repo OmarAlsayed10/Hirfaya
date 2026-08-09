@@ -26,5 +26,9 @@ dist-ssr
 .env
 vite-env.d.ts
 
+# Written by scripts/generate-seo-files.mjs at build time.
+public/robots.txt
+public/sitemap.xml
+
 eslint.config.js
 

@@ -101,19 +101,19 @@ const ReviewDialog = ({ open, onClose, onSubmitted }: ReviewDialogProps) => {
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
             {t('Thank you for your review!')}
           </Typography>
-          <Typography sx={{ color: '#6b6b66', mb: 3 }}>
+          <Typography sx={{ color: COLORS.textSecondary, mb: 3 }}>
             {t('Your review has been submitted and is pending approval.')}
           </Typography>
           <Button
             variant="contained"
             onClick={handleClose}
             sx={{
-              bgcolor: COLORS.primary,
+              bgcolor: COLORS.primarySurface,
               borderRadius: '12px',
               textTransform: 'none',
               fontWeight: 'bold',
               px: 4,
-              '&:hover': { bgcolor: COLORS.primaryDark },
+              '&:hover': { bgcolor: COLORS.primarySurfaceDark },
             }}
           >
             {t('Close')}
@@ -129,7 +129,7 @@ const ReviewDialog = ({ open, onClose, onSubmitted }: ReviewDialogProps) => {
           <DialogContent sx={{ pt: 2 }}>
             <Box sx={{ mb: 2 }}>
               <Typography
-                sx={{ fontSize: '0.85rem', color: '#6b6b66', mb: 0.5 }}
+                sx={{ fontSize: '0.85rem', color: COLORS.textSecondary, mb: 0.5 }}
               >
                 {t('Reviewing as')}
               </Typography>
@@ -138,7 +138,7 @@ const ReviewDialog = ({ open, onClose, onSubmitted }: ReviewDialogProps) => {
 
             <Box sx={{ mb: 2 }}>
               <Typography
-                sx={{ fontSize: '0.85rem', color: '#6b6b66', mb: 1 }}
+                sx={{ fontSize: '0.85rem', color: COLORS.textSecondary, mb: 1 }}
               >
                 {t('Your rating')}
               </Typography>
@@ -153,11 +153,11 @@ const ReviewDialog = ({ open, onClose, onSubmitted }: ReviewDialogProps) => {
                   >
                     {star <= (hoverRating || rating) ? (
                       <StarIcon
-                        sx={{ fontSize: '2rem', color: '#f59e0b' }}
+                        sx={{ fontSize: '2rem', color: COLORS.warning }}
                       />
                     ) : (
                       <StarBorderIcon
-                        sx={{ fontSize: '2rem', color: '#d1d5db' }}
+                        sx={{ fontSize: '2rem', color: COLORS.borderMedium }}
                       />
                     )}
                   </IconButton>
@@ -178,7 +178,7 @@ const ReviewDialog = ({ open, onClose, onSubmitted }: ReviewDialogProps) => {
             />
 
             {error && (
-              <Typography sx={{ color: '#dc2626', fontSize: '0.85rem', mt: 1 }}>
+              <Typography sx={{ color: COLORS.danger, fontSize: '0.85rem', mt: 1 }}>
                 {error}
               </Typography>
             )}
@@ -187,7 +187,7 @@ const ReviewDialog = ({ open, onClose, onSubmitted }: ReviewDialogProps) => {
             <Button
               onClick={handleClose}
               sx={{
-                color: '#6b6b66',
+                color: COLORS.textSecondary,
                 textTransform: 'none',
                 fontWeight: 600,
               }}
@@ -204,12 +204,12 @@ const ReviewDialog = ({ open, onClose, onSubmitted }: ReviewDialogProps) => {
                 ) : null
               }
               sx={{
-                bgcolor: COLORS.primary,
+                bgcolor: COLORS.primarySurface,
                 borderRadius: '10px',
                 textTransform: 'none',
                 fontWeight: 'bold',
                 px: 3,
-                '&:hover': { bgcolor: COLORS.primaryDark },
+                '&:hover': { bgcolor: COLORS.primarySurfaceDark },
               }}
             >
               {submitting ? t('Submitting...') : t('Submit Review')}

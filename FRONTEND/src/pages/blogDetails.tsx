@@ -7,9 +7,11 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import i18n from "../i18n";
 import { useTranslation } from "react-i18next";
 import { BLOG_ENDPOINTS } from "../constants/endpoints";
+import Seo from "../components/ui/Seo";
 
 interface BlogPost {
   title: string;
+  excerpt: string;
   content: string;
   category: string;
   coverImage: string | null;
@@ -50,6 +52,7 @@ const BlogDetail = () => {
 
   return (
     <Container maxWidth="md" sx={{ mt: 5 }}>
+      <Seo title={blogPost.title} description={blogPost.excerpt} />
       <Button
         variant="text"
         startIcon={currentLang === "en" ? <ArrowBackIcon /> : <ArrowForwardIcon sx={{ px: 1 }} />}

@@ -56,7 +56,7 @@ const testimonialsSection = {
     p: 3.5,
     borderRadius: '14px',
     border: '1px solid rgba(26,26,24,0.08)',
-    backgroundColor: '#fafaf8',
+    backgroundColor: COLORS.surfaceSubtle,
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
@@ -72,7 +72,7 @@ const testimonialsSection = {
     alignSelf: 'flex-start',
   },
   quoteText: {
-    color: '#3a3a38',
+    color: COLORS.textMedium,
     lineHeight: 1.75,
     fontSize: '0.92rem',
     flex: 1,
@@ -80,7 +80,7 @@ const testimonialsSection = {
   avatar: {
     width: 42,
     height: 42,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primarySurface,
     fontSize: '1rem',
     fontWeight: 700,
   },

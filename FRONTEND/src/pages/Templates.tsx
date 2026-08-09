@@ -18,6 +18,8 @@ import { useTemplate } from "../hooks/useTemplate";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import Seo from "../components/ui/Seo";
+import { COLORS } from "../theme/tokens";
 
 const TemplatesPage = () => {
   const { t } = useTranslation();
@@ -39,12 +41,18 @@ const TemplatesPage = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
+      <Seo
+        title={t("CV Templates")}
+        description={t(
+          "Modern, executive, creative and minimal CV templates that pass ATS screening, with full Arabic and RTL support."
+        )}
+      />
       <Box sx={{ textAlign: "center", mb: 5 }}>
         <Typography
           variant="h4"
           fontWeight={700}
           sx={{
-            color: "#1a1a18",
+            color: COLORS.textPrimary,
             mb: 1,
             fontFamily: '"DM Serif Display", serif'
           }}
@@ -90,8 +98,8 @@ const TemplatesPage = () => {
                       position: "absolute",
                       top: 12,
                       right: 12,
-                      background: "#2a5c45",
-                      color: "white",
+                      background: COLORS.primary,
+                      color: COLORS.onAccent,
                       fontWeight: 700,
                       fontSize: 11,
                     }}
@@ -124,13 +132,13 @@ const TemplatesPage = () => {
                     background:
                       !isPro && template.pro
                         ? undefined
-                        : "#2a5c45",
+                        : COLORS.primary,
                     borderRadius: 2,
                     textTransform: "none",
                     fontWeight: 600,
                     boxShadow: "none",
                     "&:hover": {
-                       background: !isPro && template.pro ? undefined : "#1e4332",
+                       background: !isPro && template.pro ? undefined : COLORS.primaryDark,
                        boxShadow: "none"
                     }
                   }}

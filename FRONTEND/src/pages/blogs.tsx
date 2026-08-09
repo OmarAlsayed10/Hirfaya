@@ -15,6 +15,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { BLOG_ENDPOINTS } from "../constants/endpoints";
+import Seo from "../components/ui/Seo";
 
 interface BlogPost {
   id: string;
@@ -51,6 +52,12 @@ const Blog = () => {
 
   return (
     <Box sx={{ py: 6, px: { xs: 2, sm: 4, md: 8 }, flex: 1 }}>
+      <Seo
+        title={t("Career Blog")}
+        description={t(
+          "Guides on writing an ATS-friendly CV, passing interviews, and changing careers — in Arabic and English."
+        )}
+      />
       <TextField
         fullWidth
         variant="outlined"

@@ -27,10 +27,10 @@ export const GetStartVisualizer = ({ activeStep, activeData }: GetStartVisualize
             <Paper elevation={1} sx={{ p: 4, borderRadius: 3, border: '1px solid #e0e0e0', width: '100%', maxWidth: 450 }}>
               <Typography sx={{ color: COLORS.textSecondary, fontSize: '1.2rem', lineHeight: 1.8 }}>
                 I{' '}
-                <span style={{ textDecoration: 'line-through', color: '#c25b1a', opacity: 0.6 }}>done</span>{' '}
+                <span style={{ textDecoration: 'line-through', color: COLORS.accentOrange, opacity: 0.6 }}>done</span>{' '}
                 <span style={{ color: COLORS.primary, fontWeight: 'bold' }}>completed</span>
                 {' '}the project{' '}
-                <span style={{ textDecoration: 'line-through', color: '#c25b1a', opacity: 0.6 }}>good</span>{' '}
+                <span style={{ textDecoration: 'line-through', color: COLORS.accentOrange, opacity: 0.6 }}>good</span>{' '}
                 <span style={{ color: COLORS.primary, fontWeight: 'bold' }}>successfully</span>.
               </Typography>
             </Paper>

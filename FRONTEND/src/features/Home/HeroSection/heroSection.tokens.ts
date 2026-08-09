@@ -57,9 +57,9 @@ const heroSection = {
     py: 1.5,
     borderRadius: RADIUS.sm,
     boxShadow: 'none',
-    backgroundColor: COLORS.primary,
-    color: 'white',
-    '&:hover': { backgroundColor: COLORS.primaryDark, boxShadow: 'none' },
+    backgroundColor: COLORS.primarySurface,
+    color: COLORS.onAccent,
+    '&:hover': { backgroundColor: COLORS.primarySurfaceDark, boxShadow: 'none' },
   },
   outlinedButton: {
     px: 4,

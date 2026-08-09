@@ -40,7 +40,7 @@ interface ParsedCV {
   };
   experience: unknown[];
   education: unknown[];
-  skills: { skills: string[]; languages: string; certifications: string };
+  skills: { skills: string[]; languages: string; certifications: unknown };
 }
 
 const EMPTY: ProfileForm = {
@@ -180,7 +180,7 @@ const OnboardingWizard = () => {
           mx: 'auto',
           borderRadius: RADIUS.xl,
           border: `1px solid ${COLORS.borderLight}`,
-          bgcolor: '#fff',
+          bgcolor: COLORS.bgWhite,
           overflow: 'hidden',
         }}
       >
@@ -226,8 +226,8 @@ const OnboardingWizard = () => {
                   component="label"
                   variant="contained"
                   disabled={importing}
-                  startIcon={importing ? <CircularProgress size={15} sx={{ color: '#fff' }} /> : <Sparkles size={16} />}
-                  sx={{ bgcolor: COLORS.primary, textTransform: 'none', fontWeight: 600, whiteSpace: 'nowrap', '&:hover': { bgcolor: COLORS.primaryDark } }}
+                  startIcon={importing ? <CircularProgress size={15} sx={{ color: COLORS.onAccent }} /> : <Sparkles size={16} />}
+                  sx={{ bgcolor: COLORS.primarySurface, textTransform: 'none', fontWeight: 600, whiteSpace: 'nowrap', '&:hover': { bgcolor: COLORS.primarySurfaceDark } }}
                 >
                   {importing ? t('Reading...') : t('Upload CV')}
                   <input type="file" hidden accept=".pdf,.doc,.docx" onChange={importCV} />
@@ -236,14 +236,14 @@ const OnboardingWizard = () => {
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
                 <Box sx={{ position: 'relative' }}>
-                  <Avatar src={user?.photo || ''} sx={{ width: 64, height: 64, bgcolor: COLORS.primary }}>
+                  <Avatar src={user?.photo || ''} sx={{ width: 64, height: 64, bgcolor: COLORS.primarySurface }}>
                     {initials}
                   </Avatar>
                   <Box
                     component="label"
                     sx={{
                       position: 'absolute', bottom: -4, right: -4, width: 26, height: 26,
-                      borderRadius: '50%', bgcolor: '#fff', border: `1px solid ${COLORS.borderLight}`,
+                      borderRadius: '50%', bgcolor: COLORS.bgWhite, border: `1px solid ${COLORS.borderLight}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
                     }}
                   >
@@ -285,7 +285,7 @@ const OnboardingWizard = () => {
                 <Button onClick={skip} disabled={saving} sx={{ color: COLORS.textSecondary }}>
                   {t('Skip for now')}
                 </Button>
-                <Button variant="contained" onClick={() => setStep(1)} sx={{ bgcolor: COLORS.primary, '&:hover': { bgcolor: COLORS.primaryDark } }}>
+                <Button variant="contained" onClick={() => setStep(1)} sx={{ bgcolor: COLORS.primarySurface, '&:hover': { bgcolor: COLORS.primarySurfaceDark } }}>
                   {t('Continue')}
                 </Button>
               </Box>

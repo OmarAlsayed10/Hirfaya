@@ -91,8 +91,8 @@ export const GrammarCheckResults = ({
                             fontSize: '0.75rem',
                             fontWeight: 'bold',
                             borderRadius: '6px',
-                            backgroundColor: issue.type === 'Grammar' ? '#fdecea' : issue.type === 'Punctuation' ? '#e8f4fd' : issue.type === 'Spelling' ? '#fff3e0' : '#e9f7ef',
-                            color: issue.type === 'Grammar' ? '#b71c1c' : issue.type === 'Punctuation' ? '#0d47a1' : issue.type === 'Spelling' ? '#e65100' : '#1b5e20',
+                            backgroundColor: issue.type === 'Grammar' ? COLORS.dangerSoft : issue.type === 'Punctuation' ? COLORS.bgIconTinted : issue.type === 'Spelling' ? COLORS.accentOrangeSoft : COLORS.successSoft,
+                            color: issue.type === 'Grammar' ? COLORS.danger : issue.type === 'Punctuation' ? COLORS.primary : issue.type === 'Spelling' ? COLORS.accentOrange : COLORS.success,
                           }}
                         />
                         <Button
@@ -106,7 +106,7 @@ export const GrammarCheckResults = ({
                       </Box>
 
                       <Typography sx={{ fontSize: '1.05rem', lineHeight: 1.6, color: COLORS.textPrimary }}>
-                        <span style={{ textDecoration: 'line-through', color: '#c25b1a', opacity: 0.7, marginRight: '4px' }}>
+                        <span style={{ textDecoration: 'line-through', color: COLORS.accentOrange, opacity: 0.7, marginRight: '4px' }}>
                           {wrong}
                         </span>
                         <span style={{ color: COLORS.textSecondary, margin: '0 4px' }}>→</span>

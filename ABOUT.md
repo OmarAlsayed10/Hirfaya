@@ -1,8 +1,8 @@
-# About Careerak CV 🚀
+# About Hirfaya
 
-**Careerak CV** is your ultimate AI-powered career assistant. Designed to help job seekers land their dream jobs, Resume-IQ combines intelligent resume building, deep AI resume analysis, automated job tracking, and career advice into one intuitive, easy-to-use platform.
+**Hirfaya** is your ultimate AI-powered career assistant. Designed to help job seekers land their dream jobs, Hirfaya combines intelligent resume building, deep AI resume analysis, automated job tracking, and career advice into one intuitive, easy-to-use platform.
 
-Whether you're crafting your first CV, tailoring your resume for a specific job application, or tracking opportunities across top job boards, Resume-IQ guides you every step of the way.
+Whether you're crafting your first CV, tailoring your resume for a specific job application, or tracking opportunities across top job boards, Hirfaya guides you every step of the way.
 
 ---
 
@@ -34,6 +34,7 @@ Get honest, actionable feedback on your resume before submitting it to employers
 Tailor your resume for any specific job posting to maximize your chances of getting an interview.
 - **Job Description Match Score**: Paste any job description or vacancy link to see how closely your current resume aligns with the job requirements.
 - **Skill & Keyword Gap Analysis**: See exactly which required keywords, skills, or qualifications are missing from your resume.
+- **Readiness Roadmap**: Review partially evidenced and missing job requirements, prioritized by must-have status, before deciding how to strengthen your application.
 - **One-Click Resume Tailoring**: Automatically optimize your resume's wording and bullet points to match the target vacancy without lying or distorting facts.
 - **AI Cover Letter Generation**: Generate a tailored, professional cover letter specifically written for that job posting in seconds.
 
@@ -93,7 +94,7 @@ Enjoy free access with flexible upgrade options when you need more power.
 ### 11. 📰 Career Blog & Help Center
 Stay informed with expert career advice.
 - **Career Guides & Articles**: Learn how to write effective resumes, ace interviews, and navigate career transitions.
-- **Help Center & FAQs**: Quick answers to common questions about using Resume-IQ.
+- **Help Center & FAQs**: Quick answers to common questions about using Hirfaya.
 
 ---
 

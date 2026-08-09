@@ -46,7 +46,7 @@ const ctaBanner = {
   },
   title: {
     fontFamily: TYPOGRAPHY.fontSerif,
-    color: COLORS.bgWhite,
+    color: COLORS.onAccent,
     fontSize: { xs: '1.8rem', md: '2.6rem' },
     lineHeight: 1.2,
     mb: 2,
@@ -78,12 +78,12 @@ const ctaBanner = {
     px: 4,
     py: 1.5,
     borderRadius: RADIUS.md,
-    backgroundColor: COLORS.primary,
-    color: COLORS.bgWhite,
+    backgroundColor: COLORS.primarySurface,
+    color: COLORS.onAccent,
     fontWeight: 600,
     boxShadow: '0 8px 24px rgba(42,92,69,0.4)',
     '&:hover': {
-      backgroundColor: COLORS.primaryDark,
+      backgroundColor: COLORS.primarySurfaceDark,
       boxShadow: '0 12px 28px rgba(42,92,69,0.5)',
     },
     transition: 'all 0.25s ease',
@@ -103,7 +103,7 @@ const ctaBanner = {
     transition: 'all 0.25s ease',
   },
   trust: {
-    color: '#4d7a62',
+    color: COLORS.primaryMuted,
     fontSize: '0.8rem',
     mt: 4,
     position: 'relative',

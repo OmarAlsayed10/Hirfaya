@@ -95,7 +95,7 @@ function HowItWorksSection() {
               <Box sx={howItWorksSection.progressTrack}>
                 <Box sx={{
                   width: '100%',
-                  bgcolor: COLORS.primary,
+                  bgcolor: COLORS.primarySurface,
                   borderRadius: 2,
                   transition: 'height 0.6s cubic-bezier(0.22,1,0.36,1)',
                   height: activeStep === 0 ? '0%' : activeStep === 1 ? '50%' : '100%',
@@ -109,7 +109,7 @@ function HowItWorksSection() {
                 return (
                   <Box key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: i < 2 ? 4 : 0, position: 'relative', zIndex: 1 }}>
                     <Box sx={howItWorksSection.timelineNodeActive(isActive, isDone)}>
-                      <Icon sx={{ fontSize: 16, color: isActive || isDone ? 'white' : `${COLORS.primary}66`, transition: 'color 0.3s' }} />
+                      <Icon sx={{ fontSize: 16, color: isActive || isDone ? COLORS.onAccent : `${COLORS.primaryAlpha35}`, transition: 'color 0.3s' }} />
                     </Box>
                     <Box sx={{ pt: 0.5 }}>
                       <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: isActive ? COLORS.textPrimary : COLORS.textSecondary, transition: 'color 0.3s', lineHeight: 1.3 }}>

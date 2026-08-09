@@ -18,7 +18,8 @@ import PaymentIcon from "@mui/icons-material/Payment";
 import SecurityIcon from "@mui/icons-material/Security";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import Seo from "../components/ui/Seo";
+import { COLORS } from "../theme/tokens";
 
 const helpCategories = [
   {
@@ -80,10 +81,15 @@ const faqs = [
 
 const HelpCenter = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
 
   return (
     <Container maxWidth="md" sx={{ py: 6 }}>
+      <Seo
+        title={t("Help Center")}
+        description={t(
+          "Answers about building a CV, AI analysis, credits, plans and payments on Hirfaya."
+        )}
+      />
       {/* Header */}
       <Box sx={{ textAlign: "center", mb: 5 }}>
         <HelpOutlineIcon sx={{ fontSize: 48, color: "primary.main", mb: 1 }} />
@@ -91,7 +97,7 @@ const HelpCenter = () => {
           variant="h4"
           fontWeight={700}
           sx={{
-            color: "#1a1a18",
+            color: COLORS.textPrimary,
             mb: 1,
             fontFamily: '"DM Serif Display", serif',
           }}
@@ -100,7 +106,7 @@ const HelpCenter = () => {
         </Typography>
         <Typography color="text.secondary" fontSize={15}>
           {t(
-            "Find answers to common questions and learn how to get the most out of Careerak-CV",
+            "Find answers to common questions and learn how to get the most out of Hirfaya",
           )}
         </Typography>
       </Box>
@@ -174,7 +180,7 @@ const HelpCenter = () => {
           p: 4,
           textAlign: "center",
           borderRadius: 3,
-          bgcolor: "#e8f2ec",
+          bgcolor: COLORS.bgIconTinted,
           border: "1px solid rgba(26,26,24,0.1)",
         }}
       >
@@ -189,15 +195,15 @@ const HelpCenter = () => {
         <Button
           variant="contained"
           startIcon={<EmailIcon />}
-          href="mailto:support@Careerak-CV.com"
+          href="mailto:support@hirfaya.com"
           sx={{
-            backgroundColor: "#2a5c45",
+            backgroundColor: COLORS.primarySurface,
             borderRadius: 2,
             textTransform: "none",
             fontWeight: 600,
             boxShadow: "none",
             "&:hover": {
-              backgroundColor: "#1e4332",
+              backgroundColor: COLORS.primarySurfaceDark,
               boxShadow: "none",
             },
           }}

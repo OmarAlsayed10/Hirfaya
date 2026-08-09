@@ -1,6 +1,7 @@
 import { Box, Container, Typography, Divider } from "@mui/material";
 import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
 import { useTranslation } from "react-i18next";
+import { COLORS } from "../theme/tokens";
 
 export default function TermsPage() {
   const { t } = useTranslation();
@@ -8,11 +9,11 @@ export default function TermsPage() {
   const SECTIONS = [
     {
       title: "1. Acceptance of Terms",
-      body: `By accessing or using Careerak-CV ("the Service"), you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any part of these terms, you may not use the Service.`,
+      body: `By accessing or using Hirfaya ("the Service"), you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any part of these terms, you may not use the Service.`,
     },
     {
       title: "2. Description of Service",
-      body: `Careerak-CV provides an AI-powered CV/resume building platform that allows users to create, edit, analyze, and export professional CVs. Premium features are available through a paid subscription ("Pro Plan").`,
+      body: `Hirfaya provides an AI-powered CV/resume building platform that allows users to create, edit, analyze, and export professional CVs. Premium features are available through a paid subscription ("Pro Plan").`,
     },
     {
       title: "3. User Accounts",
@@ -28,7 +29,7 @@ export default function TermsPage() {
     },
     {
       title: "6. Intellectual Property",
-      body: `The Service, including all software, design, and content created by Careerak-CV, is our exclusive property and is protected by copyright, trademark, and other laws. Your CV data remains yours. By using the Service you grant us a limited licence to process and store your data solely to provide the Service.`,
+      body: `The Service, including all software, design, and content created by Hirfaya, is our exclusive property and is protected by copyright, trademark, and other laws. Your CV data remains yours. By using the Service you grant us a limited licence to process and store your data solely to provide the Service.`,
     },
     {
       title: "7. Disclaimer of Warranties",
@@ -36,7 +37,7 @@ export default function TermsPage() {
     },
     {
       title: "8. Limitation of Liability",
-      body: `To the fullest extent permitted by law, Careerak-CV and its affiliates shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of — or inability to use — the Service, even if we have been advised of the possibility of such damages.`,
+      body: `To the fullest extent permitted by law, Hirfaya and its affiliates shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of — or inability to use — the Service, even if we have been advised of the possibility of such damages.`,
     },
     {
       title: "9. Termination",
@@ -48,16 +49,16 @@ export default function TermsPage() {
     },
     {
       title: "11. Governing Law",
-      body: `These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which Careerak-CV operates, without regard to its conflict of law provisions.`,
+      body: `These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which Hirfaya operates, without regard to its conflict of law provisions.`,
     },
     {
       title: "12. Contact",
-      body: `If you have questions about these Terms, please contact us at: support@resumeiq.com`,
+      body: `If you have questions about these Terms, please contact us at: support@hirfaya.com`,
     },
   ];
 
   return (
-    <Box sx={{ bgcolor: "#f5f4ef", minHeight: "100vh", py: { xs: 8, md: 12 } }}>
+    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: "100vh", py: { xs: 8, md: 12 } }}>
       <Container maxWidth="md">
         {/* Header */}
         <Box sx={{ textAlign: "center", mb: 8 }}>
@@ -66,7 +67,7 @@ export default function TermsPage() {
               width: 64,
               height: 64,
               borderRadius: "50%",
-              bgcolor: "#e8f2ec",
+              bgcolor: COLORS.bgIconTinted,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -74,20 +75,20 @@ export default function TermsPage() {
               mb: 3,
             }}
           >
-            <GavelOutlinedIcon sx={{ color: "#2a5c45", fontSize: 28 }} />
+            <GavelOutlinedIcon sx={{ color: COLORS.primary, fontSize: 28 }} />
           </Box>
           <Typography
             variant="h1"
             sx={{
               fontFamily: '"DM Serif Display", serif',
               fontSize: { xs: "2.2rem", md: "3rem" },
-              color: "#1a1a18",
+              color: COLORS.textPrimary,
               mb: 2,
             }}
           >
             {t("Terms of Service")}
           </Typography>
-          <Typography sx={{ color: "#6b6b66", fontSize: "1rem" }}>
+          <Typography sx={{ color: COLORS.textSecondary, fontSize: "1rem" }}>
             {t("Last updated: April 16, 2026")}
           </Typography>
         </Box>
@@ -95,7 +96,7 @@ export default function TermsPage() {
         {/* Intro */}
         <Box
           sx={{
-            bgcolor: "white",
+            bgcolor: COLORS.bgWhite,
             borderRadius: "16px",
             p: { xs: 3, md: 5 },
             border: "1px solid rgba(26,26,24,0.08)",
@@ -103,10 +104,10 @@ export default function TermsPage() {
           }}
         >
           <Typography
-            sx={{ color: "#6b6b66", fontSize: "1rem", lineHeight: 1.8, mb: 5 }}
+            sx={{ color: COLORS.textSecondary, fontSize: "1rem", lineHeight: 1.8, mb: 5 }}
           >
             {t(
-              "Please read these Terms of Service carefully before using Careerak-CV. These terms govern your access to and use of our platform, products, and services.",
+              "Please read these Terms of Service carefully before using Hirfaya. These terms govern your access to and use of our platform, products, and services.",
             )}
           </Typography>
 
@@ -117,7 +118,7 @@ export default function TermsPage() {
                 sx={{
                   fontFamily: '"DM Serif Display", serif',
                   fontSize: "1.25rem",
-                  color: "#1a1a18",
+                  color: COLORS.textPrimary,
                   mb: 1.5,
                 }}
               >
@@ -125,7 +126,7 @@ export default function TermsPage() {
               </Typography>
               <Typography
                 sx={{
-                  color: "#6b6b66",
+                  color: COLORS.textSecondary,
                   fontSize: "0.95rem",
                   lineHeight: 1.8,
                   mb: 3,

@@ -1,6 +1,7 @@
 import { Box, Container, Typography, Divider } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useTranslation } from "react-i18next";
+import { COLORS } from "../theme/tokens";
 
 export default function PrivacyPage() {
   const { t } = useTranslation();
@@ -36,7 +37,7 @@ export default function PrivacyPage() {
     },
     {
       title: "8. Your Rights",
-      body: `Depending on your location, you may have rights to: access the personal data we hold about you; correct inaccurate data; request deletion of your data; object to or restrict processing; and export your data in a portable format. To exercise any of these rights, contact us at privacy@resumeiq.com.`,
+      body: `Depending on your location, you may have rights to: access the personal data we hold about you; correct inaccurate data; request deletion of your data; object to or restrict processing; and export your data in a portable format. To exercise any of these rights, contact us at privacy@hirfaya.com.`,
     },
     {
       title: "9. Children's Privacy",
@@ -52,12 +53,12 @@ export default function PrivacyPage() {
     },
     {
       title: "12. Contact Us",
-      body: `If you have any questions or concerns about this Privacy Policy or how we handle your data, please contact our Data Protection team at: privacy@resumeiq.com`,
+      body: `If you have any questions or concerns about this Privacy Policy or how we handle your data, please contact our Data Protection team at: privacy@hirfaya.com`,
     },
   ];
 
   return (
-    <Box sx={{ bgcolor: "#f5f4ef", minHeight: "100vh", py: { xs: 8, md: 12 } }}>
+    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: "100vh", py: { xs: 8, md: 12 } }}>
       <Container maxWidth="md">
         {/* Header */}
         <Box sx={{ textAlign: "center", mb: 8 }}>
@@ -66,7 +67,7 @@ export default function PrivacyPage() {
               width: 64,
               height: 64,
               borderRadius: "50%",
-              bgcolor: "#e8f2ec",
+              bgcolor: COLORS.bgIconTinted,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -74,20 +75,20 @@ export default function PrivacyPage() {
               mb: 3,
             }}
           >
-            <LockOutlinedIcon sx={{ color: "#2a5c45", fontSize: 28 }} />
+            <LockOutlinedIcon sx={{ color: COLORS.primary, fontSize: 28 }} />
           </Box>
           <Typography
             variant="h1"
             sx={{
               fontFamily: '"DM Serif Display", serif',
               fontSize: { xs: "2.2rem", md: "3rem" },
-              color: "#1a1a18",
+              color: COLORS.textPrimary,
               mb: 2,
             }}
           >
             {t("Privacy Policy")}
           </Typography>
-          <Typography sx={{ color: "#6b6b66", fontSize: "1rem" }}>
+          <Typography sx={{ color: COLORS.textSecondary, fontSize: "1rem" }}>
             {t("Last updated: April 16, 2026")}
           </Typography>
         </Box>
@@ -95,7 +96,7 @@ export default function PrivacyPage() {
         {/* Content card */}
         <Box
           sx={{
-            bgcolor: "white",
+            bgcolor: COLORS.bgWhite,
             borderRadius: "16px",
             p: { xs: 3, md: 5 },
             border: "1px solid rgba(26,26,24,0.08)",
@@ -103,7 +104,7 @@ export default function PrivacyPage() {
           }}
         >
           <Typography
-            sx={{ color: "#6b6b66", fontSize: "1rem", lineHeight: 1.8, mb: 5 }}
+            sx={{ color: COLORS.textSecondary, fontSize: "1rem", lineHeight: 1.8, mb: 5 }}
           >
             {t(
               "Your privacy matters to us. This policy explains what data we collect, how we use it, and what choices you have. We are committed to being transparent and handling your information responsibly.",
@@ -117,7 +118,7 @@ export default function PrivacyPage() {
                 sx={{
                   fontFamily: '"DM Serif Display", serif',
                   fontSize: "1.25rem",
-                  color: "#1a1a18",
+                  color: COLORS.textPrimary,
                   mb: 1.5,
                 }}
               >
@@ -125,7 +126,7 @@ export default function PrivacyPage() {
               </Typography>
               <Typography
                 sx={{
-                  color: "#6b6b66",
+                  color: COLORS.textSecondary,
                   fontSize: "0.95rem",
                   lineHeight: 1.8,
                   mb: 3,

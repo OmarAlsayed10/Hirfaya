@@ -9,11 +9,15 @@ export const AUTH_ENDPOINTS = {
   verifyOTP: `${API_BASE_URL}/auth/verify-otp`,
   resendOTP: `${API_BASE_URL}/auth/resend-otp`,
   logout: `${API_BASE_URL}/auth/logout`,
-  updatePassword: `${API_BASE_URL}/auth/update-password`,
+  forgotPassword: `${API_BASE_URL}/auth/forgot-password`,
+  resetPassword: `${API_BASE_URL}/auth/reset-password`,
+  gitCredentials: `${API_BASE_URL}/auth/git-credentials`,
+  gitCredential: (host: string) => `${API_BASE_URL}/auth/git-credentials/${host}`,
 };
 
 export const BUILDER_ENDPOINTS = {
   save: `${API_BASE_URL}/cvbuilder/save`,
+  exportPdf: `${API_BASE_URL}/cvbuilder/export-pdf`,
   update: (id: string) => `${API_BASE_URL}/cvbuilder/${id}`,
   delete: (id: string) => `${API_BASE_URL}/cvbuilder/${id}`,
 };
@@ -33,16 +37,21 @@ export const AI_ENDPOINTS = {
   conversationalBuild: `${API_BASE_URL}/api/ai/conversational-build`,
   importCv: `${API_BASE_URL}/api/ai/import-cv`,
   optimizeCvLength: `${API_BASE_URL}/api/ai/optimize-cv-length`,
+  cvPhoto: `${API_BASE_URL}/api/ai/cv-photo`,
   editFieldAI: `${API_BASE_URL}/api/ai/edit-field-ai`,
   generateSmartSkills: `${API_BASE_URL}/api/ai/generate-smart-skills`,
   importProjectUrl: `${API_BASE_URL}/api/ai/import-project-url`,
   importProjectFile: `${API_BASE_URL}/api/ai/import-project-file`,
+  analyzeRepo: `${API_BASE_URL}/api/ai/analyze-repo`,
+  auditClaims: `${API_BASE_URL}/api/ai/audit-claims`,
+  positioning: `${API_BASE_URL}/api/ai/positioning`,
 };
 
 export const CV_ENDPOINTS = {
   userCvs: `${API_BASE_URL}/cvbuilder/user`,
   primary: `${API_BASE_URL}/cvbuilder/primary`,
   save: `${API_BASE_URL}/cvbuilder/save`,
+  update: (id: string) => `${API_BASE_URL}/cvbuilder/${id}`,
   delete: (id: string) => `${API_BASE_URL}/cvbuilder/${id}`,
   setPrimary: (id: string) => `${API_BASE_URL}/cvbuilder/${id}/primary`,
 };
@@ -51,6 +60,7 @@ export const DOCUMENT_ENDPOINTS = {
   list: `${API_BASE_URL}/documents`,
   byType: (type: string) => `${API_BASE_URL}/documents?type=${encodeURIComponent(type)}`,
   generate: `${API_BASE_URL}/documents/generate`,
+  get: (id: string) => `${API_BASE_URL}/documents/${id}`,
   update: (id: string) => `${API_BASE_URL}/documents/${id}`,
   delete: (id: string) => `${API_BASE_URL}/documents/${id}`,
   setPrimary: (id: string) => `${API_BASE_URL}/documents/${id}/primary`,
@@ -78,6 +88,17 @@ export const JOB_ENDPOINTS = {
   analytics: `${API_BASE_URL}/job-radar/analytics`,
   variants: (id: string) => `${API_BASE_URL}/job-radar/matches/${id}/variants`,
   variantOutcome: (id: string) => `${API_BASE_URL}/job-radar/variants/${id}/outcome`,
+  details: (id: string) => `${API_BASE_URL}/job-radar/matches/${id}/details`,
+  workspace: (id: string) => `${API_BASE_URL}/job-radar/matches/${id}/workspace`,
+  screeningAnswers: (id: string) => `${API_BASE_URL}/job-radar/matches/${id}/screening-answers`,
+};
+
+export const ROADMAP_ENDPOINTS = {
+  getRoadmap: `${API_BASE_URL}/api/ai/skill-roadmap`,
+  getTrends: `${API_BASE_URL}/api/ai/skill-trends`,
+  getProgress: `${API_BASE_URL}/api/ai/skill-progress`,
+  updateProgress: `${API_BASE_URL}/api/ai/skill-progress`,
+  deleteProgress: `${API_BASE_URL}/api/ai/skill-progress`,
 };
 
 

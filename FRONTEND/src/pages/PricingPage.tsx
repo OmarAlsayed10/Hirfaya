@@ -5,6 +5,8 @@ import ContentBlock from "../components/ui/ContentBlock";
 import PlanCard from "../components/ui/PlanCard";
 import { FEATURE_HIGHLIGHTS, TOPUP_NOTE } from "../constants/pricingData";
 import { useAuth } from "../hooks/useAuth";
+import Seo from "../components/ui/Seo";
+import { COLORS } from "../theme/tokens";
 
 const PricingPage = () => {
   const { t } = useTranslation();
@@ -15,7 +17,13 @@ const PricingPage = () => {
   const tier = isAdmin ? "ultra" : user?.planTier ?? (isPro ? "pro" : "basic");
 
   return (
-    <Box sx={{ bgcolor: "#f5f4ef", minHeight: "100vh", py: 8 }}>
+    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: "100vh", py: 8 }}>
+      <Seo
+        title={t("Pricing")}
+        description={t(
+          "Free CV building and AI scoring, with affordable Pro plans and credit packs paid by card or InstaPay."
+        )}
+      />
       <Container maxWidth="lg">
         {/* Pricing Header */}
         <Box sx={{ textAlign: "center", mb: 6 }}>
@@ -35,8 +43,8 @@ const PricingPage = () => {
           <Typography
             sx={{
               textAlign: "center",
-              bgcolor: "#fde68a",
-              color: "#92400e",
+              bgcolor: COLORS.warningSoft,
+              color: COLORS.accentOrange,
               fontWeight: 600,
               borderRadius: "10px",
               py: 1.5,
@@ -95,21 +103,21 @@ const PricingPage = () => {
         </Box>
 
         <Box sx={{ textAlign: "center", mt: 6, mb: 12 }}>
-          <Typography sx={{ color: "#6b6b66", mb: 2 }}>
+          <Typography sx={{ color: COLORS.textSecondary, mb: 2 }}>
             {t(TOPUP_NOTE)}
           </Typography>
           <Button
             variant="outlined"
             onClick={() => navigate("/buy-credits")}
             sx={{
-              borderColor: "#2a5c45",
-              color: "#2a5c45",
+              borderColor: COLORS.primary,
+              color: COLORS.primary,
               borderRadius: "12px",
               px: 3,
               py: 1,
               textTransform: "none",
               fontWeight: "bold",
-              "&:hover": { borderColor: "#1e4332", bgcolor: "rgba(42, 92, 69, 0.08)" },
+              "&:hover": { borderColor: COLORS.primaryDark, bgcolor: "rgba(42, 92, 69, 0.08)" },
             }}
           >
             {t("Buy more credits")}
