@@ -1,7 +1,13 @@
 import { groqChat, MODELS } from "../lib/groqChat";
+import { Language, jsonProseLanguageInstruction } from "../lib/aiLanguage";
+import { translateProse } from "./translateProseService";
 
-export async function cvChat(cvText: string, question: string): Promise<string> {
-  const systemPrompt = `You are a professional career coach and interview preparation expert. You have been given a candidate's CV to review. Answer the candidate's questions about their CV, career prospects, interview preparation, and how to position themselves professionally.
+export async function cvChat(
+  cvText: string,
+  question: string,
+  language: Language = "en"
+): Promise<string> {
+  const systemPrompt = `You are a professional career coach and interview preparation expert.${jsonProseLanguageInstruction(language)} You have been given a candidate's CV to review. Answer the candidate's questions about their CV, career prospects, interview preparation, and how to position themselves professionally.
 
 Guidelines:
 - Base all answers on the actual content of the CV provided
@@ -31,10 +37,24 @@ Provide a professional, specific answer based on their actual CV content.`;
   return response.choices[0].message?.content || "I could not generate a response. Please try again.";
 }
 
+// Answers are always written in English then translated, so the Arabic reader gets the
+// same answers rather than a separately reasoned set.
 export async function getInterviewAnswers(
   cvText: string,
-  questions: string[]
+  questions: string[],
+  language: Language = "en"
 ): Promise<{ question: string; answer: string }[]> {
+  if (language !== "en") {
+    const english = await getInterviewAnswers(cvText, questions, "en");
+    const source = english.flatMap((item) => [item.question, item.answer]);
+    const translated = await translateProse(source, language);
+    if (translated === source) return english;
+    return english.map((item, index) => ({
+      question: translated[index * 2],
+      answer: translated[index * 2 + 1],
+    }));
+  }
+
   const systemPrompt = `You are a senior interview coach who specializes in preparing candidates for competitive job interviews. You have access to the candidate's CV. For each interview question, provide a professional model answer that:
 - Uses the STAR method (Situation, Task, Action, Result) for behavioral questions
 - References specific experience, skills, or achievements from their actual CV

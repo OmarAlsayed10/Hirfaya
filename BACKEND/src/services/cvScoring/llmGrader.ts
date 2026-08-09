@@ -5,8 +5,55 @@ import {
   untrustedCandidatePayload,
 } from "../../lib/aiResponseValidation";
 import { qualityScoresSchema } from "./qualityScoresSchema";
+import { Language } from "../../lib/aiLanguage";
+import { translateProse } from "../translateProseService";
 
+// Grading always runs in English so a CV scores identically in every UI language;
+// the prose is translated afterwards rather than re-judged in the target language.
 export async function gradeQuality(
+  text: string,
+  role: string,
+  level: string,
+  language: Language = "en",
+): Promise<QualityScores> {
+  const graded = await gradeQualityInEnglish(text, role, level);
+  return language === "en" ? graded : translateQualityScores(graded, language);
+}
+
+const PROSE_FIELDS = [
+  "summaryTip",
+  "experienceTip",
+  "skillsTip",
+  "keywordsTip",
+  "grammarTip",
+  "levelMessage",
+] as const;
+
+async function translateQualityScores(
+  graded: QualityScores,
+  language: Language,
+): Promise<QualityScores> {
+  const fieldValues = PROSE_FIELDS.map((field) => graded[field]);
+  const source = [
+    ...fieldValues.filter((value): value is string => Boolean(value)),
+    ...graded.levelReasons,
+    ...graded.nextLevelTips,
+  ];
+
+  const translated = await translateProse(source, language);
+  if (translated === source) return graded;
+
+  const next = { ...graded };
+  let cursor = 0;
+  for (const field of PROSE_FIELDS) {
+    if (graded[field]) next[field] = translated[cursor++];
+  }
+  next.levelReasons = graded.levelReasons.map(() => translated[cursor++]);
+  next.nextLevelTips = graded.nextLevelTips.map(() => translated[cursor++]);
+  return next;
+}
+
+async function gradeQualityInEnglish(
   text: string,
   role: string,
   level: string,

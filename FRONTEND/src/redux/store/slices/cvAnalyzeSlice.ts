@@ -1,11 +1,15 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
+import i18n from "../../../i18n";
 import { AI_ENDPOINTS } from "../../../constants/endpoints";
+import { track } from "../../../lib/analytics";
+
+export const requestLanguage = () => (i18n.language.startsWith("ar") ? "ar" : "en");
 
 export const cvAnalyzeAction = createAsyncThunk(
   "cvAnalyze",
   async function featchAnalysisCV(
-    { file, cvText, level }: { file?: File; cvText?: string; level?: string },
+    { file, cvText, level, language }: { file?: File; cvText?: string; level?: string; language?: string },
     { rejectWithValue }
   ) {
     try {
@@ -13,11 +17,13 @@ export const cvAnalyzeAction = createAsyncThunk(
       if (file) formData.append("cv", file);
       if (cvText) formData.append("cvText", cvText);
       if (level) formData.append("level", level);
+      formData.append("language", language ?? requestLanguage());
       const response = await axios.post(AI_ENDPOINTS.analyze, formData, {
         headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true,
       });
       window.dispatchEvent(new Event("quota:refresh"));
+      track("analysis_run", { source: file ? "upload" : "saved_cv" });
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.data?.message) {
@@ -42,6 +48,7 @@ export const cvAnalyzeSlice = createSlice({
     error: null as string | null,
     errorStatus: 0,
     errorCode: null as string | null,
+    resultLanguage: null as string | null,
   },
   reducers: {},
 
@@ -57,6 +64,7 @@ export const cvAnalyzeSlice = createSlice({
       .addCase(cvAnalyzeAction.fulfilled, (state, action) => {
         state.loading = false;
         state.cvAnalyze = action.payload;
+        state.resultLanguage = action.meta.arg.language ?? requestLanguage();
       })
       .addCase(cvAnalyzeAction.rejected, (state, action) => {
         state.loading = false;

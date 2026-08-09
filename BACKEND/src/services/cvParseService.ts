@@ -1,4 +1,5 @@
 import { groqChat } from "../lib/groqChat";
+import { ProjectOwnership, coerceProjectOwnership } from "./projectOwnership";
 
 export interface BuilderFormData {
   personalInfo: {
@@ -38,8 +39,16 @@ export interface BuilderFormData {
     demoUrl: string;
     githubUrl: string;
     description: string;
+    ownership: ProjectOwnership;
   }[];
-  skills: { skills: string[]; languages: string; certifications: string };
+  skills: { skills: string[]; languages: string; certifications: CertificationItem[] };
+}
+
+export interface CertificationItem {
+  name: string;
+  issuer: string;
+  date: string;
+  url: string;
 }
 
 const EMPTY: BuilderFormData = {
@@ -47,7 +56,24 @@ const EMPTY: BuilderFormData = {
   experience: [],
   education: [],
   projects: [],
-  skills: { skills: [], languages: "", certifications: "" },
+  skills: { skills: [], languages: "", certifications: [] },
+};
+
+// Older CVs stored certifications as one comma-separated string.
+export const coerceCertifications = (input: any): CertificationItem[] => {
+  const text = (v: any) => (typeof v === "string" ? v : "");
+  if (typeof input === "string") {
+    return input.split(",").map((name) => name.trim()).filter(Boolean)
+      .map((name) => ({ name, issuer: "", date: "", url: "" }));
+  }
+  if (!Array.isArray(input)) return [];
+  return input
+    .map((entry) =>
+      typeof entry === "string"
+        ? { name: entry.trim(), issuer: "", date: "", url: "" }
+        : { name: text(entry?.name), issuer: text(entry?.issuer), date: text(entry?.date), url: text(entry?.url) },
+    )
+    .filter((cert) => cert.name);
 };
 
 // Map arbitrary parsed shape onto the exact builder schema — never trust the LLM to be exact.
@@ -127,11 +153,12 @@ export function coerceFormData(p: any): BuilderFormData {
       demoUrl: s(pr?.demoUrl),
       githubUrl: s(pr?.githubUrl),
       description: s(pr?.description),
+      ownership: coerceProjectOwnership(pr?.ownership),
     })),
     skills: {
       skills: arr(p?.skills?.skills).map(s).filter(Boolean),
       languages: s(p?.skills?.languages),
-      certifications: s(p?.skills?.certifications),
+      certifications: coerceCertifications(p?.skills?.certifications),
     },
   };
 }
@@ -145,7 +172,7 @@ Return ONLY this exact JSON shape:
   "experience": [ { "jobTitle": "", "company": "", "location": "", "startDate": "", "endDate": "", "description": "" } ],
   "education": [ { "institution": "", "degree": "", "location": "", "startYear": "", "endYear": "", "description": "" } ],
   "projects": [ { "name": "", "technologies": "", "demoUrl": "", "githubUrl": "", "description": "" } ],
-  "skills": { "skills": [], "languages": "", "certifications": "" }
+  "skills": { "skills": [], "languages": "", "certifications": [ { "name": "", "issuer": "", "date": "", "url": "" } ] }
 }
 
 CRITICAL RULES:
@@ -157,7 +184,7 @@ CRITICAL RULES:
    - "Skills", "Core Competencies", "Technologies", "Expertise", "Technical Skills" -> Map to "skills" under the "skills" object.
    - "Projects", "Personal Projects", "Academic Projects", "Open Source" -> Map to "projects".
    - "Languages" -> Map to "languages" under the "skills" object.
-   - "Certifications", "Courses" -> Map to "certifications" under the "skills" object.
+   - "Certifications", "Courses" -> Map to "certifications" under the "skills" object. One array entry per certification: "name" is the credential, "issuer" the awarding body, "date" when it was earned, "url" the verification link. Leave any part "" if the CV does not state it. Return [] if there are none.
 
 2. PHONE NUMBER & COUNTRY DIALING CODE:
    - Extract any phone number and its country dial code (e.g. "+20").

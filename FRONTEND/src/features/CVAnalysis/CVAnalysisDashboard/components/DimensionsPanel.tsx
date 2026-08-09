@@ -18,8 +18,8 @@ interface DimensionsPanelProps {
 
 function scoreColor(score: number): string {
   if (score >= 80) return COLORS.primary;
-  if (score >= 50) return '#c25b1a';
-  return '#b71c1c';
+  if (score >= 50) return COLORS.accentOrange;
+  return COLORS.danger;
 }
 
 const DimensionsPanel = ({ dimensions, detailsLocked }: DimensionsPanelProps) => {
@@ -37,7 +37,7 @@ const DimensionsPanel = ({ dimensions, detailsLocked }: DimensionsPanelProps) =>
           <Button
             variant="contained" size="small" startIcon={<LockIcon sx={{ fontSize: 16 }} />}
             onClick={() => navigate('/pricing')}
-            sx={{ bgcolor: COLORS.primary, borderRadius: '10px', textTransform: 'none', fontWeight: 'bold', '&:hover': { bgcolor: COLORS.primaryDark } }}
+            sx={{ bgcolor: COLORS.primarySurface, borderRadius: '10px', textTransform: 'none', fontWeight: 'bold', '&:hover': { bgcolor: COLORS.primarySurfaceDark } }}
           >
             {t('Unlock details with Pro')}
           </Button>
@@ -63,7 +63,7 @@ const DimensionsPanel = ({ dimensions, detailsLocked }: DimensionsPanelProps) =>
               </Box>
               <LinearProgress
                 variant="determinate" value={dim.score}
-                sx={{ height: 8, borderRadius: 4, bgcolor: 'rgba(0,0,0,0.06)', '& .MuiLinearProgress-bar': { bgcolor: color, borderRadius: 4 } }}
+                sx={{ height: 8, borderRadius: 4, bgcolor: COLORS.borderLight, '& .MuiLinearProgress-bar': { bgcolor: color, borderRadius: 4 } }}
               />
             </Box>
           );
@@ -86,7 +86,7 @@ const DimensionsPanel = ({ dimensions, detailsLocked }: DimensionsPanelProps) =>
               <Box key={dim.name} sx={{ p: 2.5, borderRadius: '16px', border: `1px solid ${COLORS.borderLight}`, borderLeft: `4px solid ${color}` }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
                   <Typography sx={{ fontWeight: 700, fontSize: '1.05rem', color: COLORS.textPrimary }}>{t(dim.name)}</Typography>
-                  <Chip label={dim.score} size="small" sx={{ bgcolor: color, color: 'white', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }} />
+                  <Chip label={dim.score} size="small" sx={{ bgcolor: color, color: COLORS.onAccent, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }} />
                 </Box>
                 <Box component="ul" sx={{ m: 0, pl: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 1.25 }}>
                   {dim.details.map((d, i) => (

@@ -17,7 +17,7 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import axios from 'axios';
 import { pdf } from '@react-pdf/renderer';
 import PdfPlainCV from '../../../../templates/pdf/PdfPlainCV';
-import { setPageCount, updateFormData } from '../../../../redux/store/slices/cvBuilderSlice';
+import { updateFormData } from '../../../../redux/store/slices/cvBuilderSlice';
 import { COLORS, TYPOGRAPHY } from '../../../../theme/tokens';
 import { AI_ENDPOINTS } from '../../../../constants/endpoints';
 import { roundScore } from '../../../../utils/scoreDisplay';
@@ -33,9 +33,9 @@ const LOADING_STEPS = [
 ];
 
 const IMPACT_CONFIG = {
-  high: { color: '#b71c1c', bg: 'rgba(183,28,28,0.08)', label: 'High Impact' },
-  medium: { color: '#c25b1a', bg: 'rgba(194,91,26,0.08)', label: 'Medium Impact' },
-  low: { color: COLORS.textSecondary, bg: 'rgba(0,0,0,0.05)', label: 'Low Impact' },
+  high: { color: COLORS.danger, bg: COLORS.dangerSoft, label: 'High Impact' },
+  medium: { color: COLORS.accentOrange, bg: COLORS.accentOrangeSoft, label: 'Medium Impact' },
+  low: { color: COLORS.textSecondary, bg: COLORS.bgHover, label: 'Low Impact' },
 };
 
 interface OptimizedCVViewProps {
@@ -112,7 +112,7 @@ const PathTo100 = ({ breakdown, newScore }: PathTo100Props) => {
           <Chip
             label={t('Needs more real experience')}
             size="small"
-            sx={{ mb: 1.5, bgcolor: 'rgba(0,0,0,0.05)', color: COLORS.textSecondary, fontWeight: 700 }}
+            sx={{ mb: 1.5, bgcolor: COLORS.borderLight, color: COLORS.textSecondary, fontWeight: 700 }}
           />
           {experience.map((c) => <Row key={c.name} c={c} />)}
           <Typography sx={{ mt: 1, color: COLORS.textSecondary, fontSize: '0.8rem', fontStyle: 'italic' }}>
@@ -153,7 +153,7 @@ const ChangesList = ({ changes, originalScore, newScore, newBreakdown }: Changes
       <Box sx={{
         p: 3, mb: 3, borderRadius: '16px',
         background: `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryDark} 100%)`,
-        color: 'white', display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap',
+        color: COLORS.onAccent, display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap',
       }}>
         <TrendingUpIcon sx={{ fontSize: 40, opacity: 0.9 }} />
         <Box sx={{ flex: 1 }}>
@@ -177,13 +177,13 @@ const ChangesList = ({ changes, originalScore, newScore, newBreakdown }: Changes
             </Box>
             <Chip
               label={gain > 0 ? `+${gain} pts` : `${gain} pts`}
-              sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 'bold', fontSize: '1rem' }}
+              sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: COLORS.onAccent, fontWeight: 'bold', fontSize: '1rem' }}
             />
           </Box>
           <LinearProgress
             variant="determinate"
             value={safeNew}
-            sx={{ mt: 1, height: 6, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.2)', '& .MuiLinearProgress-bar': { bgcolor: 'white' } }}
+            sx={{ mt: 1, height: 6, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.2)', '& .MuiLinearProgress-bar': { bgcolor: COLORS.bgWhite } }}
           />
         </Box>
       </Box>
@@ -215,9 +215,9 @@ const ChangesList = ({ changes, originalScore, newScore, newBreakdown }: Changes
                 sx={{ bgcolor: COLORS.primaryAlpha12, color: COLORS.primary, fontWeight: 'bold', fontSize: '0.78rem' }}
               />
               <Chip
-                label={config.label}
+                label={t(config.label)}
                 size="small"
-                sx={{ bgcolor: config.bg, color: config.color, fontWeight: 600, fontSize: '0.75rem', border: `1px solid ${config.color}30` }}
+                sx={{ bgcolor: config.bg, color: config.color, fontWeight: 600, fontSize: '0.75rem', border: `1px solid ${COLORS.borderLight}` }}
               />
             </Box>
             <Typography sx={{ fontWeight: 600, color: COLORS.textPrimary, mb: 0.5, fontSize: '0.92rem' }}>
@@ -334,7 +334,6 @@ const CVOptimizeModal = ({
     try {
       const formData = await ensureFormData();
       dispatch(updateFormData(formData));
-      dispatch(setPageCount(pageCount));
       navigate('/builder');
     } catch {
       // leave the modal open on failure
@@ -425,7 +424,7 @@ const CVOptimizeModal = ({
                 sx={{
                   '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: '0.95rem' },
                   '& .Mui-selected': { color: COLORS.primary },
-                  '& .MuiTabs-indicator': { bgcolor: COLORS.primary },
+                  '& .MuiTabs-indicator': { bgcolor: COLORS.primarySurface },
                 }}
               >
                 <Tab label={t('Score & Changes')} />
@@ -462,10 +461,10 @@ const CVOptimizeModal = ({
               <Tooltip title={t('Downloads as PDF')}>
                 <Button
                   variant="contained"
-                  startIcon={downloading ? <CircularProgress size={16} sx={{ color: 'white' }} /> : <DownloadIcon />}
+                  startIcon={downloading ? <CircularProgress size={16} sx={{ color: COLORS.onAccent }} /> : <DownloadIcon />}
                   onClick={handleDownload}
                   disabled={downloading}
-                  sx={{ bgcolor: COLORS.primary, borderRadius: '12px', textTransform: 'none', fontWeight: 'bold', px: 3, '&:hover': { bgcolor: COLORS.primaryDark } }}
+                  sx={{ bgcolor: COLORS.primarySurface, borderRadius: '12px', textTransform: 'none', fontWeight: 'bold', px: 3, '&:hover': { bgcolor: COLORS.primarySurfaceDark } }}
                 >
                   {downloading ? t('Downloading...') : t('Download Optimized CV')}
                 </Button>

@@ -288,16 +288,34 @@ export function summarySection(text: string): string {
   return lines.slice(start + 1, end).join(" ").trim();
 }
 
+const SKILLS_HEADING = /\b(skills|technologies|competencies|tools|expertise)\b/i;
+
 export function skillTokens(text: string): string[] {
   const lines = text.split("\n");
-  const idx = lines.findIndex((l) =>
-    /\b(skills|technologies|competencies|tools|expertise)\b/i.test(l),
-  );
+  // Anchor on a heading, not on any line containing the word. A summary reading "Strong
+  // interpersonal skills, teamwork abilities" used to win the match, after which the parser
+  // read the experience bullets as the skills list.
+  const idx = lines.findIndex((l) => {
+    const head = l.trim();
+    return SKILLS_HEADING.test(head) && (isHeadingLine(head) || headingFamily(head) === "skills");
+  });
   if (idx === -1) return [];
-  return lines
-    .slice(idx + 1, idx + 14)
-    .join(", ")
-    .split(/[,|•\n]/)
+
+  const body: string[] = [];
+  for (let i = idx + 1; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    if (isHeadingLine(line) || headingFamily(line)) break;
+    body.push(line);
+  }
+
+  return body
+    // PDF text extraction wraps long lines mid-word ("Time Man-" / "agement"); rejoin those
+    // before splitting, or the hyphenated halves count as two junk skills.
+    .join("\n")
+    .replace(/-\n/g, "")
+    .replace(/\n/g, ", ")
+    .split(/[,|•]/)
     .map((s) => s.replace(/^[a-z ]+:/i, "").trim())
     .filter((s) => s.length > 1 && s.length < 40);
 }

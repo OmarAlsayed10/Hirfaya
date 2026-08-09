@@ -13,8 +13,8 @@ interface ScoreCardProps {
 function getScoreStyle(score: number): { color: string; label: string } {
   if (score === 100) return { color: COLORS.primary, label: 'Perfect' };
   if (score >= 75) return { color: COLORS.primary, label: 'Excellent' };
-  if (score >= 50) return { color: '#c25b1a', label: 'Average' };
-  return { color: '#e65100', label: 'Needs Work' };
+  if (score >= 50) return { color: COLORS.accentOrange, label: 'Average' };
+  return { color: COLORS.accentOrange, label: 'Needs Work' };
 }
 
 const ScoreCard = ({ score, matchJobTitle }: ScoreCardProps) => {

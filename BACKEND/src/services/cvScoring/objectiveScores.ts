@@ -9,6 +9,7 @@ import {
   BULLET_LABEL,
   KEYWORD_SECTION,
 } from "./constants";
+import { Language } from "../../lib/aiLanguage";
 import {
   trimmedLines,
   detectPrimarySectionOrder,
@@ -23,7 +24,12 @@ import {
   keywordTokens,
 } from "./textParse";
 
-export function atsCompatibilityObjective(text: string): ObjectiveDiagnostic {
+export function atsCompatibilityObjective(
+  text: string,
+  language: Language = "en",
+  pageCount = 0,
+): ObjectiveDiagnostic {
+  const isArabic = language === "ar";
   const lines = trimmedLines(text);
   const exactHeadingLines = lines.filter((line) =>
     STD_HEADINGS.some((heading) =>
@@ -47,11 +53,25 @@ export function atsCompatibilityObjective(text: string): ObjectiveDiagnostic {
     const missing = PRIMARY_SECTION_ORDER.filter(
       (section) => !foundPrimaryHeadings.includes(section),
     );
-    details.push(`Use standard heading lines for: ${missing.join(", ")}`);
+    details.push(
+      isArabic
+        ? `استخدم عناوين أقسام قياسية لـ: ${missing.join("، ")}`
+        : `Use standard heading lines for: ${missing.join(", ")}`,
+    );
   }
   if (multiColumnSignals.length > 0) {
     details.push(
-      "Avoid table-like multi-column layout markers such as tabs or repeated vertical bars",
+      isArabic
+        ? "تجنّب علامات التخطيط متعدد الأعمدة مثل المسافات الجدولية أو الخطوط الرأسية المتكررة"
+        : "Avoid table-like multi-column layout markers such as tabs or repeated vertical bars",
+    );
+  }
+  // A long CV is still analysed in full; length is reported as advice, not a gate.
+  if (pageCount > 2) {
+    details.push(
+      isArabic
+        ? `سيرتك الذاتية ${pageCount} صفحات. اختصرها إلى صفحة أو صفحتين بإبقاء آخر 10–15 سنة من الخبرة والنتائج الأكثر صلة بالوظيفة المستهدفة.`
+        : `Your CV is ${pageCount} pages. Cut it to 1–2 pages by keeping the last 10–15 years of experience and the results most relevant to the target role.`,
     );
   }
 
@@ -70,7 +90,11 @@ export function atsCompatibilityObjective(text: string): ObjectiveDiagnostic {
   return { score, details, checks };
 }
 
-export function formattingLayoutObjective(text: string): ObjectiveDiagnostic {
+export function formattingLayoutObjective(
+  text: string,
+  language: Language = "en",
+): ObjectiveDiagnostic {
+  const isArabic = language === "ar";
   const sectionOrder = detectPrimarySectionOrder(text);
   const bulletDetails = bulletStyleDetails(text);
   const dateStyles = detectDateStyles(text);
@@ -104,17 +128,29 @@ export function formattingLayoutObjective(text: string): ObjectiveDiagnostic {
   const details: string[] = [];
   if (!matchesPreferredOrder) {
     details.push(
-      "Order major sections as Summary → Experience → Skills → Education",
+      isArabic
+        ? "رتّب الأقسام الرئيسية كالتالي: Summary ← Experience ← Skills ← Education"
+        : "Order major sections as Summary → Experience → Skills → Education",
     );
   }
   if (bulletDetails.styles.length > 1) {
-    details.push("Use one consistent bullet style throughout");
+    details.push(
+      isArabic
+        ? "استخدم نمط نقاط موحدًا في كامل السيرة الذاتية"
+        : "Use one consistent bullet style throughout",
+    );
   }
   if (dateStyles.length === 0) {
-    details.push("Use a consistent date format on roles and education");
+    details.push(
+      isArabic
+        ? "استخدم تنسيق تاريخ موحدًا في الوظائف والتعليم"
+        : "Use a consistent date format on roles and education",
+    );
   } else if (dateStyles.length > 1) {
     details.push(
-      `Use one date format consistently; found: ${dateStyles.join(", ")}`,
+      isArabic
+        ? `استخدم تنسيق تاريخ واحدًا باستمرار؛ وجدنا: ${dateStyles.join("، ")}`
+        : `Use one date format consistently; found: ${dateStyles.join(", ")}`,
     );
   }
 
@@ -138,15 +174,19 @@ export function formattingLayoutObjective(text: string): ObjectiveDiagnostic {
 
 // ─── Objective, deterministic scoring — same CV always yields the same points ───
 
-export function scoreContact(text: string): ScoreCategory {
+export function scoreContact(
+  text: string,
+  language: Language = "en",
+): ScoreCategory {
+  const isArabic = language === "ar";
   let earned = 0;
   const missing: string[] = [];
   if (/[\w.+-]+@[\w-]+\.[a-z]{2,}/i.test(text)) earned += 3;
-  else missing.push("professional email");
+  else missing.push(isArabic ? "بريد إلكتروني احترافي" : "professional email");
   if (/(\+?\d[\d\s\-()/.]{6,}\d)/.test(text)) earned += 2;
-  else missing.push("phone number");
+  else missing.push(isArabic ? "رقم هاتف" : "phone number");
   if (/linkedin/i.test(text)) earned += 3;
-  else missing.push("LinkedIn URL");
+  else missing.push(isArabic ? "رابط LinkedIn" : "LinkedIn URL");
   if (
     /\b([A-Z][a-z]+,\s*[A-Z][a-z]+|remote|[A-Z][a-z]+\s+[A-Z]{2}\b)/.test(
       text,
@@ -154,30 +194,41 @@ export function scoreContact(text: string): ScoreCategory {
     /\b(city|country|egypt|cairo|usa|uk|uae|remote)\b/i.test(text)
   )
     earned += 2;
-  else missing.push("location");
+  else missing.push(isArabic ? "الموقع الجغرافي" : "location");
   return {
     name: "Contact Info",
     earned: Math.min(10, earned),
     max: 10,
-    tip: missing.length ? `Add: ${missing.join(", ")}` : null,
+    tip: missing.length
+      ? isArabic
+        ? `أضف: ${missing.join("، ")}`
+        : `Add: ${missing.join(", ")}`
+      : null,
     blocker: missing.length ? "content" : null,
   };
 }
 
-export function scoreEducation(text: string): ScoreCategory {
+export function scoreEducation(
+  text: string,
+  language: Language = "en",
+): ScoreCategory {
+  const isArabic = language === "ar";
   let earned = 0;
   const tips: string[] = [];
   if (/\b(education|academic|qualifications?)\b/i.test(text)) earned += 4;
-  else tips.push("add an Education section");
+  else tips.push(isArabic ? "أضف قسم Education" : "add an Education section");
   if (
     /\b(bachelor|master|phd|bsc|msc|mba|diploma|degree|university|college|institute)\b/i.test(
       text,
     )
   )
     earned += 4;
-  else tips.push("name the degree/institution");
+  else
+    tips.push(
+      isArabic ? "اذكر الدرجة العلمية والجامعة" : "name the degree/institution",
+    );
   if (/\b(19|20)\d{2}\b/.test(text)) earned += 2;
-  else tips.push("add graduation year");
+  else tips.push(isArabic ? "أضف سنة التخرج" : "add graduation year");
   return {
     name: "Education",
     earned: Math.min(10, earned),
@@ -187,8 +238,11 @@ export function scoreEducation(text: string): ScoreCategory {
   };
 }
 
-export function scoreATSFormatting(text: string): ScoreCategory {
-  const ats = atsCompatibilityObjective(text);
+export function scoreATSFormatting(
+  text: string,
+  language: Language = "en",
+): ScoreCategory {
+  const ats = atsCompatibilityObjective(text, language);
   return {
     name: "ATS Formatting",
     earned: Math.max(0, Math.min(10, Math.round(ats.score / 10))),
@@ -198,7 +252,10 @@ export function scoreATSFormatting(text: string): ScoreCategory {
   };
 }
 
-export function experienceObjective(text: string): {
+export function experienceObjective(
+  text: string,
+  language: Language = "en",
+): {
   base: number;
   metric: number;
   verb: number;
@@ -207,6 +264,7 @@ export function experienceObjective(text: string): {
   unquantified: number;
   noVerb: number;
 } {
+  const isArabic = language === "ar";
   const tips: string[] = [];
   let base = 0;
   // Projects/internships count as experience — fair for entry-level candidates.
@@ -253,9 +311,17 @@ export function experienceObjective(text: string): {
   }
 
   if (metricRatio < 0.5)
-    tips.push("quantify more bullets with numbers/percentages");
+    tips.push(
+      isArabic
+        ? "أضف أرقامًا أو نسبًا مئوية لعدد أكبر من النقاط"
+        : "quantify more bullets with numbers/percentages",
+    );
   if (verbRatio < 0.6)
-    tips.push("start bullets with action verbs (led, built, improved)");
+    tips.push(
+      isArabic
+        ? "ابدأ النقاط بأفعال إنجاز (قاد، بنى، حسّن)"
+        : "start bullets with action verbs (led, built, improved)",
+    );
   const unquantified = bullets.filter((l) => !/\d/.test(l)).length;
   const noVerb = bullets.filter((l) => !hasVerb(l)).length;
   return {
@@ -272,57 +338,94 @@ export function experienceObjective(text: string): {
 export function contentQualityObjective(
   text: string,
   exp: ReturnType<typeof experienceObjective>,
+  language: Language = "en",
 ): ObjectiveDiagnostic {
+  const isArabic = language === "ar";
   const gaps: string[] = [];
   let earned = 0;
 
   const summary = summarySection(text);
   if (summary) earned += 10;
-  else gaps.push("Add a Professional Summary section near the top.");
+  else
+    gaps.push(
+      isArabic
+        ? "أضف قسم Professional Summary بالقرب من أعلى السيرة الذاتية."
+        : "Add a Professional Summary section near the top.",
+    );
   if (/\d/.test(summary)) earned += 10;
   else if (summary)
     gaps.push(
-      "Add a quantified result to your summary (a %, count, or $ figure).",
+      isArabic
+        ? "أضف نتيجة قابلة للقياس إلى الملخص (نسبة مئوية أو عدد أو مبلغ)."
+        : "Add a quantified result to your summary (a %, count, or $ figure).",
     );
   if (summary.split(/\s+/).filter(Boolean).length >= 20) earned += 5;
   else if (summary)
-    gaps.push("Expand the summary to 2–3 sentences of positioning.");
+    gaps.push(
+      isArabic
+        ? "وسّع الملخص ليصبح جملتين إلى ثلاث جمل توضّح موقعك المهني."
+        : "Expand the summary to 2–3 sentences of positioning.",
+    );
 
   const metricRatio = exp.bulletCount ? 1 - exp.unquantified / exp.bulletCount : 0;
   const verbRatio = exp.bulletCount ? 1 - exp.noVerb / exp.bulletCount : 0;
   earned += Math.round(metricRatio * 30 + verbRatio * 20);
   if (exp.unquantified > 0)
     gaps.push(
-      `Quantify ${exp.unquantified} experience/project bullet${exp.unquantified === 1 ? "" : "s"} with no number.`,
+      isArabic
+        ? `أضف أرقامًا إلى ${exp.unquantified} من نقاط الخبرة/المشاريع التي لا تحتوي على أي رقم.`
+        : `Quantify ${exp.unquantified} experience/project bullet${exp.unquantified === 1 ? "" : "s"} with no number.`,
     );
   if (exp.noVerb > 0)
     gaps.push(
-      `Start ${exp.noVerb} bullet${exp.noVerb === 1 ? "" : "s"} with an action verb (Built, Led, Reduced).`,
+      isArabic
+        ? `ابدأ ${exp.noVerb} من النقاط بفعل إنجاز (بنى، قاد، خفّض).`
+        : `Start ${exp.noVerb} bullet${exp.noVerb === 1 ? "" : "s"} with an action verb (Built, Led, Reduced).`,
     );
 
   const skills = skillTokens(text);
   if (skills.length > 0) earned += 10;
-  else gaps.push("Add a Skills section listing your core tools.");
+  else
+    gaps.push(
+      isArabic
+        ? "أضف قسم Skills يعرض أدواتك الأساسية."
+        : "Add a Skills section listing your core tools.",
+    );
   if (skills.length >= 8) earned += 15;
   else if (skills.length > 0)
-    gaps.push(`List at least 8 skills (found ${skills.length}).`);
+    gaps.push(
+      isArabic
+        ? `اذكر 8 مهارات على الأقل (وجدنا ${skills.length}).`
+        : `List at least 8 skills (found ${skills.length}).`,
+    );
 
   return { score: Math.min(100, earned), details: gaps, checks: {} };
 }
 
-export function keywordMatchObjective(text: string): ObjectiveDiagnostic {
+export function keywordMatchObjective(
+  text: string,
+  language: Language = "en",
+): ObjectiveDiagnostic {
+  const isArabic = language === "ar";
   const gaps: string[] = [];
   let earned = 0;
 
   const hasSkills = KEYWORD_SECTION.test(text);
   if (hasSkills) earned += 40;
-  else gaps.push("Add a Skills section listing your core tools and technologies.");
+  else
+    gaps.push(
+      isArabic
+        ? "أضف قسم Skills يعرض أدواتك وتقنياتك الأساسية."
+        : "Add a Skills section listing your core tools and technologies.",
+    );
 
   const distinct = keywordTokens(text);
   earned += Math.min(60, Math.round((distinct.size / 15) * 60));
   if (distinct.size < 15)
     gaps.push(
-      `List more role-relevant skills, tools, or certifications (found ${distinct.size}, aim for 15+).`,
+      isArabic
+        ? `اذكر مزيدًا من المهارات أو الأدوات أو الشهادات المرتبطة بالوظيفة (وجدنا ${distinct.size}، استهدف 15+).`
+        : `List more role-relevant skills, tools, or certifications (found ${distinct.size}, aim for 15+).`,
     );
 
   return { score: Math.min(100, earned), details: gaps, checks: {} };

@@ -34,8 +34,8 @@ const InterviewQuestionsCard = ({
   };
 
   return (
-    <Card elevation={0} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${COLORS.borderLight}`, bgcolor: COLORS.primary, color: 'white' }}>
-      <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 1, fontFamily: TYPOGRAPHY.fontSerif, color: 'white' }}>
+    <Card elevation={0} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${COLORS.borderLight}`, bgcolor: COLORS.primarySurface, color: COLORS.onAccent }}>
+      <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 1, fontFamily: TYPOGRAPHY.fontSerif, color: COLORS.onAccent }}>
         {t('Prepare for the Interview')}
       </Typography>
       <Typography sx={{ mb: 3, opacity: 0.85, fontSize: '0.95rem' }}>
@@ -60,7 +60,7 @@ const InterviewQuestionsCard = ({
               <Collapse in={!!expanded[i]}>
                 <Box sx={{ ml: 5, mb: 1.5 }}>
                   {answersLoading && !answers[i] ? (
-                    <CircularProgress size={16} sx={{ color: 'white' }} />
+                    <CircularProgress size={16} sx={{ color: COLORS.onAccent }} />
                   ) : answers[i] ? (
                     <Box sx={{ p: 2, bgcolor: 'rgba(255,255,255,0.12)', borderRadius: '10px', borderLeft: '3px solid rgba(255,255,255,0.5)' }}>
                       <Typography sx={{ fontSize: '0.9rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.95)' }}>
@@ -87,7 +87,7 @@ const InterviewQuestionsCard = ({
             variant="outlined"
             startIcon={<WorkspacePremiumIcon />}
             onClick={onWantMore}
-            sx={{ borderColor: 'rgba(255,255,255,0.6)', color: 'white', borderRadius: '10px', textTransform: 'none', fontWeight: 'bold', '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' } }}
+            sx={{ borderColor: 'rgba(255,255,255,0.6)', color: COLORS.onAccent, borderRadius: '10px', textTransform: 'none', fontWeight: 'bold', '&:hover': { borderColor: COLORS.borderLight, bgcolor: 'rgba(255,255,255,0.1)' } }}
           >
             {t('Want more?')} (+{hiddenCount} {t('questions')})
           </Button>

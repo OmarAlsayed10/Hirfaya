@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
+import i18n from '../../../../i18n';
 import { AI_ENDPOINTS } from '../../../../constants/endpoints';
 
 export interface ChatMessage {
@@ -21,7 +22,7 @@ export function useCVChat(cvText: string | undefined) {
     try {
       const res = await axios.post(
         AI_ENDPOINTS.cvChat,
-        { cvText, question: q },
+        { cvText, question: q, language: i18n.language.startsWith('ar') ? 'ar' : 'en' },
         { withCredentials: true }
       );
       setMessages((prev) => [...prev, { role: 'ai', text: res.data.answer }]);

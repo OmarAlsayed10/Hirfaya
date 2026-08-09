@@ -53,7 +53,7 @@ const cvAnalysisDashboard = {
   },
   negativeFeedbackLabel: {
     fontWeight: 'bold',
-    color: '#b71c1c',
+    color: COLORS.danger,
     mb: 2,
     display: 'flex',
     alignItems: 'center',
@@ -61,7 +61,7 @@ const cvAnalysisDashboard = {
   },
   neutralFeedbackLabel: {
     fontWeight: 'bold',
-    color: '#c25b1a',
+    color: COLORS.accentOrange,
     mb: 2,
     display: 'flex',
     alignItems: 'center',
@@ -78,14 +78,14 @@ const cvAnalysisDashboard = {
     p: 4,
     borderRadius: '24px',
     border: `1px solid ${COLORS.borderLight}`,
-    backgroundColor: COLORS.primary,
-    color: 'white',
+    backgroundColor: COLORS.primarySurface,
+    color: COLORS.onAccent,
   },
   interviewTitle: {
     fontWeight: 'bold',
     mb: 3,
     fontFamily: TYPOGRAPHY.fontSerif,
-    color: 'white',
+    color: COLORS.onAccent,
   },
 } as const;
 

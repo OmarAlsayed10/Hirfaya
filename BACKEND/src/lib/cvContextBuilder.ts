@@ -1,4 +1,4 @@
-import { BuilderFormData } from "../services/cvParseService";
+import { BuilderFormData, coerceCertifications } from "../services/cvParseService";
  
  export function buildCvContext(
    formData: BuilderFormData,
@@ -50,11 +50,14 @@ import { BuilderFormData } from "../services/cvParseService";
  
    if (excludeSection !== "skills" && formData.skills) {
      const skills = formData.skills.skills || [];
-     if (skills.length > 0 || formData.skills.languages || formData.skills.certifications) {
+     const certifications = coerceCertifications(formData.skills.certifications)
+       .map((cert) => [cert.name, cert.issuer, cert.date].filter(Boolean).join(" · "))
+       .join("; ");
+     if (skills.length > 0 || formData.skills.languages || certifications) {
        parts.push(`\n--- SKILLS & CREDENTIALS ---`);
        if (skills.length > 0) parts.push(`Skills: ${skills.join(", ")}`);
        if (formData.skills.languages) parts.push(`Languages: ${formData.skills.languages}`);
-       if (formData.skills.certifications) parts.push(`Certifications: ${formData.skills.certifications}`);
+       if (certifications) parts.push(`Certifications: ${certifications}`);
      }
    }
  

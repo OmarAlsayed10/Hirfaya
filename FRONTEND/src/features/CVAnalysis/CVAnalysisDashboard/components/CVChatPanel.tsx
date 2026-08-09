@@ -58,7 +58,7 @@ const CVChatPanel = ({ open, onClose, messages, input, loading, setInput, send }
                 maxWidth: '85%', p: 2,
                 borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                 bgcolor: msg.role === 'user' ? COLORS.primary : COLORS.bgLight,
-                color: msg.role === 'user' ? 'white' : COLORS.textPrimary,
+                color: msg.role === 'user' ? COLORS.onAccent : COLORS.textPrimary,
                 fontSize: '0.9rem', lineHeight: 1.6, whiteSpace: 'pre-wrap',
               }}
             >
@@ -86,7 +86,7 @@ const CVChatPanel = ({ open, onClose, messages, input, loading, setInput, send }
           <IconButton
             onClick={() => send()}
             disabled={loading || !input.trim()}
-            sx={{ bgcolor: COLORS.primary, color: 'white', borderRadius: '12px', px: 2, '&:hover': { bgcolor: COLORS.primaryDark }, '&.Mui-disabled': { bgcolor: COLORS.disabled } }}
+            sx={{ bgcolor: COLORS.primarySurface, color: COLORS.onAccent, borderRadius: '12px', px: 2, '&:hover': { bgcolor: COLORS.primarySurfaceDark }, '&.Mui-disabled': { bgcolor: COLORS.disabled } }}
           >
             <SendIcon fontSize="small" />
           </IconButton>

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { cvChat, getInterviewAnswers } from "../services/cvChatService";
 import { sendAiError } from "../lib/aiError";
+import { normalizeLanguage } from "../lib/aiLanguage";
 
 export const cvChatController = async (req: Request, res: Response) => {
   const { cvText, question } = req.body;
@@ -11,7 +12,7 @@ export const cvChatController = async (req: Request, res: Response) => {
   }
 
   try {
-    const answer = await cvChat(cvText, question);
+    const answer = await cvChat(cvText, question, normalizeLanguage(req.body?.language));
     res.status(200).json({ answer });
   } catch (error) {
     sendAiError(res, error, "CV chat error", "Failed to get AI response");
@@ -27,7 +28,7 @@ export const interviewAnswersController = async (req: Request, res: Response) =>
   }
 
   try {
-    const answers = await getInterviewAnswers(cvText, questions);
+    const answers = await getInterviewAnswers(cvText, questions, normalizeLanguage(req.body?.language));
     res.status(200).json({ answers });
   } catch (error) {
     sendAiError(res, error, "Interview answers error", "Failed to generate interview answers");

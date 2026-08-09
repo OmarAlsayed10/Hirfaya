@@ -22,6 +22,7 @@ import LevelContextCard from './components/LevelContextCard';
 import DimensionsPanel from './components/DimensionsPanel';
 import FeedbackPanel from './components/FeedbackPanel';
 import SuggestionsPanel from './components/SuggestionsPanel';
+import RoastCard from './components/RoastCard';
 import AdjustCVPanel from './components/AdjustCVPanel';
 import InterviewQuestionsCard from './components/InterviewQuestionsCard';
 import CVChatPanel from './components/CVChatPanel';
@@ -160,7 +161,7 @@ const CVAnalysisDashboard = ({ uploadedFile, cvText, level }: CVAnalysisDashboar
       startIcon={downloading ? <CircularProgress size={16} color="inherit" /> : <DownloadRoundedIcon sx={{ fontSize: 18 }} />}
       onClick={downloadPdf}
       disabled={downloading}
-      sx={{ bgcolor: COLORS.primary, borderRadius: '12px', textTransform: 'none', fontWeight: 'bold', py: 1.25, '&:hover': { bgcolor: COLORS.primaryDark } }}
+      sx={{ bgcolor: COLORS.primarySurface, borderRadius: '12px', textTransform: 'none', fontWeight: 'bold', py: 1.25, '&:hover': { bgcolor: COLORS.primarySurfaceDark } }}
     >
       {downloading ? t('Preparing PDF...') : t('Download Report (PDF)')}
     </Button>
@@ -214,6 +215,11 @@ const CVAnalysisDashboard = ({ uploadedFile, cvText, level }: CVAnalysisDashboar
   return (
     <Box sx={cvAnalysisDashboard.root}>
       <ScoreCard score={cvAnalyze.qualityScore} matchJobTitle={cvAnalyze.matchJobTitle} />
+
+      <RoastCard
+        score={cvAnalyze.qualityScore}
+        sectionsToImprove={cvAnalyze.sectionsToImprove || []}
+      />
 
       <Box sx={{ mb: 4, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
         {downloadButton}

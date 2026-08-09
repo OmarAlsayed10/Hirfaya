@@ -1,5 +1,5 @@
 import { Document, Page, View, Text, StyleSheet, Svg, Circle } from '@react-pdf/renderer';
-import { pdfLangStyle, tp } from '../../../templates/pdf/pdfFont';
+import { isPdfRtl, pdfLangStyle, tp } from '../../../templates/pdf/pdfFont';
 import { roundScore } from '../../../utils/scoreDisplay';
 import type {
   CVAnalysisResult,
@@ -22,6 +22,11 @@ const scoreStyle = (score: number): { color: string; label: string } => {
   return { color: '#e65100', label: 'Needs Work' };
 };
 
+// A trailing percent sign is a bidi neutral, so in an Arabic line it detaches from its
+// number and drifts to the far edge. Written ahead of the digits it reorders back into
+// "100%" exactly where it belongs.
+const percent = (value: number): string => (isPdfRtl() ? `%${value}` : `${value}%`);
+
 const dimColor = (score: number): string => {
   if (score >= 80) return PRIMARY;
   if (score >= 50) return '#c25b1a';
@@ -40,25 +45,31 @@ const s = StyleSheet.create({
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     alignItems: 'center', justifyContent: 'center',
   },
-  ringNum: { fontSize: 28, fontFamily: 'Helvetica-Bold', textAlign: 'center', lineHeight: 1 },
+  // The score is always digits, so it takes the Latin font in every language. Cairo's
+  // ascent sits far higher than Helvetica's, which drops its baseline ~10pt inside the
+  // same line box and pushed the number off the centre of the ring in Arabic only.
+  ringNum: { fontSize: 28, fontWeight: 700, textAlign: 'center', fontFamily: 'Helvetica-Bold' },
   chip: {
     alignSelf: 'flex-start', borderRadius: 8, paddingVertical: 3, paddingHorizontal: 8,
-    fontSize: 10, fontFamily: 'Helvetica-Bold', marginBottom: 6, lineHeight: 1,
+    marginBottom: 6,
   },
-  cardHeading: { fontSize: 15, fontFamily: 'Helvetica-Bold', marginBottom: 4, color: TEXT },
+  chipText: { fontSize: 10, fontWeight: 700, textAlign: 'center' },
+  cardHeading: { fontSize: 15, fontWeight: 700, marginBottom: 9, color: TEXT },
   cardText: { fontSize: 9.5, color: MUTED },
   roleChip: {
     alignSelf: 'flex-start', marginTop: 8, borderRadius: 8, paddingVertical: 4, paddingHorizontal: 8,
-    fontSize: 9.5, color: PRIMARY, border: `1 solid ${PRIMARY}`, lineHeight: 1,
+    border: `1 solid ${PRIMARY}`,
   },
+  roleChipText: { fontSize: 9.5, color: PRIMARY, textAlign: 'center' },
 
   section: { marginTop: 16 },
-  sectionTitle: { fontSize: 13, fontFamily: 'Helvetica-Bold', color: PRIMARY, marginBottom: 8 },
+  sectionTitle: { fontSize: 13, fontWeight: 700, color: PRIMARY, marginBottom: 8 },
 
   levelBox: { border: `1 solid ${PRIMARY}`, backgroundColor: TINT, borderRadius: 12, padding: 12, marginTop: 16 },
   levelRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  levelMsg: { flex: 1, fontFamily: 'Helvetica-Bold', color: PRIMARY, fontSize: 11 },
-  fitBadge: { backgroundColor: PRIMARY, color: '#fff', borderRadius: 999, paddingVertical: 5, paddingHorizontal: 10, fontSize: 9, fontFamily: 'Helvetica-Bold', textAlign: 'center', lineHeight: 1 },
+  levelMsg: { flex: 1, fontWeight: 700, color: PRIMARY, fontSize: 11 },
+  fitBadge: { backgroundColor: PRIMARY, borderRadius: 999, paddingVertical: 5, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },
+  fitBadgeText: { color: '#fff', fontSize: 9, fontWeight: 700, textAlign: 'center' },
 
   stepper: { position: 'relative', flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, marginBottom: 4, paddingHorizontal: 8 },
   stepLine: { position: 'absolute', top: 5, left: '10%', right: '10%', height: 3, backgroundColor: '#d8ded9' },
@@ -69,8 +80,8 @@ const s = StyleSheet.create({
 
   dim: { marginBottom: 14 },
   dimRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  dimName: { fontFamily: 'Helvetica-Bold', fontSize: 10 },
-  dimScore: { fontFamily: 'Helvetica-Bold', fontSize: 10 },
+  dimName: { fontWeight: 700, fontSize: 10 },
+  dimScore: { fontWeight: 700, fontSize: 10 },
   barBg: { height: 7, borderRadius: 4, backgroundColor: '#e9e8e3', marginBottom: 8 },
   barFill: { height: 7, borderRadius: 4 },
   detail: { flexDirection: 'row', marginTop: 4, paddingLeft: 4 },
@@ -82,10 +93,10 @@ const s = StyleSheet.create({
   bulletText: { flex: 1 },
 
   improve: { marginBottom: 5 },
-  improveTitle: { fontFamily: 'Helvetica-Bold' },
+  improveTitle: { fontWeight: 700 },
 
   qaBlock: { marginBottom: 9 },
-  question: { fontFamily: 'Helvetica-Bold', marginBottom: 2 },
+  question: { fontWeight: 700, marginBottom: 2 },
   answer: { color: '#333' },
 
   footer: { position: 'absolute', bottom: 20, left: 36, right: 36, fontSize: 8, color: '#9a9a95', textAlign: 'center' },
@@ -120,8 +131,8 @@ const LevelStepper = ({ level }: { level: string }) => {
         return (
           <View key={lvl} style={s.step}>
             <View style={[s.stepDot, { backgroundColor: done ? PRIMARY : '#fff', border: `1.5 solid ${done ? PRIMARY : '#c8ccc9'}` }]} />
-            <Text style={[s.stepLabel, { color: i === active ? PRIMARY : MUTED, fontFamily: i === active ? 'Helvetica-Bold' : 'Helvetica' }]}>
-              {lvl}
+            <Text style={[s.stepLabel, { color: i === active ? PRIMARY : MUTED, fontWeight: i === active ? 700 : 400 }]}>
+              {tp(lvl)}
             </Text>
           </View>
         );
@@ -135,7 +146,7 @@ const Dimension = ({ dim }: { dim: ScoreDimension }) => {
   return (
     <View style={s.dim} wrap={false}>
       <View style={s.dimRow}>
-        <Text style={s.dimName}>{dim.name}</Text>
+        <Text style={s.dimName}>{tp(dim.name)}</Text>
         <Text style={[s.dimScore, { color }]}>{dim.score}</Text>
       </View>
       <View style={s.barBg}>
@@ -188,14 +199,17 @@ const AnalysisReportPdf = ({ result, answers }: Props) => {
             </View>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[s.chip, { color, backgroundColor: `${color}22` }]}>{label}</Text>
+            <View style={[s.chip, { backgroundColor: `${color}22` }]}>
+              <Text style={[s.chipText, { color }]}>{tp(label)}</Text>
+            </View>
             <Text style={s.cardHeading}>{tp('CV Quality Score')}</Text>
             <Text style={s.cardText}>
-              How well your CV is written and optimized — content, keywords, formatting, grammar and impact.
-              It measures the document, not your skills. Aim for 75+.
+              {tp('This rates how well your CV is written and optimized — content, keywords, formatting, grammar and impact. It measures the document, not your skills. How well you match your chosen level is shown separately below. Aim for 75+.')}
             </Text>
             {result.matchJobTitle ? (
-              <Text style={s.roleChip}>{result.matchJobTitle}</Text>
+              <View style={s.roleChip}>
+                <Text style={s.roleChipText}>{result.matchJobTitle}</Text>
+              </View>
             ) : null}
           </View>
         </View>
@@ -205,13 +219,17 @@ const AnalysisReportPdf = ({ result, answers }: Props) => {
           <View style={s.levelBox} wrap={false}>
             <View style={s.levelRow}>
               <Text style={s.levelMsg}>{lc.message}</Text>
-              {typeof lc.fit === 'number' ? <Text style={s.fitBadge}>Level fit: {lc.fit}%</Text> : null}
+              {typeof lc.fit === 'number' ? (
+                <View style={s.fitBadge}>
+                  <Text style={s.fitBadgeText}>{`${tp('Level fit')}: ${percent(lc.fit)}`}</Text>
+                </View>
+              ) : null}
             </View>
             {lc.level ? <LevelStepper level={lc.level} /> : null}
             {lc.levelReasons && lc.levelReasons.length ? (
               <View style={{ marginTop: 6, marginBottom: 6 }}>
-                <Text style={{ fontSize: 9.5, fontFamily: 'Helvetica-Bold', color: TEXT, marginBottom: 2 }}>
-                  Why you fit this level:
+                <Text style={{ fontSize: 9.5, fontWeight: 700, color: TEXT, marginBottom: 2 }}>
+                  {tp('Why you fit this level')}:
                 </Text>
                 {lc.levelReasons.map((reason, i) => (
                   <Bullet key={i}>{reason}</Bullet>
@@ -220,8 +238,8 @@ const AnalysisReportPdf = ({ result, answers }: Props) => {
             ) : null}
             {lc.nextLevelTips.length ? (
               <View style={{ marginTop: 6 }}>
-                <Text style={{ fontSize: 9.5, fontFamily: 'Helvetica-Bold', color: TEXT, marginBottom: 2 }}>
-                  {lc.belowBar ? 'To close the gap to' : 'To level up to'} {lc.nextLevel}:
+                <Text style={{ fontSize: 9.5, fontWeight: 700, color: TEXT, marginBottom: 2 }}>
+                  {lc.belowBar ? tp('To close the gap to') : tp('To level up to')} {tp(lc.nextLevel)}:
                 </Text>
                 {lc.nextLevelTips.map((tip, i) => (
                   <Bullet key={i}>{tip}</Bullet>
@@ -248,12 +266,12 @@ const AnalysisReportPdf = ({ result, answers }: Props) => {
             {result.sectionsToImprove.map((sec, i) => (
               <View key={i} style={s.improve}>
                 <Text>
-                  <Text style={s.improveTitle}>{sec.section}: </Text>
+                  <Text style={s.improveTitle}>{tp(sec.section)}: </Text>
                   {sec.suggestion}
                 </Text>
-                {sec.evidence.cvExcerpt ? <Text style={s.cardText}>CV excerpt: "{sec.evidence.cvExcerpt}"</Text> : null}
-                {sec.evidence.jobRequirement ? <Text style={s.cardText}>Job requirement: "{sec.evidence.jobRequirement}"</Text> : null}
-                <Text style={s.cardText}>Why it matters: {sec.evidence.rationale}</Text>
+                {sec.evidence.cvExcerpt ? <Text style={s.cardText}>{tp('CV excerpt')}: "{sec.evidence.cvExcerpt}"</Text> : null}
+                {sec.evidence.jobRequirement ? <Text style={s.cardText}>{tp('Job requirement')}: "{sec.evidence.jobRequirement}"</Text> : null}
+                <Text style={s.cardText}>{tp('Why it matters')}: {sec.evidence.rationale}</Text>
               </View>
             ))}
           </View>

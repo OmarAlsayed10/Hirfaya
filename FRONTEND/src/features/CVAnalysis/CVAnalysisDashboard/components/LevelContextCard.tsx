@@ -20,7 +20,6 @@ export default function LevelContextCard({ levelContext }: LevelContextCardProps
     nextLevelTips,
     belowBar,
     levelReasons,
-    skillLevel,
   } = levelContext;
 
   const activeIndex = LEVELS.indexOf(level as any);
@@ -32,9 +31,8 @@ export default function LevelContextCard({ levelContext }: LevelContextCardProps
         p: { xs: 3, md: 4 },
         mb: 4,
         borderRadius: '24px',
-        border: `1px solid ${COLORS.primary}22`,
-        bgcolor: 'rgba(245, 247, 245, 0.5)',
-        boxShadow: '0 4px 20px rgba(42, 92, 69, 0.03)',
+        border: `1px solid ${COLORS.primaryAlpha20}`,
+        bgcolor: COLORS.surfaceSubtle,
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -48,7 +46,7 @@ export default function LevelContextCard({ levelContext }: LevelContextCardProps
           width: 120,
           height: 120,
           borderRadius: '50%',
-          background: `radial-gradient(circle, ${COLORS.primary}08 0%, transparent 70%)`,
+          background: `radial-gradient(circle, ${COLORS.primaryAlpha12} 0%, transparent 70%)`,
           pointerEvents: 'none',
         }}
       />
@@ -72,8 +70,8 @@ export default function LevelContextCard({ levelContext }: LevelContextCardProps
               width: 40,
               height: 40,
               borderRadius: '12px',
-              bgcolor: belowBar ? '#fbebe8' : `${COLORS.primary}12`,
-              color: belowBar ? '#d32f2f' : COLORS.primary,
+              bgcolor: belowBar ? COLORS.dangerSoft : `${COLORS.primaryAlpha12}`,
+              color: belowBar ? COLORS.danger : COLORS.primary,
               flexShrink: 0,
             }}
           >
@@ -98,9 +96,9 @@ export default function LevelContextCard({ levelContext }: LevelContextCardProps
               px: 2,
               py: 1,
               borderRadius: '16px',
-              bgcolor: belowBar ? '#fbebe8' : `${COLORS.primary}12`,
-              border: `1px solid ${belowBar ? '#fbebe8' : `${COLORS.primary}22`}`,
-              color: belowBar ? '#d32f2f' : COLORS.primary,
+              bgcolor: belowBar ? COLORS.dangerSoft : `${COLORS.primaryAlpha12}`,
+              border: `1px solid ${belowBar ? COLORS.dangerSoft : `${COLORS.primaryAlpha20}`}`,
+              color: belowBar ? COLORS.danger : COLORS.primary,
               fontWeight: 800,
               fontSize: '0.85rem',
               display: 'flex',
@@ -126,15 +124,15 @@ export default function LevelContextCard({ levelContext }: LevelContextCardProps
             mb: 1,
           }}
         >
-          {/* Connector Line */}
+          {/* Connector lines span dot centres: each step is a 60px cell, so inset by half a cell. */}
           <Box
             sx={{
               position: 'absolute',
               top: '12px',
-              left: 0,
-              right: 0,
+              left: '30px',
+              right: '30px',
               height: '4px',
-              bgcolor: 'rgba(26,26,24,0.06)',
+              bgcolor: COLORS.borderLight,
               zIndex: 1,
             }}
           />
@@ -142,10 +140,10 @@ export default function LevelContextCard({ levelContext }: LevelContextCardProps
             sx={{
               position: 'absolute',
               top: '12px',
-              left: 0,
-              width: `${(displayIndex / (LEVELS.length - 1)) * 100}%`,
+              insetInlineStart: '30px',
+              width: `calc((100% - 60px) * ${displayIndex / (LEVELS.length - 1)})`,
               height: '4px',
-              bgcolor: COLORS.primary,
+              bgcolor: COLORS.primarySurface,
               zIndex: 1,
               transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
@@ -154,7 +152,6 @@ export default function LevelContextCard({ levelContext }: LevelContextCardProps
           {LEVELS.map((lvl, index) => {
             const isCompleted = index < displayIndex;
             const isActive = index === displayIndex;
-            const isUpcoming = index > displayIndex;
 
             return (
               <Box
@@ -181,32 +178,32 @@ export default function LevelContextCard({ levelContext }: LevelContextCardProps
                       ? COLORS.primary
                       : isCompleted
                       ? COLORS.primary
-                      : '#fff',
+                      : COLORS.onAccent,
                     border: `3px solid ${
-                      isActive || isCompleted ? COLORS.primary : 'rgba(26,26,24,0.12)'
+                      isActive || isCompleted ? COLORS.primary : COLORS.borderMedium
                     }`,
                     boxShadow: isActive
-                      ? `0 0 0 6px ${COLORS.primary}22`
+                      ? `0 0 0 6px ${COLORS.primaryAlpha20}`
                       : 'none',
                     transition: 'all 0.4s ease',
                     ...(isActive && {
                       '@keyframes pulse': {
-                        '0%': { boxShadow: `0 0 0 0 rgba(42, 92, 69, 0.4)` },
-                        '70%': { boxShadow: `0 0 0 8px rgba(42, 92, 69, 0)` },
-                        '100%': { boxShadow: `0 0 0 0 rgba(42, 92, 69, 0)` },
+                        '0%': { boxShadow: `0 0 0 0 ${COLORS.primaryAlpha35}` },
+                        '70%': { boxShadow: '0 0 0 8px transparent' },
+                        '100%': { boxShadow: '0 0 0 0 transparent' },
                       },
                       animation: 'pulse 2s infinite',
                     }),
                   }}
                 >
-                  {isCompleted && <Check size={14} color="#fff" strokeWidth={3} />}
+                  {isCompleted && <Check size={14} color={COLORS.onAccent} strokeWidth={3} />}
                   {isActive && (
                     <Box
                       sx={{
                         width: 8,
                         height: 8,
                         borderRadius: '50%',
-                        bgcolor: '#fff',
+                        bgcolor: COLORS.bgWhite,
                       }}
                     />
                   )}
@@ -240,7 +237,7 @@ export default function LevelContextCard({ levelContext }: LevelContextCardProps
           gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
           gap: 3,
           mt: 4,
-          borderTop: `1px solid rgba(26,26,24,0.06)`,
+          borderTop: `1px solid ${COLORS.borderLight}`,
           pt: 3,
         }}
       >
@@ -269,8 +266,8 @@ export default function LevelContextCard({ levelContext }: LevelContextCardProps
                     gap: 1.5,
                     p: 1.5,
                     borderRadius: '12px',
-                    bgcolor: 'rgba(255, 255, 255, 0.6)',
-                    border: '1px solid rgba(26,26,24,0.03)',
+                    bgcolor: COLORS.bgRaised,
+                    border: `1px solid ${COLORS.borderLight}`,
                   }}
                 >
                   <Box
@@ -281,7 +278,7 @@ export default function LevelContextCard({ levelContext }: LevelContextCardProps
                       width: 20,
                       height: 20,
                       borderRadius: '50%',
-                      bgcolor: `${COLORS.primary}12`,
+                      bgcolor: `${COLORS.primaryAlpha12}`,
                       color: COLORS.primary,
                       flexShrink: 0,
                       mt: 0.25,
@@ -328,8 +325,8 @@ export default function LevelContextCard({ levelContext }: LevelContextCardProps
                     gap: 1.5,
                     p: 1.5,
                     borderRadius: '12px',
-                    bgcolor: 'rgba(255, 255, 255, 0.6)',
-                    border: '1px solid rgba(26,26,24,0.03)',
+                    bgcolor: COLORS.bgRaised,
+                    border: `1px solid ${COLORS.borderLight}`,
                   }}
                 >
                   <Box
@@ -340,7 +337,7 @@ export default function LevelContextCard({ levelContext }: LevelContextCardProps
                       width: 20,
                       height: 20,
                       borderRadius: '50%',
-                      bgcolor: 'rgba(42, 92, 69, 0.06)',
+                      bgcolor: COLORS.primaryAlpha12,
                       color: COLORS.primary,
                       flexShrink: 0,
                       mt: 0.25,

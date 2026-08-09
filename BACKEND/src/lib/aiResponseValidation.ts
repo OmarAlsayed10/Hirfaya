@@ -1,7 +1,17 @@
 import { z } from "zod";
 
+export type InvalidAiResponseReason =
+  | "malformed_json"
+  | "invalid_shape"
+  | "source_evidence_mismatch"
+  | "uncalibrated_result";
+
 export class InvalidAiResponseError extends Error {
-  constructor(message = "The AI provider returned an invalid response.") {
+  constructor(
+    public readonly reason: InvalidAiResponseReason = "invalid_shape",
+    message = "The AI provider returned an invalid response.",
+    public readonly responsePayload?: unknown,
+  ) {
     super(message);
     this.name = "InvalidAiResponseError";
   }
@@ -13,7 +23,7 @@ export function parseAiResponse<T>(raw: string, schema: z.ZodType<T>): T {
   try {
     value = JSON.parse(raw);
   } catch {
-    throw new InvalidAiResponseError("The AI provider returned malformed JSON.");
+    throw new InvalidAiResponseError("malformed_json", "The AI provider returned malformed JSON.");
   }
 
   const parsed = schema.safeParse(value);
@@ -23,7 +33,7 @@ export function parseAiResponse<T>(raw: string, schema: z.ZodType<T>): T {
       "AI response schema validation failed:",
       parsed.error.issues.map((issue) => ({ path: issue.path.join("."), code: issue.code })),
     );
-    throw new InvalidAiResponseError();
+    throw new InvalidAiResponseError("invalid_shape", undefined, value);
   }
 
   return parsed.data;

@@ -68,7 +68,7 @@ const AdjustCVPanel = ({
           variant="contained"
           startIcon={<AutoFixHighIcon />}
           onClick={() => openModal(applyJake)}
-          sx={{ bgcolor: COLORS.primary, borderRadius: '12px', textTransform: 'none', fontWeight: 'bold', '&:hover': { bgcolor: COLORS.primaryDark } }}
+          sx={{ bgcolor: COLORS.primarySurface, borderRadius: '12px', textTransform: 'none', fontWeight: 'bold', '&:hover': { bgcolor: COLORS.primarySurfaceDark } }}
         >
           {t('Optimize My CV')}
         </Button>

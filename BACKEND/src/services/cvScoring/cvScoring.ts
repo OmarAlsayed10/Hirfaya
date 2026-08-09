@@ -8,8 +8,12 @@ import {
   REQUIRED_STRENGTH,
   NEXT_LEVEL,
   LEVEL_YEAR_RANGE,
+  LEVEL_YEAR_RANGE_AR,
+  SKILL_LEVEL_AR,
 } from "./constants";
 import { hashCV, scoreCache, CACHE_MAX } from "./cache";
+import { readCache, writeCache } from "../../lib/persistentCache";
+import { Language } from "../../lib/aiLanguage";
 import {
   scoreContact,
   scoreEducation,
@@ -32,19 +36,30 @@ export async function scoreCVWithBreakdown(
   text: string,
   targetRole = "",
   level = "",
+  language: Language = "en",
+  pageCount = 0,
 ): Promise<ScoreBreakdown> {
+  const isArabic = language === "ar";
   const role = targetRole.trim();
   const lvl = LEVELS.includes(level.trim() as Level) ? level.trim() : "";
-  const key = hashCV(text, `${role}|${lvl}`);
+  // pageCount is derived from the same CV, so it stays out of the key — adding it would
+  // desync this from hasScore() and silently re-charge the quota gate.
+  const key = hashCV(text, `${role}|${lvl}|${language}`);
   const cached = scoreCache.get(key);
   if (cached) return cached;
 
-  const contact = scoreContact(text);
-  const education = scoreEducation(text);
-  const ats = scoreATSFormatting(text);
-  const atsCompatibility = atsCompatibilityObjective(text);
-  const formattingLayout = formattingLayoutObjective(text);
-  const exp = experienceObjective(text);
+  const stored = await readCache<ScoreBreakdown>(key);
+  if (stored) {
+    scoreCache.set(key, stored);
+    return stored;
+  }
+
+  const contact = scoreContact(text, language);
+  const education = scoreEducation(text, language);
+  const ats = scoreATSFormatting(text, language);
+  const atsCompatibility = atsCompatibilityObjective(text, language, pageCount);
+  const formattingLayout = formattingLayoutObjective(text, language);
+  const exp = experienceObjective(text, language);
   const summaryPresent = /\b(summary|profile|objective|about)\b/i.test(text)
     ? 5
     : 0;
@@ -70,7 +85,7 @@ export async function scoreCVWithBreakdown(
   const skillsCount = skillItems >= 8 ? 4 : skillItems >= 4 ? 2 : 0;
 
   // Narrow LLM call: quality sub-scores judged against the candidate's declared level.
-  const q = await gradeQuality(text, role, lvl);
+  const q = await gradeQuality(text, role, lvl, language);
 
   const categories: ScoreCategory[] = [
     contact,
@@ -129,7 +144,7 @@ export async function scoreCVWithBreakdown(
   const pct = (v: number, max: number) =>
     Math.max(0, Math.min(100, Math.round((v / max) * 100)));
 
-  const IMPROVE_HINT: Record<string, string> = {
+  const IMPROVE_HINT_EN: Record<string, string> = {
     "Content Quality":
       'Add a concrete achievement with a number to each role, e.g. "Shipped 3 features that cut support tickets 20%."',
     "ATS Compatibility":
@@ -144,6 +159,23 @@ export async function scoreCVWithBreakdown(
       'Rewrite every bullet as: strong action verb + what you did + measurable result. Example: "Reduced API latency 35% by adding Redis caching and pagination."',
   };
 
+  const IMPROVE_HINT_AR: Record<string, string> = {
+    "Content Quality":
+      'أضف إنجازًا ملموسًا مدعومًا برقم لكل وظيفة، مثال: "أطلقت 3 مزايا خفّضت تذاكر الدعم بنسبة 20%."',
+    "ATS Compatibility":
+      "استخدم عناوين أقسام قياسية (Summary, Experience, Skills, Education) وتخطيطًا بعمود واحد حتى تقرأ أنظمة ATS كل سطر.",
+    "Keyword Match":
+      "استخدم نفس الأدوات والمهارات المذكورة حرفيًا في إعلان الوظيفة المستهدفة — طابق صياغتهم، لا المرادفات.",
+    "Grammar & Spelling":
+      "راجع علامات الترقيم واتساق الأزمنة والمسافات؛ اقرأ كل نقطة بصوت عالٍ لاكتشاف الصياغة الركيكة.",
+    "Formatting & Layout":
+      "حافظ على نمط نقاط ومسافات وتنسيق تاريخ موحد، ورتّب الأقسام Summary ← Experience ← Skills ← Education.",
+    "Impact & Results":
+      'أعد صياغة كل نقطة كالتالي: فعل إنجاز قوي + ما قمت به + نتيجة قابلة للقياس. مثال: "خفّضت زمن استجابة الـ API بنسبة 35% بإضافة Redis caching والتقسيم إلى صفحات."',
+  };
+
+  const IMPROVE_HINT = isArabic ? IMPROVE_HINT_AR : IMPROVE_HINT_EN;
+
   const fill = (name: string, score: number, base: string[]): string[] => {
     const out = [...base];
     if (
@@ -155,10 +187,16 @@ export async function scoreCVWithBreakdown(
     }
     if (out.length > 0) return out;
     if (score >= 100)
-      return ["Strong here — nothing blocking a top score."];
+      return [
+        isArabic
+          ? "ممتاز هنا — لا شيء يمنع الحصول على درجة كاملة."
+          : "Strong here — nothing blocking a top score.",
+      ];
     if (score >= 85)
       return [
-        "Strong — nothing to fix here; a perfect score is reserved for exceptional writing.",
+        isArabic
+          ? "قوي — لا يوجد ما يحتاج إصلاحًا هنا؛ الدرجة الكاملة محجوزة للكتابة الاستثنائية."
+          : "Strong — nothing to fix here; a perfect score is reserved for exceptional writing.",
       ];
     return [IMPROVE_HINT[name]];
   };
@@ -177,8 +215,8 @@ export async function scoreCVWithBreakdown(
     ),
   });
 
-  const contentQuality = contentQualityObjective(text, exp);
-  const keywordMatch = keywordMatchObjective(text);
+  const contentQuality = contentQualityObjective(text, exp, language);
+  const keywordMatch = keywordMatchObjective(text, language);
 
   const dimensions: ScoreDimension[] = [
     mk("Content Quality", contentQuality.score, contentQuality.details),
@@ -257,23 +295,35 @@ export async function scoreCVWithBreakdown(
   const roundedYoe = Math.round(yoe * 10) / 10;
   if (roundedYoe > 0) {
     levelReasons.push(
-      `~${roundedYoe} year${roundedYoe !== 1 ? "s" : ""} of professional experience detected`,
+      isArabic
+        ? `تم رصد ~${roundedYoe} سنة من الخبرة المهنية`
+        : `~${roundedYoe} year${roundedYoe !== 1 ? "s" : ""} of professional experience detected`,
     );
   } else {
     levelReasons.push(
-      "No professional work experience detected — evaluated on projects, education, and skills",
+      isArabic
+        ? "لم يتم رصد خبرة عملية مهنية — تم التقييم بناءً على المشاريع والتعليم والمهارات"
+        : "No professional work experience detected — evaluated on projects, education, and skills",
     );
   }
-  const expectedRange = LEVEL_YEAR_RANGE[effectiveLevel];
+  const expectedRange = isArabic
+    ? LEVEL_YEAR_RANGE_AR[effectiveLevel]
+    : LEVEL_YEAR_RANGE[effectiveLevel];
   if (expectedRange) {
     levelReasons.push(
-      `${effectiveLevel} level typically requires ${expectedRange} of experience`,
+      isArabic
+        ? `مستوى ${effectiveLevel} يتطلب عادةً ${expectedRange} من الخبرة`
+        : `${effectiveLevel} level typically requires ${expectedRange} of experience`,
     );
   }
   // Skill-level reason from LLM
   const skillLevel = q.skillLevel || null;
   if (skillLevel) {
-    levelReasons.push(`Skills assessment: ${skillLevel}`);
+    levelReasons.push(
+      isArabic
+        ? `تقييم المهارات: ${SKILL_LEVEL_AR[skillLevel] || skillLevel}`
+        : `Skills assessment: ${skillLevel}`,
+    );
   }
   // Add any LLM-provided reasons
   if (Array.isArray(q.levelReasons)) {
@@ -295,8 +345,10 @@ export async function scoreCVWithBreakdown(
     fit: levelFit,
     detected,
     message: detected
-      ? `Based on your experience and skills, this CV reads as ${effectiveLevel} level${role ? ` ${role}` : ""}.`
-      : levelMessage(effectiveLevel, levelFit, strength, role),
+      ? isArabic
+        ? `بناءً على خبرتك ومهاراتك، سيرتك الذاتية تقع في مستوى ${effectiveLevel}${role ? ` ${role}` : ""}.`
+        : `Based on your experience and skills, this CV reads as ${effectiveLevel} level${role ? ` ${role}` : ""}.`
+      : levelMessage(effectiveLevel, levelFit, strength, role, language),
     nextLevel: goalLevel,
     nextLevelTips: q.nextLevelTips || [],
     belowBar,
@@ -308,5 +360,6 @@ export async function scoreCVWithBreakdown(
   if (scoreCache.size >= CACHE_MAX)
     scoreCache.delete(scoreCache.keys().next().value!);
   scoreCache.set(key, result);
+  await writeCache(key, result);
   return result;
 }

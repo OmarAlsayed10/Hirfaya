@@ -1,8 +1,7 @@
 import { createHash } from "crypto";
 import { LEVELS, Level, ScoreBreakdown } from "./constants";
+import { hasCache } from "../../lib/persistentCache";
 
-// ponytail: in-memory cache, per instance, lost on restart. Move to a DB table if
-// you need scores durable across restarts or shared across multiple instances.
 export const CACHE_MAX = 500;
 const SCORING_CACHE_VERSION = "2026-07-pipe-list";
 export const scoreCache = new Map<string, ScoreBreakdown>();
@@ -21,8 +20,13 @@ const normLevel = (level: string) =>
 
 // True when this exact CV+role+level was already scored (cache hit) — lets the quota
 // layer serve repeat/identical analyses for free.
-export function hasScore(text: string, targetRole = "", level = ""): boolean {
-  return scoreCache.has(
-    hashCV(text, `${targetRole.trim()}|${normLevel(level)}`),
-  );
+export async function hasScore(
+  text: string,
+  targetRole = "",
+  level = "",
+  language = "en",
+): Promise<boolean> {
+  const key = hashCV(text, `${targetRole.trim()}|${normLevel(level)}|${language}`);
+  if (scoreCache.has(key)) return true;
+  return hasCache(key);
 }

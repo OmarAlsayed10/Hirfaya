@@ -1,5 +1,6 @@
 import { MONTHS, LEVELS, Level, REQUIRED_STRENGTH } from "./constants";
 import { experienceSection } from "./textParse";
+import { Language } from "../../lib/aiLanguage";
 
 // Objective years of experience from date ranges in the Experience section.
 // Merges overlapping ranges so concurrent roles aren't double-counted.
@@ -85,13 +86,25 @@ export function levelMessage(
   fit: number,
   strength: number,
   role: string,
+  language: Language = "en",
 ): string {
+  const fits = bestFitLevel(strength);
+  if (language === "ar") {
+    const whoAr = role || "مرشح";
+    if (fit >= 90)
+      return `ممتاز بالنسبة لـ ${level} ${whoAr} — إنت واصل للمستوى المطلوب في المرحلة دي.`;
+    if (fit >= 75)
+      return `مناسب بقوة لمستوى ${level} ${whoAr} — فاضل شوية حاجات للدرجة الكاملة.`;
+    if (fit >= 55)
+      return `قريب من مستوى ${level} بس لسه مش واصل — خبرتك دلوقتي بتقع في مستوى ${fits}.`;
+    return `أقل من مستوى ${level} — السيرة دي بتقع في مستوى ${fits} حاليًا. استهدف ${level} بعد ما تبني الخبرة.`;
+  }
+
   const who = role || "candidate";
   if (fit >= 90)
     return `Excellent for a ${level} ${who} — you're meeting the bar for this stage.`;
   if (fit >= 75)
     return `Strong fit for ${level} ${who} — a few gaps from a top score.`;
-  const fits = bestFitLevel(strength);
   if (fit >= 55)
     return `Near the ${level} bar, but not there yet — your experience currently reads as ${fits}.`;
   return `Below the ${level} bar — this CV fits ${fits} level right now. Aim for ${level} once you've built the experience.`;

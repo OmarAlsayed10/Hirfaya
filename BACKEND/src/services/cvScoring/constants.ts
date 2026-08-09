@@ -88,8 +88,26 @@ export const LEVEL_YEAR_RANGE: Record<string, string> = {
   Lead: "8+ years",
 };
 
+export const LEVEL_YEAR_RANGE_AR: Record<string, string> = {
+  Fresh: "أقل من سنة",
+  Junior: "سنة إلى سنتين",
+  Mid: "3–5 سنوات",
+  Senior: "5–8 سنوات",
+  Lead: "8+ سنوات",
+};
+
+export const SKILL_LEVEL_AR: Record<string, string> = {
+  foundational: "أساسي",
+  developing: "في طور النمو",
+  solid: "قوي",
+  advanced: "متقدم",
+  expert: "خبير",
+};
+
+// Non-tech and operational CVs (health, safety, admin, sales, field work) lean on verbs the
+// original list missed — "Handled", "Inspected", "Monitored" — and were marked down for it.
 export const ACTION_VERB =
-  /^(achieved|accelerated|architected|assisted|automated|built|collaborated|completed|conducted|contributed|coordinated|created|delivered|deployed|designed|developed|devised|directed|drove|engineered|enhanced|established|executed|facilitated|formulated|generated|grew|headed|implemented|improved|increased|initiated|integrated|launched|led|managed|maximized|mentored|minimized|optimized|organized|oversaw|pioneered|presented|produced|published|reduced|resolved|secured|spearheaded|streamlined|strengthened|supported|tested|trained|transformed|wrote)\b/i;
+  /^(achieved|accelerated|administered|advised|analy[sz]ed|architected|arranged|assessed|assisted|audited|authored|automated|briefed|built|championed|collaborated|communicated|compiled|completed|conducted|consolidated|contributed|controlled|converted|coordinated|counseled|created|cut|decreased|defined|delivered|demonstrated|deployed|designed|developed|devised|diagnosed|directed|documented|doubled|drafted|drove|eliminated|engineered|enhanced|ensured|escalated|established|evaluated|examined|executed|expanded|facilitated|forecast|formulated|generated|grew|guided|handled|headed|identified|implemented|improved|increased|influenced|initiated|inspected|installed|instructed|integrated|interpreted|introduced|investigated|launched|led|maintained|managed|maximized|mentored|minimized|modernized|monitored|negotiated|operated|optimized|organized|overhauled|oversaw|performed|pioneered|planned|prepared|presented|prevented|processed|produced|promoted|provided|published|ran|rebuilt|recommended|recorded|recruited|reduced|refactored|reported|researched|resolved|restructured|reviewed|revamped|saved|scaled|scheduled|secured|simplified|sold|sourced|spearheaded|standardi[sz]ed|streamlined|strengthened|supervised|supported|sustained|tested|tracked|trained|transformed|translated|troubleshot|upgraded|validated|verified|wrote)\b/i;
 
 export const STD_HEADINGS = [
   "experience",

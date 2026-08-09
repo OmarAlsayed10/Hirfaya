@@ -68,7 +68,7 @@ const FeedbackPanel = ({ positiveFeedback, negativeFeedback, neutralFeedback, at
             <AutorenewIcon /> {t('ATS Technical Notes')}
           </Typography>
           {atsCheckerNotes.map((note, i) => (
-            <Box key={i} sx={{ p: 2, mb: 1.5, bgcolor: 'rgba(0,0,0,0.03)', borderLeft: '4px solid #9e9e9e', borderRadius: '4px 8px 8px 4px' }}>
+            <Box key={i} sx={{ p: 2, mb: 1.5, bgcolor: COLORS.bgHover, borderLeft: '4px solid #9e9e9e', borderRadius: '4px 8px 8px 4px' }}>
               <Typography sx={{ color: COLORS.textSecondary, fontSize: '0.95rem' }}>{note}</Typography>
             </Box>
           ))}

@@ -8,6 +8,7 @@ import { runWithUser } from "../lib/creditContext";
 import { isGroqRateLimit } from "../lib/groqChat";
 import prisma from "../lib/prisma";
 import { InvalidAiResponseError } from "../lib/aiResponseValidation";
+import { normalizeLanguage } from "../lib/aiLanguage";
 
 export const analyzeCVController = async (req: Request, res: Response) => {
   const file = req.file as Express.Multer.File | undefined;
@@ -30,6 +31,7 @@ export const analyzeCVController = async (req: Request, res: Response) => {
   const level = (
     typeof req.body?.level === "string" ? req.body.level : ""
   ).slice(0, 20);
+  const language = normalizeLanguage(req.body?.language);
 
   try {
     const extracted = file
@@ -71,9 +73,12 @@ export const analyzeCVController = async (req: Request, res: Response) => {
     const ip = req.ip || req.socket.remoteAddress || "unknown";
 
     // A repeat of the exact same CV+role+level is served from cache — free, no quota spent.
-    const cached =
-      hasScore(extractedText, "", level) &&
-      hasAiResponse(extractedText);
+    // Viewing an already-analyzed CV in the other language is also free: language is
+    // clamped to en/ar, so this caps a paid analysis at one regeneration, not unlimited.
+    const analyzedIn = async (candidate: "en" | "ar") =>
+      (await hasScore(extractedText, "", level, candidate)) &&
+      (await hasAiResponse(extractedText, "", "", candidate));
+    const cached = (await analyzedIn("en")) || (await analyzedIn("ar"));
     if (!cached) {
       const gate = userId ? await canSpend({ userId, ip }) : await canAnonAnalyze(ip);
       if (!gate.ok) {
@@ -86,8 +91,8 @@ export const analyzeCVController = async (req: Request, res: Response) => {
     // Logged-in callers are billed real credits inside groqChat via the ALS context.
     const [ai, score] = await runWithUser(userId, () =>
       Promise.all([
-        aiResponse(extractedText),
-        scoreCVWithBreakdown(extractedText, "", level),
+        aiResponse(extractedText, "", "", language),
+        scoreCVWithBreakdown(extractedText, "", level, language, pageCount),
       ])
     );
 
