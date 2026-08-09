@@ -16,6 +16,8 @@ model User {
   emailVerified  Boolean   @default(false)
   otp            String?
   otpExpiry      DateTime?
+  resetOtp       String?
+  resetOtpExpiry DateTime?
   photo          String?
   phone          String?
   location       String?
@@ -31,6 +33,12 @@ model User {
   proExpiresAt   DateTime?
   googleId       String?   @unique
   lastNameChange DateTime?
+  salaryExpectation String?
+  salaryCurrency    String?
+  visaStatus        String?
+  noticePeriod      String?
+  workPreference    String?
+  relocationOpen    Boolean   @default(false)
   createdAt      DateTime  @default(now())
 
   planTier           String  @default("basic")
@@ -55,6 +63,41 @@ model User {
   documents          Document[]
   careerMatchCaches  CareerMatchCache[]
   reviews            Review[]
+  skillProgress      UserSkillProgress[]
+  gitHostCredentials GitHostCredential[]
+}
+
+model SkillRoadmap {
+  id           String   @id @default(uuid())
+  skillKey     String   @unique
+  skill        String
+  category     String   @default("skill")
+  officialDocs Json?
+  playground   Json?
+  projectIdeas String[] @default([])
+  courseLinks  Json     @default("[]")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  userProgress UserSkillProgress[]
+
+  @@index([skillKey])
+}
+
+model UserSkillProgress {
+  id             String       @id @default(uuid())
+  userId         String
+  skillRoadmapId String
+  status         String       @default("in_progress")
+  learnedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillRoadmap SkillRoadmap @relation(fields: [skillRoadmapId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillRoadmapId])
+  @@index([userId, status])
 }
 
 model CareerMatchCache {
@@ -99,10 +142,19 @@ model JobMatch {
   location    String?
   url         String
   postedAt    DateTime?
-  fitScore    Int       @default(0)
+  fitScore    Int?
+  analysisStatus String @default("available")
   earlyBird   Boolean   @default(false)
   status      String    @default("matched")
   coverLetter String?
+  coverLetterAr String?
+  checklist          Json?
+  screeningAnswers   Json?
+  notes              String?
+  reminderAt         DateTime?
+  reminderSent       Boolean   @default(false)
+  workspaceData      Json?
+  selectedCvVariant  String?
   appliedAt   DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -289,11 +341,16 @@ model Blog {
 model CV {
   id            String   @id @default(uuid())
   userId        String
+  title         String?
+  template      String   @default("classic-cv")
   personalInfo  Json
   experience    Json
   education     Json
   projects      Json     @default("[]")
   skills        Json
+  sectionOrder  Json?
+  customSections Json?
+  fontScale     Float    @default(1)
   cloudinaryUrl String?
   isPrimary     Boolean  @default(false)
   createdAt     DateTime @default(now())
@@ -392,4 +449,33 @@ enum PaymentStatus {
 
 enum PaymentMethod {
   INSTAPAY
+}
+
+model GitHostCredential {
+  id        String   @id @default(uuid())
+  userId    String
+  host      GitHost
+  token     String   @db.Text
+  hint      String
+  label     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, host])
+  @@map("git_host_credentials")
+}
+
+enum GitHost {
+  GITHUB
+  GITLAB
+}
+
+model AiCache {
+  key       String   @id
+  value     Json
+  createdAt DateTime @default(now())
+
+  @@map("ai_cache")
 }
