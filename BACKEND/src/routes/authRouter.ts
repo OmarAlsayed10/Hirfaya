@@ -9,6 +9,8 @@ import {
   login,
   verifyOTP,
   resendOTP,
+  forgotPassword,
+  resetPassword,
   logout,
   getCurrentUser,
   issueProToken,
@@ -19,6 +21,11 @@ import {
   getPlan,
 } from "../controllers/authController";
 import { authenticateToken } from "../middleware/validateJWTMiddleware";
+import {
+  listGitCredentialsController,
+  saveGitCredentialController,
+  deleteGitCredentialController,
+} from "../controllers/gitHostCredentialController";
 import { uploadAvatar } from "../services/importService";
 import { authLimiter, otpLimiter } from "../middleware/rateLimitMiddleware";
 
@@ -29,6 +36,8 @@ router.post("/register", authLimiter, register);
 router.post("/login", authLimiter, login);
 router.post("/verify-otp", otpLimiter, verifyOTP);
 router.post("/resend-otp", otpLimiter, resendOTP);
+router.post("/forgot-password", otpLimiter, forgotPassword);
+router.post("/reset-password", otpLimiter, resetPassword);
 
 // ─── Session ──────────────────────────────────────────────────────────────────
 router.post("/logout", logout);
@@ -45,6 +54,10 @@ router.post(
 router.delete("/profile/photo", authenticateToken, deleteProfilePhoto);
 router.delete("/account", authenticateToken, deleteAccount);
 router.get("/plan", authenticateToken, getPlan);
+
+router.get("/git-credentials", authenticateToken, listGitCredentialsController);
+router.post("/git-credentials", authenticateToken, saveGitCredentialController);
+router.delete("/git-credentials/:host", authenticateToken, deleteGitCredentialController);
 
 // ─── Google OAuth ─────────────────────────────────────────────────────────────
 router.get(
