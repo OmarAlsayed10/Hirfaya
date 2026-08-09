@@ -31,6 +31,32 @@ export const listPublishedBlogsController = async (
   res.status(200).json({ blogs });
 };
 
+const xmlEscape = (s: string): string =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+// Blog posts live in the DB, so the crawler cannot get them from the static
+// sitemap the SPA ships. robots.txt points here as a second sitemap.
+export const blogSitemapController = async (
+  _req: Request,
+  res: Response
+): Promise<void> => {
+  const blogs = await prisma.blog.findMany({
+    where: { published: true },
+    select: { slug: true, updatedAt: true },
+  });
+  const origin = (process.env.CLIENT_URL ?? "").replace(/\/+$/, "");
+  const urls = blogs
+    .map(
+      (b) =>
+        `<url><loc>${xmlEscape(`${origin}/Blogs/${b.slug}`)}</loc><lastmod>${b.updatedAt.toISOString()}</lastmod></url>`
+    )
+    .join("");
+
+  res.type("application/xml").send(
+    `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`
+  );
+};
+
 export const getBlogController = async (
   req: Request,
   res: Response

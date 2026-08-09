@@ -3,13 +3,14 @@ import prisma from "../lib/prisma";
 import { emailService } from "./emailService";
 import { refreshMatchesForUser } from "./jobRadarService";
 import { ingestJobs } from "./jobIngestionService";
+import { checkDueReminders } from "./reminderScheduler";
 
 export const startCronJobs = (): void => {
   // Every 6 hours — refill the shared public job board from all sources.
   cron.schedule("0 */6 * * *", async () => {
     try {
-      const count = await ingestJobs();
-      console.log(`[cron] Job Radar pool ingested ${count} jobs`);
+      const ingestion = await ingestJobs();
+      console.log(`[cron] Job Radar pool persisted ${ingestion.persisted} jobs`, ingestion.providers);
     } catch (err) {
       console.error("[cron] Job Radar pool ingest failed:", err);
     }
@@ -27,12 +28,13 @@ export const startCronJobs = (): void => {
         try {
           await refreshMatchesForUser(pref.userId);
           const top = await prisma.jobMatch.findMany({
-            where: { userId: pref.userId, status: "matched" },
+            where: { userId: pref.userId, status: "matched", fitScore: { not: null } },
             orderBy: [{ earlyBird: "desc" }, { fitScore: "desc" }],
             take: 5,
           });
-          if (top.length > 0) {
-            await emailService.sendJobDigest(pref.user.email, pref.user.firstName, top);
+          const scoredTop = top.filter((match): match is typeof match & { fitScore: number } => match.fitScore !== null);
+          if (scoredTop.length > 0) {
+            await emailService.sendJobDigest(pref.user.email, pref.user.firstName, scoredTop);
           }
         } catch (err) {
           console.error(`[cron] Job Radar failed for user ${pref.userId}:`, err);
@@ -80,11 +82,23 @@ export const startCronJobs = (): void => {
     .then((n) => {
       if (n === 0) {
         ingestJobs()
-          .then((c) => console.log(`[cron] Job Radar pool seeded ${c} jobs on boot`))
+          .then((ingestion) => console.log(`[cron] Job Radar pool seeded ${ingestion.persisted} jobs on boot`, ingestion.providers))
           .catch((e) => console.error("[cron] Job Radar pool boot seed failed:", e));
       }
     })
     .catch(() => {});
+
+  // Every 15 minutes — check due application follow-up reminders
+  cron.schedule("*/15 * * * *", async () => {
+    try {
+      const count = await checkDueReminders();
+      if (count > 0) {
+        console.log(`[cron] Sent ${count} application follow-up reminder email(s)`);
+      }
+    } catch (err) {
+      console.error("[cron] Reminder scheduler check failed:", err);
+    }
+  });
 
   console.log("[cron] Scheduled jobs started");
 };

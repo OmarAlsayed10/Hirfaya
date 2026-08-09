@@ -8,6 +8,7 @@ export interface CustomRequest extends Request {
     email: string;
     role?: string;
     proExpiresAt?: Date;
+    sessionStart?: number;
   };
 }
 
@@ -32,6 +33,7 @@ export const authenticateToken = (
       email: string;
       role: string;
       proExpiresAt: Date;
+      sessionStart?: number;
     };
 
     if (isUserBanned(decoded.userId)) {
@@ -44,6 +46,7 @@ export const authenticateToken = (
       email: decoded.email,
       role: decoded.role,
       proExpiresAt: decoded.proExpiresAt,
+      sessionStart: decoded.sessionStart,
     };
 
     next();

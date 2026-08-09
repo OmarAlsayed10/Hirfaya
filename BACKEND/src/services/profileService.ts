@@ -72,6 +72,12 @@ export interface ProfileUpdate {
   portfolio?: string;
   avatarColor?: string;
   skills?: string[];
+  salaryExpectation?: string;
+  salaryCurrency?: string;
+  visaStatus?: string;
+  noticePeriod?: string;
+  workPreference?: string;
+  relocationOpen?: boolean;
 }
 
 // Builds a sanitized update containing only the keys actually present in the request body.
@@ -86,5 +92,11 @@ export const sanitizeProfile = (body: Record<string, unknown>): ProfileUpdate =>
   if ("portfolio" in body) out.portfolio = url(body.portfolio) ?? "";
   if ("avatarColor" in body) out.avatarColor = avatarColor(body.avatarColor) ?? "";
   if ("skills" in body) out.skills = skills(body.skills) ?? [];
+  if ("salaryExpectation" in body) out.salaryExpectation = text(body.salaryExpectation, 50) ?? "";
+  if ("salaryCurrency" in body) out.salaryCurrency = text(body.salaryCurrency, 10) ?? "USD";
+  if ("visaStatus" in body) out.visaStatus = text(body.visaStatus, 50) ?? "";
+  if ("noticePeriod" in body) out.noticePeriod = text(body.noticePeriod, 50) ?? "";
+  if ("workPreference" in body) out.workPreference = text(body.workPreference, 50) ?? "";
+  if ("relocationOpen" in body) out.relocationOpen = Boolean(body.relocationOpen);
   return out;
 };

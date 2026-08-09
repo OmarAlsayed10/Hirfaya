@@ -1,15 +1,18 @@
 
 import prisma from "../lib/prisma";
+import { normalizeJobDescription } from "../lib/jobDescriptionNormalizer";
+import { Preference, RawJob } from "./jobMatchScoring";
 import {
-  RawJob,
-  Preference,
+  fetchAdzuna,
+  fetchCareerjet,
+  fetchJSearch,
+  fetchJooble,
   fetchRemotive,
   fetchRemoteOK,
   fetchTheMuse,
-  fetchJooble,
-  fetchCareerjet,
-} from "./jobRadarService";
+} from "./jobProviderAdapters";
 import { fetchGreenhouseJobs, fetchLeverJobs, fetchXJobs } from "./jobSourceService";
+import { fetchProvider, JobProvider, JobProviderDiagnostic, JobProviderOutcome, providerDiagnostics } from "./jobProviderOutcome";
 
 const DESC_CAP = 6000;
 const REMOTE_HINT = /\bremote\b/i;
@@ -43,6 +46,8 @@ const seedPref = (role: string, location: string): Preference => ({
 const MAX_JOB_AGE_DAYS = 90;
 const ROLE_BATCH_SIZE = 4;
 const INGESTION_INTERVAL_HOURS = 6;
+const MAX_CONCURRENT_PROVIDER_REQUESTS = 4;
+const JOB_PERSISTENCE_BATCH_SIZE = 100;
 
 const activeRoleNames = async (): Promise<string[]> => {
   const roles = await prisma.jobRole.findMany({
@@ -60,14 +65,12 @@ const currentRoleBatch = (roles: string[]): string[] => {
     roles[(start + offset) % roles.length],
   );
 };
-// De-dupe on source+externalId and insert-only (skip existing on the unique). One round-trip.
-async function persistRaw(jobs: RawJob[]): Promise<number> {
-  const seen = new Map<string, RawJob>();
+const jobRows = (jobs: RawJob[]) => {
+  const uniqueJobs = new Map<string, RawJob>();
   for (const job of jobs) {
-    if (!job.url || !job.title) continue;
-    seen.set(`${job.source}:${job.externalId}`, job);
+    if (job.url && job.title) uniqueJobs.set(`${job.source}:${job.externalId}`, job);
   }
-  const rows = Array.from(seen.values()).map((job) => ({
+  return Array.from(uniqueJobs.values()).map((job) => ({
     source: job.source,
     externalId: job.externalId,
     title: job.title,
@@ -76,47 +79,60 @@ async function persistRaw(jobs: RawJob[]): Promise<number> {
     remote: REMOTE_HINT.test(`${job.location ?? ""} ${job.title}`),
     url: job.url,
     postedAt: job.postedAt,
-    description: (job.description ?? "").slice(0, DESC_CAP),
+    description: normalizeJobDescription(job.description ?? "").plainText.slice(0, DESC_CAP),
   }));
-  const { count } = await prisma.job.createMany({ data: rows, skipDuplicates: true });
-  return count;
+};
+
+async function persistRaw(jobs: RawJob[]): Promise<number> {
+  const rows = jobRows(jobs);
+  for (let offset = 0; offset < rows.length; offset += JOB_PERSISTENCE_BATCH_SIZE) {
+    const batch = rows.slice(offset, offset + JOB_PERSISTENCE_BATCH_SIZE);
+    await prisma.$transaction(batch.map((job) => prisma.job.upsert({
+      where: { source_externalId: { source: job.source, externalId: job.externalId } },
+      create: job,
+      update: job,
+    })));
+  }
+  return rows.length;
 }
 
-// Pull from every source into the shared Job pool, prune stale. Company boards (Greenhouse/Lever)
-// aren't polled here — they're fetched live per company search, so the pool grows from real demand.
-export async function ingestJobs(): Promise<number> {
+export interface JobIngestionResult {
+  persisted: number;
+  providers: JobProviderDiagnostic[];
+}
+
+const collectProviderOutcomes = async (providers: JobProvider[]): Promise<JobProviderOutcome[]> => {
+  const outcomes: JobProviderOutcome[] = [];
+  for (let offset = 0; offset < providers.length; offset += MAX_CONCURRENT_PROVIDER_REQUESTS) {
+    outcomes.push(...await Promise.all(providers.slice(offset, offset + MAX_CONCURRENT_PROVIDER_REQUESTS).map(fetchProvider)));
+  }
+  return outcomes;
+};
+
+export async function ingestJobs(): Promise<JobIngestionResult> {
   const roles = await activeRoleNames();
   const roleBatch = currentRoleBatch(roles);
-  const global = (
-    await Promise.all([
-    fetchRemoteOK(),
-    fetchTheMuse(seedPref("", "")),
-    fetchGreenhouseJobs(),
-    fetchLeverJobs(),
-    fetchXJobs(),
-  ])
-  ).flat();
-
-  const seeded = (
-    await Promise.all(
-      roleBatch.map((role:any) => {
-        const pref = seedPref(role, "Egypt");
-        return Promise.all([
-          fetchJooble(pref),
-          fetchRemotive(pref),
-          fetchCareerjet(pref),
-        ]).then((r) => r.flat());
-      })
-    )
-  ).flat();
-
-
-  const count = await persistRaw([...global, ...seeded]);
-
-  // Drop postings older than 90 days. Null postedAt stays (age unknown) — prune those by createdAt if needed.
+  const globalProviders: JobProvider[] = [
+    { id: "remoteok", configured: () => true, fetch: fetchRemoteOK },
+    { id: "themuse", configured: () => true, fetch: () => fetchTheMuse(seedPref("", "")) },
+    { id: "greenhouse", configured: () => Boolean(process.env.GREENHOUSE_BOARDS), fetch: fetchGreenhouseJobs },
+    { id: "lever", configured: () => Boolean(process.env.LEVER_SITES), fetch: fetchLeverJobs },
+    { id: "x", configured: () => Boolean(process.env.X_API_BEARER_TOKEN), fetch: fetchXJobs },
+  ];
+  const seededProviders = roleBatch.flatMap((role): JobProvider[] => {
+    const preference = seedPref(role, "Egypt");
+    return [
+      { id: "adzuna", configured: () => Boolean(process.env.ADZUNA_APP_ID && process.env.ADZUNA_APP_KEY), fetch: () => fetchAdzuna(preference) },
+      { id: "jsearch", configured: () => Boolean(process.env.JSEARCH_KEY), fetch: () => fetchJSearch(preference) },
+      { id: "jooble", configured: () => Boolean(process.env.JOOBLE_KEY), fetch: () => fetchJooble(preference) },
+      { id: "remotive", configured: () => true, fetch: () => fetchRemotive(preference) },
+      { id: "careerjet", configured: () => Boolean(process.env.CAREERJET_AFFID), fetch: () => fetchCareerjet(preference) },
+    ];
+  });
+  const outcomes = await collectProviderOutcomes([...globalProviders, ...seededProviders]);
+  const persisted = await persistRaw(outcomes.flatMap((outcome) => outcome.jobs));
   await prisma.job.deleteMany({
     where: { postedAt: { lt: new Date(Date.now() - MAX_JOB_AGE_DAYS * 86_400_000) } },
   });
-
-  return count;
+  return { persisted, providers: providerDiagnostics(outcomes) };
 }

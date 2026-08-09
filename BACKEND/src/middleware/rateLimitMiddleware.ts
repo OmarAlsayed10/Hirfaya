@@ -1,7 +1,11 @@
 import { Request } from "express";
 import rateLimit from "express-rate-limit";
 import jwt from "jsonwebtoken";
-const isAdminRequest = (req: Request): boolean => {
+import { CustomRequest } from "./validateJWTMiddleware";
+
+export const isAdminRequest = (req: Request): boolean => {
+  if ((req as CustomRequest).user?.role === "admin") return true;
+
   const token = req.cookies?.token || req.headers.authorization?.split(" ")[1];
   if (!token) return false;
 
@@ -29,6 +33,7 @@ export const authLimiter = rateLimit({
 export const otpLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
+  skip: isAdminRequest,
   standardHeaders: true,
   legacyHeaders: false,
   message: json("Too many OTP requests. Try again in 1 hour."),
@@ -37,6 +42,7 @@ export const otpLimiter = rateLimit({
 export const aiLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 30,
+  skip: isAdminRequest,
   standardHeaders: true,
   legacyHeaders: false,
   message: json("AI request limit reached. Try again in 1 hour."),
@@ -45,6 +51,7 @@ export const aiLimiter = rateLimit({
 export const paymentLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
+  skip: isAdminRequest,
   standardHeaders: true,
   legacyHeaders: false,
   message: json("Too many payment attempts. Try again in 1 hour."),
@@ -53,6 +60,7 @@ export const paymentLimiter = rateLimit({
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
+  skip: isAdminRequest,
   standardHeaders: true,
   legacyHeaders: false,
   message: json("Too many requests. Please slow down."),

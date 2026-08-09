@@ -4,9 +4,11 @@ import { PROJECT_IMPORT_CONSTANTS } from "../config/projectImportConstants";
 import { CustomRequest } from "./validateJWTMiddleware";
 import prisma from "../lib/prisma";
 import { hasPaidAccess } from "../services/entitlementService";
+import { isAdminRequest } from "./rateLimitMiddleware";
 
 export const projectImportLimiter = rateLimit({
   windowMs: PROJECT_IMPORT_CONSTANTS.WINDOW_MS,
+  skip: isAdminRequest,
   max: async (req: Request): Promise<number> => {
     const user = (req as CustomRequest).user;
     if (!user) return PROJECT_IMPORT_CONSTANTS.FREE_USER_RATE_LIMIT;

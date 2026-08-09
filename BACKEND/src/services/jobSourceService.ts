@@ -1,5 +1,6 @@
 import axios from "axios";
-import type { RawJob } from "./jobRadarService";
+import { normalizeJobDescription } from "../lib/jobDescriptionNormalizer";
+import type { RawJob } from "./jobMatchScoring";
 
 interface JobBoard {
   company: string;
@@ -37,7 +38,7 @@ const fromGreenhouse = (company: string, job: any): RawJob => ({
   location: job.location?.name ?? null,
   url: job.absolute_url ?? "",
   postedAt: job.updated_at ? new Date(job.updated_at) : null,
-  description: job.content ?? "",
+  description: normalizeJobDescription(job.content ?? "").plainText,
 });
 
 export async function fetchGreenhouseJobs(): Promise<RawJob[]> {
@@ -50,8 +51,7 @@ export async function fetchGreenhouseJobs(): Promise<RawJob[]> {
       );
       return (data.jobs ?? []).map((job: any) => fromGreenhouse(company, job));
     } catch (error) {
-      console.error("[jobRadar] Greenhouse " + company + " fetch failed:", (error as Error).message);
-      return [];
+      throw error;
     }
   }));
   return responses.flat();
@@ -65,7 +65,7 @@ const fromLever = (company: string, job: any): RawJob => ({
   location: job.categories?.location ?? null,
   url: job.hostedUrl ?? "",
   postedAt: typeof job.createdAt === "number" ? new Date(job.createdAt) : null,
-  description: job.descriptionPlain ?? job.description ?? "",
+  description: normalizeJobDescription(job.descriptionPlain ?? job.description ?? "").plainText,
 });
 
 export async function fetchLeverJobs(): Promise<RawJob[]> {
@@ -78,8 +78,7 @@ export async function fetchLeverJobs(): Promise<RawJob[]> {
       );
       return Array.isArray(data) ? data.map((job: any) => fromLever(company, job)) : [];
     } catch (error) {
-      console.error("[jobRadar] Lever " + company + " fetch failed:", (error as Error).message);
-      return [];
+      throw error;
     }
   }));
   return responses.flat();
@@ -114,11 +113,10 @@ export async function fetchXJobs(): Promise<RawJob[]> {
         location: author?.location ?? null,
         url: "https://x.com/" + (author?.username ?? "i") + "/status/" + post.id,
         postedAt: post.created_at ? new Date(post.created_at) : null,
-        description: post.text,
+        description: normalizeJobDescription(post.text).plainText,
       };
     });
   } catch (error) {
-    console.error("[jobRadar] X fetch failed:", (error as Error).message);
-    return [];
+    throw error;
   }
-}
+}
