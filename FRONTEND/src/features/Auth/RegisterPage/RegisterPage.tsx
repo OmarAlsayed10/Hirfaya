@@ -20,6 +20,7 @@ import i18n from "../../../i18n";
 import { useAuth } from "../../../hooks/useAuth";
 import { AUTH_ENDPOINTS } from "../../../constants/endpoints";
 import registerPage from "./registerPage.tokens";
+import { identifyUser, track } from "../../../lib/analytics";
 
 type Stage = "form" | "otp";
 
@@ -63,6 +64,7 @@ const RegisterPage = () => {
         email: email.trim(),
         password,
       });
+      track("signup_started");
       setStage("otp");
     } catch (err: any) {
       setError(err.response?.data?.message ?? t("Registration failed. Please try again."));
@@ -85,6 +87,8 @@ const RegisterPage = () => {
         { email: email.trim(), otp: otp.trim() },
         { withCredentials: true }
       );
+      if (data.user?.id) identifyUser(data.user.id);
+      track("signup_completed");
       login(data.user);
       navigate(data.user?.onboarded ? "/" : "/onboarding");
     } catch (err: any) {

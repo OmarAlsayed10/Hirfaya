@@ -36,12 +36,25 @@ class EmailService {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
+      // Relays that sign for us (SES, Resend, Postmark) need no local key; this
+      // only signs when a key is supplied for a self-hosted SMTP host.
+      ...(process.env.EMAIL_DKIM_PRIVATE_KEY
+        ? {
+            dkim: {
+              domainName: process.env.EMAIL_DKIM_DOMAIN!,
+              keySelector: process.env.EMAIL_DKIM_SELECTOR!,
+              privateKey: process.env.EMAIL_DKIM_PRIVATE_KEY,
+            },
+          }
+        : {}),
     });
   }
 
   private async send(payload: EmailPayload): Promise<void> {
     await this.transporter.sendMail({
-      from: `"Careerak-CV" <${process.env.EMAIL_USER}>`,
+      // On a relay the authenticated user is not the sending identity, and a
+      // From that does not align with the signing domain fails DMARC.
+      from: process.env.EMAIL_FROM || `"Hirfaya" <${process.env.EMAIL_USER}>`,
       disableFileAccess: true,
       disableUrlAccess: true,
       ...payload,
@@ -51,7 +64,7 @@ class EmailService {
   async sendOTP(to: string, firstName: string, otp: string): Promise<void> {
     await this.send({
       to,
-      subject: "Careerak-CV — Your Verification Code",
+      subject: "Hirfaya — Your Verification Code",
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:auto">
           <h2>Hello ${esc(firstName)},</h2>
@@ -65,10 +78,31 @@ class EmailService {
     });
   }
 
+  async sendPasswordResetOTP(
+    to: string,
+    firstName: string,
+    otp: string
+  ): Promise<void> {
+    await this.send({
+      to,
+      subject: "Hirfaya — Reset Your Password",
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:auto">
+          <h2>Hello ${esc(firstName)},</h2>
+          <p>Use this code to set a new password:</p>
+          <div style="font-size:36px;letter-spacing:10px;font-weight:bold;padding:16px;background:#f4f4f4;display:inline-block;border-radius:8px">
+            ${otp}
+          </div>
+          <p style="color:#888;font-size:13px">Expires in <strong>15 minutes</strong> and can be used once. If you did not ask for this, ignore this email — your password has not changed.</p>
+        </div>
+      `,
+    });
+  }
+
   async sendWelcome(to: string, firstName: string): Promise<void> {
     await this.send({
       to,
-      subject: "Welcome to Careerak-CV!",
+      subject: "Welcome to Hirfaya!",
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:auto">
           <h2>Welcome, ${esc(firstName)}!</h2>
@@ -83,7 +117,7 @@ class EmailService {
   ): Promise<void> {
     await this.send({
       to: process.env.ADMIN_EMAIL!,
-      subject: `[Careerak-CV] New Payment — Ref: ${details.referenceNumber}`,
+      subject: `[Hirfaya] New Payment — Ref: ${details.referenceNumber}`,
       html: `
         <div style="font-family:sans-serif;max-width:600px;margin:auto">
           <h2>New InstaPay Payment Request</h2>
@@ -111,7 +145,7 @@ class EmailService {
   async sendPaymentApproved(to: string, firstName: string): Promise<void> {
     await this.send({
       to,
-      subject: "Careerak-CV Pro — Payment Approved!",
+      subject: "Hirfaya Pro — Payment Approved!",
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:auto">
           <h2>Congratulations, ${esc(firstName)}!</h2>
@@ -129,7 +163,7 @@ class EmailService {
   ): Promise<void> {
     await this.send({
       to,
-      subject: "Careerak-CV — Payment Could Not Be Verified",
+      subject: "Hirfaya — Payment Could Not Be Verified",
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:auto">
           <h2>Hi ${esc(firstName)},</h2>
@@ -148,7 +182,7 @@ class EmailService {
   ): Promise<void> {
     await this.send({
       to,
-      subject: `Careerak-CV Pro expires in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}`,
+      subject: `Hirfaya Pro expires in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}`,
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:auto">
           <h2>Hi ${esc(firstName)},</h2>
@@ -177,13 +211,39 @@ class EmailService {
       .join("");
     await this.send({
       to,
-      subject: `Careerak-CV — ${jobs.length} new job match${jobs.length !== 1 ? "es" : ""} for you`,
+      subject: `Hirfaya — ${jobs.length} new job match${jobs.length !== 1 ? "es" : ""} for you`,
       html: `
         <div style="font-family:sans-serif;max-width:520px;margin:auto">
           <h2>Hi ${esc(firstName)},</h2>
           <p>Here are your top new matches. The <strong>Apply early</strong> ones were just posted — get in before the competition.</p>
           ${rows}
-          <p style="color:#888;font-size:12px;margin-top:16px">Open Careerak-CV to see all matches and track your applications.</p>
+          <p style="color:#888;font-size:12px;margin-top:16px">Open Hirfaya to see all matches and track your applications.</p>
+        </div>
+      `,
+    });
+  }
+
+  async sendApplicationReminder(
+    to: string,
+    firstName: string,
+    jobTitle: string,
+    company: string,
+    matchId: string,
+    notes?: string | null
+  ): Promise<void> {
+    await this.send({
+      to,
+      subject: `Reminder: Follow up on your application for ${jobTitle} at ${company}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:520px;margin:auto">
+          <h2>Hi ${esc(firstName)},</h2>
+          <p>This is your reminder to follow up on your job application:</p>
+          <div style="background:#f4f6f8;padding:16px;border-radius:8px;margin:16px 0">
+            <h3 style="margin:0 0 8px 0;color:#2a5c45">${esc(jobTitle)}</h3>
+            <p style="margin:0;color:#555"><strong>Company:</strong> ${esc(company)}</p>
+            ${notes ? `<p style="margin:8px 0 0 0;color:#666"><strong>Notes:</strong> ${esc(notes)}</p>` : ""}
+          </div>
+          <p style="margin-top:16px"><a href="${process.env.FRONTEND_URL || "http://localhost:5173"}/applications/${esc(matchId)}" style="background:#2a5c45;color:#fff;padding:10px 18px;text-decoration:none;border-radius:6px;display:inline-block">Open Application Workspace</a></p>
         </div>
       `,
     });

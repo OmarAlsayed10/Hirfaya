@@ -3,11 +3,13 @@ import { StatusCodes } from "http-status-codes";
 import { CustomRequest } from "../middleware/validateJWTMiddleware";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { createHmac, timingSafeEqual, randomInt } from "crypto";
+import { randomInt } from "crypto";
 import prisma from "../lib/prisma";
 import { deleteImageFromCloudinary } from "../services/importService";
 import { deleteUserAccount } from "../services/accountDeletionService";
 import { emailService } from "../services/emailService";
+import { hashOTP, otpMatches, OTP_TTL_MS, registerAccount } from "../services/registrationService";
+import { confirmPasswordReset, requestPasswordReset } from "../services/passwordResetService";
 import { sanitizeProfile } from "../services/profileService";
 
 const PROFILE_FIELDS = ["phone", "location", "title", "linkedin", "github", "portfolio", "summary", "avatarColor", "skills", "onboarded"] as const;
@@ -15,28 +17,18 @@ const profileDefault = (k: string) => (k === "onboarded" ? false : k === "skills
 const pickProfile = (u: Record<string, unknown>) =>
   Object.fromEntries(PROFILE_FIELDS.map((k) => [k, u[k] ?? profileDefault(k)]));
 
-const BCRYPT_ROUNDS = 12;
-const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
+export const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
-const hashOTP = (otp: string): string =>
-  createHmac("sha256", process.env.JWT_SECRET_Key!).update(otp).digest("hex");
-
-const otpMatches = (input: string, stored: string): boolean => {
-  const inputHash = Buffer.from(hashOTP(input));
-  const storedHash = Buffer.from(stored);
-  return (
-    inputHash.length === storedHash.length &&
-    timingSafeEqual(inputHash, storedHash)
-  );
-};
-
-const issueToken = (user: {
-  id: string;
-  email: string;
-  role: string;
-  planTier?: string;
-  proExpiresAt: Date | null;
-}) =>
+const issueToken = (
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    planTier?: string;
+    proExpiresAt: Date | null;
+  },
+  sessionStart: number = Date.now()
+) =>
   jwt.sign(
     {
       userId: user.id,
@@ -44,15 +36,12 @@ const issueToken = (user: {
       role: user.role,
       planTier: user.planTier ?? "basic",
       proExpiresAt: user.proExpiresAt ? user.proExpiresAt.getTime() : null,
+      sessionStart,
     },
     process.env.JWT_SECRET_Key!,
     { expiresIn: "1d" }
   );
 
-// Shared so set and clear always use identical attributes — a mismatch can leave
-// the cookie un-clearable on logout. "lax": frontend and backend live on sibling
-// subdomains (app./api. of one domain) = same-site, so the cookie is sent on XHR
-// and survives the Google OAuth top-level redirect.
 const AUTH_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
@@ -70,47 +59,18 @@ const setAuthCookie = (res: Response, token: string): void => {
 // ─── Email Auth ───────────────────────────────────────────────────────────────
 
 export const register = async (req: Request, res: Response): Promise<void> => {
-  const { firstName, lastName, email, password } = req.body;
+  const registration = await registerAccount(req.body);
+  res.status(registration.status).json({ message: registration.message });
+};
 
-  if (!firstName || !lastName || !email || !password) {
-    res.status(400).json({ message: "All fields are required." });
-    return;
-  }
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  const message = await requestPasswordReset(req.body?.email);
+  res.status(200).json({ message });
+};
 
-  if (password.length < 8) {
-    res.status(400).json({ message: "Password must be at least 8 characters." });
-    return;
-  }
-
-  const existing = await prisma.user.findUnique({ where: { email } });
-
-  if (existing?.emailVerified) {
-    res.status(409).json({ message: "Email already registered." });
-    return;
-  }
-
-  const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-  const otp = String(randomInt(100000, 999999));
-  const otpHash = hashOTP(otp);
-  const otpExpiry = new Date(Date.now() + OTP_TTL_MS);
-
-  await prisma.user.upsert({
-    where: { email },
-    update: { firstName, lastName, passwordHash, otp: otpHash, otpExpiry },
-    create: {
-      firstName,
-      lastName,
-      email,
-      passwordHash,
-      otp: otpHash,
-      otpExpiry,
-      emailVerified: false,
-    },
-  });
-
-  await emailService.sendOTP(email, firstName, otp);
-
-  res.status(200).json({ message: "Verification code sent to your email." });
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+  const result = await confirmPasswordReset(req.body ?? {});
+  res.status(result.status).json({ message: result.message });
 };
 
 export const login = async (req: Request, res: Response): Promise<void> => {
@@ -270,6 +230,11 @@ export const getCurrentUser = async (req: Request, res: Response) => {
   const ip = req.ip || req.socket.remoteAddress || null;
   if (dbUser && ip && dbUser.lastIp !== ip) {
     prisma.user.update({ where: { id: dbUser.id }, data: { lastIp: ip } }).catch(() => {});
+  }
+
+  const sessionStart = customReq.user.sessionStart ?? Date.now();
+  if (Date.now() - sessionStart < SESSION_MAX_AGE_MS) {
+    setAuthCookie(res, issueToken(dbUser, sessionStart));
   }
 
   res.status(200).json({

@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import { AUTH_ENDPOINTS } from "../../constants/endpoints";
+import { identifyUser, resetAnalytics } from "../../lib/analytics";
 
 export const AuthContext = createContext<any>(null);
 
@@ -16,6 +17,7 @@ const AuthProvider = ({ children }) => {
 
       if (res.data && res.data.user) {
         setUser(res.data.user);
+        if (res.data.user.userId) identifyUser(res.data.user.userId);
         return res.data.user;
       } else {
         throw new Error("Invalid response from server.");
@@ -43,6 +45,7 @@ const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
+    resetAnalytics();
   };
 
   const updateUserFromPayment = (userData: any) => {

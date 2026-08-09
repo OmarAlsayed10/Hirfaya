@@ -130,6 +130,12 @@ const LoginPage = () => {
         </Box>
 
         <Typography sx={loginPage.helperText}>
+          <Link component={RouterLink} to="/forgot-password" sx={loginPage.link}>
+            {t("Forgot your password?")}
+          </Link>
+        </Typography>
+
+        <Typography sx={loginPage.helperText}>
           {t("Don't have an account?")}{" "}
           <Link component={RouterLink} to="/register" sx={loginPage.link}>
             {t("Register")}
