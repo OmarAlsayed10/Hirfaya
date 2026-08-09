@@ -89,7 +89,7 @@ const UsersTab = () => {
         elevation={0}
         sx={{ borderRadius: RADIUS.xl, border: `1px solid ${COLORS.borderLight}` }}
       >
-        <Table>
+        <Table sx={{ minWidth: 720 }}>
           <TableHead>
             <TableRow sx={{ bgcolor: COLORS.bgLight }}>
               {["User", "Role", "Tier", "Credits", "CVs", "Payments", "Status"].map(
@@ -127,7 +127,7 @@ const UsersTab = () => {
                     sx={{
                       bgcolor:
                         u.role === "admin"
-                          ? "#fde68a"
+                          ? COLORS.warningSoft
                           : u.role === "pro user"
                           ? COLORS.primaryAlpha12
                           : COLORS.bgLight,
@@ -145,9 +145,9 @@ const UsersTab = () => {
                 <TableCell>{u._count.paymentRequests}</TableCell>
                 <TableCell>
                   {u.banned ? (
-                    <Chip label={t('Banned')} size="small" sx={{ bgcolor: "#fee2e2", color: "#dc2626", fontWeight: 600 }} />
+                    <Chip label={t('Banned')} size="small" sx={{ bgcolor: COLORS.dangerSoft, color: COLORS.danger, fontWeight: 600 }} />
                   ) : (
-                    <Chip label={t('Active')} size="small" sx={{ bgcolor: "#dcfce7", color: "#16a34a", fontWeight: 600 }} />
+                    <Chip label={t('Active')} size="small" sx={{ bgcolor: COLORS.successSoft, color: COLORS.success, fontWeight: 600 }} />
                   )}
                 </TableCell>
               </TableRow>

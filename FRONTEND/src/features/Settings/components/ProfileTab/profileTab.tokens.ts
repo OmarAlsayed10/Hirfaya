@@ -52,13 +52,13 @@ const profileTab = {
     p: 0,
     fontWeight: 500,
     minWidth: 0,
-    color: '#c25b1a',
+    color: COLORS.accentOrange,
     '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' },
   },
   confirmDeleteButton: {
-    bgcolor: '#c25b1a',
-    color: COLORS.bgWhite,
-    '&:hover': { bgcolor: '#a84a12' },
+    bgcolor: COLORS.accentOrange,
+    color: COLORS.onAccent,
+    '&:hover': { bgcolor: COLORS.accentOrange },
     borderRadius: RADIUS.md,
   },
 } as const;

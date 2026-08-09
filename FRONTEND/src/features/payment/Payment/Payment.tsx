@@ -68,7 +68,7 @@ const Payment = ({ purchaseMode = "plan" }: PaymentProps) => {
   const activeStep = STEP_INDEX[step];
 
   return (
-    <Box sx={{ background: "#f5f5fa", minHeight: "100vh", py: 6 }}>
+    <Box sx={{ background: COLORS.bgLight, minHeight: "100vh", py: 6 }}>
 
       <Container maxWidth="lg">
         <Paper
@@ -77,7 +77,7 @@ const Payment = ({ purchaseMode = "plan" }: PaymentProps) => {
             borderRadius: RADIUS.xl,
             border: `1px solid rgba(26,26,24,0.1)`,
             overflow: "hidden",
-            bgcolor: "#fff",
+            bgcolor: COLORS.bgWhite,
           }}
         >
           {/* Header */}

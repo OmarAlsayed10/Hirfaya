@@ -40,9 +40,9 @@ const stateOf = (m: ModelStatus): State => {
   return "ACTIVE";
 };
 const STATE_STYLE: Record<State, { label: string; bg: string; fg: string; bar: string; border: string }> = {
-  ACTIVE: { label: "ACTIVE", bg: "#dcfce7", fg: "#16a34a", bar: COLORS.primary, border: COLORS.borderLight },
-  ALMOST: { label: "ALMOST OUT", bg: "#fef3c7", fg: "#b45309", bar: "#d97706", border: "#fcd34d" },
-  OUT: { label: "OUT OF TOKENS", bg: "#dc2626", fg: "#fff", bar: "#dc2626", border: "#fca5a5" },
+  ACTIVE: { label: "ACTIVE", bg: COLORS.successSoft, fg: COLORS.success, bar: COLORS.primary, border: COLORS.borderLight },
+  ALMOST: { label: "ALMOST OUT", bg: COLORS.warningSoft, fg: COLORS.accentOrange, bar: COLORS.warning, border: COLORS.warning },
+  OUT: { label: "OUT OF TOKENS", bg: COLORS.danger, fg: COLORS.onAccent, bar: COLORS.danger, border: COLORS.dangerBorder },
 };
 
 const msToUtcMidnight = (): number => {
@@ -156,7 +156,7 @@ const AiStatusTab = () => {
                 p: 2.5,
                 borderRadius: RADIUS.xl,
                 border: `1px solid ${style.border}`,
-                bgcolor: st === "OUT" ? "#fef2f2" : st === "ALMOST" ? "#fffbeb" : "#fff",
+                bgcolor: st === "OUT" ? COLORS.dangerSoft : st === "ALMOST" ? COLORS.goldLight : COLORS.bgWhite,
               }}
             >
                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1, flexWrap: "wrap" }}>
@@ -182,7 +182,7 @@ const AiStatusTab = () => {
                   {m.tokensToday.toLocaleString()} / {m.dailyLimit.toLocaleString()} {t('tokens')} (~{pct.toFixed(0)}%)
                 </Typography>
                 {m.lastRateLimitAt && (
-                  <Typography variant="caption" sx={{ color: "#dc2626", fontWeight: 600 }}>
+                  <Typography variant="caption" sx={{ color: COLORS.danger, fontWeight: 600 }}>
                     {t('Rate-limited at')} {new Date(m.lastRateLimitAt).toLocaleTimeString()}
                   </Typography>
                 )}

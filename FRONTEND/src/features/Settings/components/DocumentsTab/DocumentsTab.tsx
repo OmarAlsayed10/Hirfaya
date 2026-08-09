@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Card, CardContent, IconButton, Tooltip, Button } from '@mui/material';
-import { Star, Trash2, Plus } from "../../../../components/icons/MuiIcons";
+import { Box, Typography, Card, CardContent, Button } from '@mui/material';
+import { Pencil, Star, Trash2, Plus } from "../../../../components/icons/MuiIcons";
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { DOCUMENT_ENDPOINTS } from '../../../../constants/endpoints';
 import { useFeedback } from '../../../../context/FeedbackContext';
+import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
+import IconAction from '../../../../components/ui/IconAction';
 
 interface DocItem {
   id: string;
@@ -26,6 +28,8 @@ const DocumentsTab = () => {
   const navigate = useNavigate();
   const { notify } = useFeedback();
   const [docs, setDocs] = useState<DocItem[]>([]);
+  const [pendingDelete, setPendingDelete] = useState<DocItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = () => {
     axios
@@ -46,14 +50,18 @@ const DocumentsTab = () => {
     }
   };
 
-  const remove = async (doc: DocItem) => {
-    if (!window.confirm(t('This permanently deletes "{{title}}". You cannot undo this action.', { title: doc.title }))) return;
+  const remove = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
     try {
-      await axios.delete(DOCUMENT_ENDPOINTS.delete(doc.id), { withCredentials: true });
-      setDocs((prev) => prev.filter((item) => item.id !== doc.id));
+      await axios.delete(DOCUMENT_ENDPOINTS.delete(pendingDelete.id), { withCredentials: true });
+      setDocs((prev) => prev.filter((item) => item.id !== pendingDelete.id));
       notify(t('Document deleted successfully.'), 'success');
+      setPendingDelete(null);
     } catch {
       notify(t('Could not delete this document. Please try again.'));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -89,22 +97,45 @@ const DocumentsTab = () => {
                       {doc.content.slice(0, 90)}…
                     </Typography>
                   </Box>
-                  <Tooltip title={doc.isPrimary ? t('Primary') : t('Set as primary')}>
-                    <IconButton size="small" onClick={() => makePrimary(doc)} sx={{ color: doc.isPrimary ? 'warning.main' : 'action.disabled' }}>
-                      <Star size={18} fill={doc.isPrimary ? 'currentColor' : 'none'} />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title={t('Delete document')}>
-                    <IconButton aria-label={t('Delete document')} size="small" onClick={() => remove(doc)} sx={{ color: 'action.disabled', '&:hover': { color: 'error.main' } }}>
-                      <Trash2 size={18} />
-                    </IconButton>
-                  </Tooltip>
+                  <IconAction
+                    label={t('Edit document')}
+                    tone="primary"
+                    onClick={() => navigate(`/documents/${doc.id}/edit`)}
+                  >
+                    <Pencil size={18} />
+                  </IconAction>
+                  <IconAction
+                    label={doc.isPrimary ? t('Primary') : t('Set as primary')}
+                    tone="favorite"
+                    active={doc.isPrimary}
+                    onClick={() => makePrimary(doc)}
+                  >
+                    <Star size={18} fill={doc.isPrimary ? 'currentColor' : 'none'} />
+                  </IconAction>
+                  <IconAction
+                    label={t('Delete document')}
+                    tone="danger"
+                    onClick={() => setPendingDelete(doc)}
+                  >
+                    <Trash2 size={18} />
+                  </IconAction>
                 </CardContent>
               </Card>
             ))}
           </Box>
         ) : null,
       )}
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title={t('Delete document')}
+        message={t('This permanently deletes "{{title}}". You cannot undo this action.', {
+          title: pendingDelete?.title || '',
+        })}
+        loading={deleting}
+        onConfirm={remove}
+        onClose={() => setPendingDelete(null)}
+      />
     </Box>
   );
 };

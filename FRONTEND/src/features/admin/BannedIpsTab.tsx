@@ -19,6 +19,8 @@ import { Trash2 } from "../../components/icons/MuiIcons";
 import { useTranslation } from "react-i18next";
 import { COLORS, RADIUS, TYPOGRAPHY } from "../../theme/tokens";
 import { ADMIN_ENDPOINTS } from "../../constants/endpoints";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import IconAction from "../../components/ui/IconAction";
 
 interface BannedIp {
   ip: string;
@@ -33,6 +35,7 @@ const BannedIpsTab = () => {
   const [ip, setIp] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [unbanTarget, setUnbanTarget] = useState<string | null>(null);
 
   const fetchIps = useCallback(async () => {
     setLoading(true);
@@ -65,11 +68,13 @@ const BannedIpsTab = () => {
     }
   };
 
-  const remove = async (target: string) => {
+  const remove = async () => {
+    if (!unbanTarget) return;
     setBusy(true);
     try {
-      await axios.delete(ADMIN_ENDPOINTS.unbanIp(target), { withCredentials: true });
+      await axios.delete(ADMIN_ENDPOINTS.unbanIp(unbanTarget), { withCredentials: true });
       await fetchIps();
+      setUnbanTarget(null);
     } finally {
       setBusy(false);
     }
@@ -81,7 +86,7 @@ const BannedIpsTab = () => {
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
           <TextField size="small" placeholder={t('IP address')} value={ip} onChange={(e) => setIp(e.target.value)} sx={{ flex: "1 1 180px" }} />
           <TextField size="small" placeholder={t('Reason (optional)')} value={reason} onChange={(e) => setReason(e.target.value)} sx={{ flex: "1 1 220px" }} />
-          <Button variant="contained" onClick={add} disabled={busy || !ip.trim()} sx={{ bgcolor: COLORS.primary }}>
+          <Button variant="contained" onClick={add} disabled={busy || !ip.trim()} sx={{ bgcolor: COLORS.primarySurface }}>
             {t('Ban IP')}
           </Button>
         </Box>
@@ -93,7 +98,7 @@ const BannedIpsTab = () => {
         </Box>
       ) : (
         <TableContainer component={Paper} elevation={0} sx={{ borderRadius: RADIUS.xl, border: `1px solid ${COLORS.borderLight}` }}>
-          <Table>
+          <Table sx={{ minWidth: 720 }}>
             <TableHead>
               <TableRow sx={{ bgcolor: COLORS.bgLight }}>
                 {["IP", "Reason", "Banned on", ""].map((h) => (
@@ -121,9 +126,9 @@ const BannedIpsTab = () => {
                       {new Date(b.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <IconButton size="small" onClick={() => remove(b.ip)} disabled={busy}>
-                        <Trash2 size={16} color="#dc2626" />
-                      </IconButton>
+                      <IconAction label={t('Unban')} tone="danger" onClick={() => setUnbanTarget(b.ip)} disabled={busy}>
+                        <Trash2 size={16} />
+                      </IconAction>
                     </TableCell>
                   </TableRow>
                 ))
@@ -132,6 +137,18 @@ const BannedIpsTab = () => {
           </Table>
         </TableContainer>
       )}
+
+      <ConfirmDialog
+        open={Boolean(unbanTarget)}
+        title={t('Unban IP')}
+        message={t('This removes the ban on {{ip}}. They will be able to reach the site again.', {
+          ip: unbanTarget || '',
+        })}
+        confirmLabel={t('Unban')}
+        loading={busy}
+        onConfirm={remove}
+        onClose={() => setUnbanTarget(null)}
+      />
     </Box>
   );
 };

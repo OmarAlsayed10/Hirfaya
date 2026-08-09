@@ -41,9 +41,9 @@ interface PaymentRow {
 
 const statusColor = (s: string) =>
   s === "APPROVED"
-    ? { bgcolor: "#dcfce7", color: "#16a34a" }
+    ? { bgcolor: COLORS.successSoft, color: COLORS.success }
     : s === "REJECTED"
-    ? { bgcolor: "#fee2e2", color: "#dc2626" }
+    ? { bgcolor: COLORS.dangerSoft, color: COLORS.danger }
     : { bgcolor: COLORS.bgLight, color: COLORS.textPrimary };
 
 const PaymentsTab = () => {
@@ -112,7 +112,7 @@ const PaymentsTab = () => {
         elevation={0}
         sx={{ borderRadius: RADIUS.xl, border: `1px solid ${COLORS.borderLight}` }}
       >
-        <Table>
+        <Table sx={{ minWidth: 720 }}>
           <TableHead>
             <TableRow sx={{ bgcolor: COLORS.bgLight }}>
               {["User", "Plan", "Amount", "Ref #", "Receipt", "Date", "Status", "Actions"].map((h) => (
@@ -163,7 +163,7 @@ const PaymentsTab = () => {
                         variant="contained"
                         disabled={busyId === r.id}
                         onClick={() => approve(r.id)}
-                        sx={{ bgcolor: COLORS.primary, "&:hover": { bgcolor: COLORS.primaryDark } }}
+                        sx={{ bgcolor: COLORS.primarySurface, "&:hover": { bgcolor: COLORS.primarySurfaceDark } }}
                       >
                         {t('Approve')}
                       </Button>
@@ -172,7 +172,7 @@ const PaymentsTab = () => {
                         variant="outlined"
                         disabled={busyId === r.id}
                         onClick={() => setRejectId(r.id)}
-                        sx={{ color: "#dc2626", borderColor: "#dc2626" }}
+                        sx={{ color: COLORS.danger, borderColor: COLORS.danger }}
                       >
                         {t('Reject')}
                       </Button>
@@ -205,7 +205,7 @@ const PaymentsTab = () => {
             variant="contained"
             disabled={!reason.trim() || !!busyId}
             onClick={reject}
-            sx={{ bgcolor: "#dc2626", "&:hover": { bgcolor: "#b91c1c" } }}
+            sx={{ bgcolor: COLORS.danger, "&:hover": { bgcolor: COLORS.dangerDark } }}
           >
             {t('Reject')}
           </Button>

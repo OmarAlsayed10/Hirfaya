@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../../hooks/useAuth';
 import { USER_ENDPOINTS } from '../../../../constants/endpoints';
 import { AVATAR_COLORS } from '../../../../theme/tokens';
+import { COLORS } from "../../../../theme/tokens";
 
 interface Props {
   size?: number;
@@ -80,12 +81,12 @@ const AvatarPicker = ({ size = 96, onFeedback }: Props) => {
             sx={{
               position: 'absolute', bottom: 0, right: 0, width: size * 0.3, height: size * 0.3,
               minWidth: 26, minHeight: 26, borderRadius: '50%', border: '2px solid #fff',
-              bgcolor: 'primary.main', color: '#fff', cursor: 'pointer', p: 0,
+              bgcolor: 'primary.main', color: COLORS.onAccent, cursor: 'pointer', p: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: 1, '&:hover': { bgcolor: 'primary.dark' },
             }}
           >
-            {uploading ? <CircularProgress size={14} sx={{ color: '#fff' }} /> : <Pencil size={16} />}
+            {uploading ? <CircularProgress size={14} sx={{ color: COLORS.onAccent }} /> : <Pencil size={16} />}
           </Box>
         </Tooltip>
       </Box>
@@ -127,7 +128,7 @@ const AvatarPicker = ({ size = 96, onFeedback }: Props) => {
               onClick={() => pickColor(c)}
               sx={{
                 width: 46, height: 46, borderRadius: '50%', bgcolor: c, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', color: COLORS.onAccent,
                 border: color === c && !u?.photo ? '3px solid #1a1a18' : '3px solid transparent',
                 transition: 'transform .12s', '&:hover': { transform: 'scale(1.08)' },
               }}

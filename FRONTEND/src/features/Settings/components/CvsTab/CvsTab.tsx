@@ -6,20 +6,22 @@ import {
   Card,
   CardActionArea,
   CardContent,
+  TextField,
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import { FileText, Plus, Star, Trash2 } from "../../../../components/icons/MuiIcons";
-import Tooltip from '@mui/material/Tooltip';
-import IconButton from '@mui/material/IconButton';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { createEmptyBuilderFormData, updateFormData } from '../../../../redux/store/slices/cvBuilderSlice';
+import { loadCv, resetCv } from '../../../../redux/store/slices/cvBuilderSlice';
 import { CV_ENDPOINTS } from '../../../../constants/endpoints';
 import { COLORS } from '../../../../theme/tokens';
 import cvsTab from './cvsTab.tokens';
 import type { CV } from './CvsTab.types';
 import { useFeedback } from '../../../../context/FeedbackContext';
+import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
+import IconAction from '../../../../components/ui/IconAction';
 
 const CvsTab = () => {
   const { t } = useTranslation();
@@ -27,6 +29,10 @@ const CvsTab = () => {
   const dispatch = useDispatch();
   const { notify } = useFeedback();
   const [cvs, setCvs] = useState<CV[]>([]);
+  const [pendingDelete, setPendingDelete] = useState<CV | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [draftTitle, setDraftTitle] = useState('');
 
   useEffect(() => {
     axios
@@ -38,6 +44,7 @@ const CvsTab = () => {
   const cvKey = (cv: CV) => cv.id ?? cv._id ?? '';
 
   const makePrimary = async (cv: CV) => {
+    if (cv.isPrimary) return;
     const id = cvKey(cv);
     if (!id) return;
     setCvs((prev) => prev.map((c) => ({ ...c, isPrimary: cvKey(c) === id })));
@@ -48,17 +55,37 @@ const CvsTab = () => {
     }
   };
 
-  const remove = async (cv: CV) => {
+  const commitRename = async (cv: CV) => {
     const id = cvKey(cv);
-    if (!id || !window.confirm(t('This permanently deletes "{{title}}". You cannot undo this action.', { title: cv.title || t('Untitled CV') }))) return;
+    const next = draftTitle.trim();
+    setRenamingId(null);
+    if (!id || next === (cv.title || '')) return;
+    const previous = cv.title;
+    setCvs((prev) => prev.map((c) => (cvKey(c) === id ? { ...c, title: next } : c)));
+    try {
+      await axios.put(CV_ENDPOINTS.update(id), { title: next }, { withCredentials: true });
+    } catch {
+      setCvs((prev) => prev.map((c) => (cvKey(c) === id ? { ...c, title: previous } : c)));
+      notify(t('Could not rename this CV. Please try again.'));
+    }
+  };
+
+  const remove = async () => {
+    const id = pendingDelete ? cvKey(pendingDelete) : '';
+    if (!id) return;
+    setDeleting(true);
     try {
       await axios.delete(CV_ENDPOINTS.delete(id), { withCredentials: true });
       setCvs((prev) => prev.filter((item) => cvKey(item) !== id));
       notify(t('CV deleted successfully!'), 'success');
+      setPendingDelete(null);
     } catch {
       notify(t('Could not delete this CV. Please try again.'));
+    } finally {
+      setDeleting(false);
     }
   };
+
   return (
     <Box>
       <Typography sx={cvsTab.sectionTitle}>{t('My CVs')}</Typography>
@@ -66,27 +93,38 @@ const CvsTab = () => {
         {cvs.map((cv) => (
           <Grid size={{ xs: 12, sm: 6, md: 4 }} key={cvKey(cv)}>
             <Card variant="outlined" sx={{ ...cvsTab.card, position: 'relative' }}>
-              <Tooltip title={cv.isPrimary ? t('Primary CV — used by Job Radar') : t('Set as primary')}>
-                <IconButton
-                  size="small"
-                  onClick={() => makePrimary(cv)}
-                  sx={{ position: 'absolute', top: 4, right: 4, zIndex: 1, color: cv.isPrimary ? 'warning.main' : 'action.disabled' }}
+              <Box sx={cvsTab.cardActions}>
+                <IconAction
+                  label={t('Rename CV')}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setDraftTitle(cv.title || '');
+                    setRenamingId(cvKey(cv));
+                  }}
                 >
-                  <Star size={18} fill={cv.isPrimary ? 'currentColor' : 'none'} />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title={t('Delete CV')}>
-                <IconButton
-                  size="small"
-                  aria-label={t('Delete CV')}
-                  onClick={(event) => { event.stopPropagation(); remove(cv); }}
-                  sx={{ position: 'absolute', top: 4, right: 36, zIndex: 3, color: 'error.main' }}
+                  <EditIcon sx={{ fontSize: 18 }} />
+                </IconAction>
+                <IconAction
+                  label={t('Delete CV')}
+                  tone="danger"
+                  onClick={(event) => { event.stopPropagation(); setPendingDelete(cv); }}
                 >
                   <Trash2 size={18} />
-                </IconButton>
-              </Tooltip>              <CardActionArea
+                </IconAction>
+                <IconAction
+                  label={cv.isPrimary ? t('Primary CV — used by Job Radar') : t('Set as primary')}
+                  tone="favorite"
+                  active={cv.isPrimary}
+                  onClick={() => makePrimary(cv)}
+                >
+                  <Star size={18} fill={cv.isPrimary ? 'currentColor' : 'none'} />
+                </IconAction>
+              </Box>
+              <CardActionArea
+                component="div"
                 onClick={() => {
-                  dispatch(updateFormData(cv));
+                  if (renamingId === cvKey(cv)) return;
+                  dispatch(loadCv(cv));
                   navigate('/builder');
                 }}
               >
@@ -94,9 +132,28 @@ const CvsTab = () => {
                   <Box sx={cvsTab.cardPreview}>
                     <FileText size={24} color={COLORS.primary} />
                   </Box>
-                  <Typography fontSize={13} fontWeight={600} noWrap>
-                    {cv.title || t('Untitled CV')}
-                  </Typography>
+                  {renamingId === cvKey(cv) ? (
+                    <TextField
+                      autoFocus
+                      fullWidth
+                      size="small"
+                      variant="standard"
+                      value={draftTitle}
+                      placeholder={t('Untitled CV')}
+                      inputProps={{ maxLength: 80 }}
+                      onClick={(event) => event.stopPropagation()}
+                      onChange={(event) => setDraftTitle(event.target.value)}
+                      onBlur={() => commitRename(cv)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') commitRename(cv);
+                        if (event.key === 'Escape') setRenamingId(null);
+                      }}
+                    />
+                  ) : (
+                    <Typography fontSize={13} fontWeight={600} noWrap>
+                      {cv.title || t('Untitled CV')}
+                    </Typography>
+                  )}
                   <Typography fontSize={11} color="text.secondary" sx={{ mt: 0.5 }}>
                     {new Date(cv.updatedAt).toLocaleDateString()}
                   </Typography>
@@ -109,7 +166,7 @@ const CvsTab = () => {
           <Card variant="outlined" sx={cvsTab.newCvCard}>
             <CardActionArea
               onClick={() => {
-                dispatch(updateFormData(createEmptyBuilderFormData()));
+                dispatch(resetCv());
                 navigate('/builder');
               }}
               sx={{ height: '100%' }}
@@ -124,6 +181,17 @@ const CvsTab = () => {
           </Card>
         </Grid>
       </Grid>
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title={t('Delete CV')}
+        message={t('This permanently deletes "{{title}}". You cannot undo this action.', {
+          title: pendingDelete?.title || t('Untitled CV'),
+        })}
+        loading={deleting}
+        onConfirm={remove}
+        onClose={() => setPendingDelete(null)}
+      />
     </Box>
   );
 };

@@ -140,8 +140,8 @@ export const InstapayDetailsCard = ({
                 minWidth: 22,
                 height: 22,
                 borderRadius: RADIUS.full,
-                bgcolor: COLORS.primary,
-                color: "#fff",
+                bgcolor: COLORS.primarySurface,
+                color: COLORS.onAccent,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -172,8 +172,8 @@ export const InstapayDetailsCard = ({
           onClick={onContinue}
           sx={{
             flex: 2,
-            bgcolor: COLORS.primary,
-            "&:hover": { bgcolor: COLORS.primaryDark },
+            bgcolor: COLORS.primarySurface,
+            "&:hover": { bgcolor: COLORS.primarySurfaceDark },
           }}
         >
           {t("I've Paid — Continue")}

@@ -7,6 +7,7 @@ import FolderCopyRoundedIcon from '@mui/icons-material/FolderCopyRounded';
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
 import FactCheckRoundedIcon from '@mui/icons-material/FactCheckRounded';
 import WorkRoundedIcon from '@mui/icons-material/WorkRounded';
+import HubRoundedIcon from '@mui/icons-material/HubRounded';
 import Button from '@mui/material/Button';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +17,7 @@ import CreditsPlanTab from '../components/PlanTab/CreditsPlanTab';
 import CvsTab from '../components/CvsTab';
 import DocumentsTab from '../components/DocumentsTab';
 import AvatarPicker from '../components/AvatarPicker';
+import { GitCredentialsSection } from '../GitCredentialsSection';
 import settings from './settings.tokens';
 import type { SettingsTab, NavItem } from './Settings.types';
 import { displayName } from '../../../utils/displayName';
@@ -24,6 +26,7 @@ const NAV: NavItem[] = [
   { id: 'profile', label: 'Profile', icon: <PersonRoundedIcon sx={{ fontSize: 18 }} /> },
   { id: 'cv', label: 'My CVs', icon: <DescriptionRoundedIcon sx={{ fontSize: 18 }} /> },
   { id: 'documents', label: 'Documents', icon: <FolderCopyRoundedIcon sx={{ fontSize: 18 }} /> },
+  { id: 'connections', label: 'Connections', icon: <HubRoundedIcon sx={{ fontSize: 18 }} /> },
   { id: 'plan', label: 'Credits & Plan', icon: <WorkspacePremiumRoundedIcon sx={{ fontSize: 18 }} /> },
 ];
 
@@ -41,6 +44,7 @@ const Settings = () => {
 
   const query = new URLSearchParams(window.location.search);
   const requestedTab = query.get('tab') as SettingsTab | null;
+  const requestedHost = query.get('host') === 'GITLAB' ? 'GITLAB' : query.get('host') === 'GITHUB' ? 'GITHUB' : undefined;
   const defaultTab = user ? (requestedTab || 'profile') : 'plan';
   const [tab, setTab] = useState<SettingsTab>(defaultTab);
 
@@ -93,6 +97,7 @@ const Settings = () => {
             {tab === 'profile' && <ProfileTab />}
             {tab === 'cv' && <CvsTab />}
             {tab === 'documents' && <DocumentsTab />}
+            {tab === 'connections' && <GitCredentialsSection highlightHost={requestedHost} />}
             {tab === 'plan' && <CreditsPlanTab />}
           </Box>
         </Box>

@@ -4,11 +4,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   Divider,
   Paper,
   Stack,
@@ -23,6 +18,8 @@ import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../constants/endpoints';
 import { useFeedback } from '../../context/FeedbackContext';
 import { displayName } from '../../utils/displayName';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { COLORS } from '../../theme/tokens';
 
 type ReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -166,7 +163,7 @@ const ReviewsTab = () => {
                     {Array.from({ length: review.rating }).map((_, i) => (
                       <StarIcon
                         key={i}
-                        sx={{ color: '#f59e0b', fontSize: '1rem' }}
+                        sx={{ color: COLORS.warning, fontSize: '1rem' }}
                       />
                     ))}
                   </Box>
@@ -226,41 +223,16 @@ const ReviewsTab = () => {
         )}
       </Paper>
 
-      {/* Delete confirmation dialog */}
-      <Dialog
+      <ConfirmDialog
         open={!!deleteTarget}
+        title={t('Delete review')}
+        message={t(
+          'Are you sure you want to permanently delete this review? This action cannot be undone.'
+        )}
+        loading={deleting}
+        onConfirm={handleDelete}
         onClose={() => setDeleteTarget(null)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle>{t('Delete review')}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {t(
-              'Are you sure you want to permanently delete this review? This action cannot be undone.'
-            )}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setDeleteTarget(null)}
-            disabled={deleting}
-          >
-            {t('Cancel')}
-          </Button>
-          <Button
-            color="error"
-            variant="contained"
-            onClick={handleDelete}
-            disabled={deleting}
-            startIcon={
-              deleting ? <CircularProgress size={16} color="inherit" /> : null
-            }
-          >
-            {t('Delete')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      />
     </>
   );
 };

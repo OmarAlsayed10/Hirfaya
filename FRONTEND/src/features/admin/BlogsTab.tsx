@@ -21,6 +21,8 @@ import { Plus, Pencil, Trash2 } from "../../components/icons/MuiIcons";
 import { useTranslation } from "react-i18next";
 import { COLORS, RADIUS, TYPOGRAPHY } from "../../theme/tokens";
 import { ADMIN_ENDPOINTS } from "../../constants/endpoints";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import IconAction from "../../components/ui/IconAction";
 
 interface Blog {
   id: string;
@@ -51,6 +53,7 @@ const BlogsTab = () => {
   const [form, setForm] = useState(emptyForm);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Blog | null>(null);
 
   const fetchBlogs = useCallback(async () => {
     setLoading(true);
@@ -102,11 +105,13 @@ const BlogsTab = () => {
     }
   };
 
-  const remove = async (id: string) => {
+  const remove = async () => {
+    if (!deleteTarget) return;
     setBusy(true);
     try {
-      await axios.delete(ADMIN_ENDPOINTS.blog(id), { withCredentials: true });
+      await axios.delete(ADMIN_ENDPOINTS.blog(deleteTarget.id), { withCredentials: true });
       await fetchBlogs();
+      setDeleteTarget(null);
     } finally {
       setBusy(false);
     }
@@ -115,7 +120,7 @@ const BlogsTab = () => {
   return (
     <Box>
       <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
-        <Button variant="contained" startIcon={<Plus size={16} />} onClick={openNew} sx={{ bgcolor: COLORS.primary }}>
+        <Button variant="contained" startIcon={<Plus size={16} />} onClick={openNew} sx={{ bgcolor: COLORS.primarySurface }}>
           {t('New Blog')}
         </Button>
       </Box>
@@ -142,7 +147,7 @@ const BlogsTab = () => {
                   <Chip
                     label={b.published ? t('Published') : t('Draft')}
                     size="small"
-                    sx={{ bgcolor: b.published ? "#dcfce7" : COLORS.bgLight, color: b.published ? "#16a34a" : COLORS.textSecondary, fontWeight: 600 }}
+                    sx={{ bgcolor: b.published ? COLORS.successSoft : COLORS.bgLight, color: b.published ? COLORS.success : COLORS.textSecondary, fontWeight: 600 }}
                   />
                   <Chip label={b.category} size="small" variant="outlined" />
                 </Box>
@@ -150,12 +155,12 @@ const BlogsTab = () => {
                   {b.excerpt || "—"}
                 </Typography>
               </Box>
-              <IconButton onClick={() => openEdit(b)} disabled={busy}>
-                <Pencil size={16} color={COLORS.primary} />
-              </IconButton>
-              <IconButton onClick={() => remove(b.id)} disabled={busy}>
-                <Trash2 size={16} color="#dc2626" />
-              </IconButton>
+              <IconAction label={t('Edit')} tone="primary" onClick={() => openEdit(b)} disabled={busy}>
+                <Pencil size={16} />
+              </IconAction>
+              <IconAction label={t('Delete')} tone="danger" onClick={() => setDeleteTarget(b)} disabled={busy}>
+                <Trash2 size={16} />
+              </IconAction>
             </Paper>
           ))}
         </Stack>
@@ -180,11 +185,22 @@ const BlogsTab = () => {
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
           <Button onClick={() => setOpen(false)}>{t('Cancel')}</Button>
-          <Button variant="contained" onClick={save} disabled={busy || !form.title.trim() || !form.content.trim()} sx={{ bgcolor: COLORS.primary }}>
+          <Button variant="contained" onClick={save} disabled={busy || !form.title.trim() || !form.content.trim()} sx={{ bgcolor: COLORS.primarySurface }}>
             {busy ? <CircularProgress size={18} color="inherit" /> : t('Save')}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title={t('Delete blog')}
+        message={t('This permanently deletes "{{title}}". You cannot undo this action.', {
+          title: deleteTarget?.title || '',
+        })}
+        loading={busy}
+        onConfirm={remove}
+        onClose={() => setDeleteTarget(null)}
+      />
     </Box>
   );
 };

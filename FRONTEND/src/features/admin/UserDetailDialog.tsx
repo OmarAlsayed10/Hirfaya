@@ -187,7 +187,7 @@ const UserDetailDialog = ({ userId, onClose, onChanged }: Props) => {
             {user.banned && (
               <Chip
                 label={`${t('Banned')} — ${user.bannedReason ?? t('no reason')}`}
-                sx={{ bgcolor: "#fee2e2", color: "#dc2626", fontWeight: 600, alignSelf: "flex-start" }}
+                sx={{ bgcolor: COLORS.dangerSoft, color: COLORS.danger, fontWeight: 600, alignSelf: "flex-start" }}
               />
             )}
 
@@ -253,7 +253,7 @@ const UserDetailDialog = ({ userId, onClose, onChanged }: Props) => {
                         size="small"
                         sx={{
                           bgcolor:
-                            p.status === "APPROVED" ? "#dcfce7" : p.status === "REJECTED" ? "#fee2e2" : COLORS.bgLight,
+                            p.status === "APPROVED" ? COLORS.successSoft : p.status === "REJECTED" ? COLORS.dangerSoft : COLORS.bgLight,
                           fontWeight: 600,
                         }}
                       />
@@ -315,7 +315,7 @@ const UserDetailDialog = ({ userId, onClose, onChanged }: Props) => {
                     <Typography variant="body2" sx={{ fontFamily: "monospace", flex: 1 }}>
                       {user.lastIp ?? t('Unknown — not seen since IP tracking was added')}
                     </Typography>
-                    <Button variant="outlined" onClick={banIp} disabled={busy || !user.lastIp} sx={{ color: "#dc2626", borderColor: "#dc2626" }}>
+                    <Button variant="outlined" onClick={banIp} disabled={busy || !user.lastIp} sx={{ color: COLORS.danger, borderColor: COLORS.danger }}>
                       {t('Ban this IP')}
                     </Button>
                   </Box>
@@ -326,7 +326,7 @@ const UserDetailDialog = ({ userId, onClose, onChanged }: Props) => {
             {user.role === "admin" && (
               <Chip
                 label={t('Admin account — unrestricted, no plan or usage limit')}
-                sx={{ bgcolor: "#fde68a", color: "#92400e", fontWeight: 600, alignSelf: "flex-start" }}
+                sx={{ bgcolor: COLORS.warningSoft, color: COLORS.accentOrange, fontWeight: 600, alignSelf: "flex-start" }}
               />
             )}
           </Stack>
@@ -343,18 +343,18 @@ const UserDetailDialog = ({ userId, onClose, onChanged }: Props) => {
             onClick={() => setConfirmDelete(true)}
             disabled={busy}
             startIcon={<DeleteForeverRoundedIcon />}
-            sx={{ color: "#dc2626", mr: "auto" }}
+            sx={{ color: COLORS.danger, mr: "auto" }}
           >
             {t("Delete account")}
           </Button>
         )}
         {user && user.role !== "admin" && (
           user.banned ? (
-            <Button variant="contained" onClick={unbanUser} disabled={busy} sx={{ bgcolor: COLORS.primary }}>
+            <Button variant="contained" onClick={unbanUser} disabled={busy} sx={{ bgcolor: COLORS.primarySurface }}>
               {t('Unban User')}
             </Button>
           ) : (
-            <Button variant="contained" onClick={banUser} disabled={busy} sx={{ bgcolor: "#dc2626", "&:hover": { bgcolor: "#b91c1c" } }}>
+            <Button variant="contained" onClick={banUser} disabled={busy} sx={{ bgcolor: COLORS.danger, "&:hover": { bgcolor: COLORS.dangerDark } }}>
               {t('Ban User')}
             </Button>
           )

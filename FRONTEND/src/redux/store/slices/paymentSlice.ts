@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
 import { PAYMENT_ENDPOINTS } from "../../../constants/endpoints";
+import { track } from "../../../lib/analytics";
 
 export interface Plan {
   id: string;
@@ -117,6 +118,9 @@ export const submitInstapayPayment = createAsyncThunk(
       const { data } = await axios.post(PAYMENT_ENDPOINTS.submit, form, {
         withCredentials: true,
         headers: { "Content-Type": "multipart/form-data" },
+      });
+      track("payment_submitted", {
+        kind: payload.planId ? "plan" : "credits",
       });
       return data as { requestId: string; status: string };
     } catch (err: any) {

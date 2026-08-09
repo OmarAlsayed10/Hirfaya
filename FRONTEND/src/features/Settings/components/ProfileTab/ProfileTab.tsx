@@ -5,15 +5,13 @@ import {
   Typography,
   TextField,
   Button,
+  MenuItem,
+  FormControlLabel,
+  Switch,
   Grid,
   Alert,
   Autocomplete,
   Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
 } from '@mui/material';
 import { Plus } from "../../../../components/icons/MuiIcons";
 import axios from 'axios';
@@ -23,6 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import { USER_ENDPOINTS } from '../../../../constants/endpoints';
 import { SKILL_DICTIONARY } from '../../../Builder/skillDictionary';
 import CountrySelect from '../../../../components/ui/CountrySelect';
+import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import { suggestSkills } from './skillSuggestions';
 import profileTab from './profileTab.tokens';
 import { AppDispatch, resetStore } from '../../../../redux/store/store';
@@ -37,6 +36,7 @@ const ProfileTab = () => {
   const [lastName, setLastName] = useState('');
   const [details, setDetails] = useState({
     title: '', location: '', phone: '', linkedin: '', github: '', portfolio: '', summary: '',
+    salaryExpectation: '', salaryCurrency: 'USD', visaStatus: '', noticePeriod: '', workPreference: '', relocationOpen: false,
   });
   const [skills, setSkills] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -45,12 +45,18 @@ const ProfileTab = () => {
   const feedbackTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const u = user as Record<string, string | null> | null;
+    const u = user as Record<string, any> | null;
     if (!u) return;
     setDetails({
       title: u.title ?? '', location: u.location ?? '', phone: u.phone ?? '',
       linkedin: u.linkedin ?? '', github: u.github ?? '', portfolio: u.portfolio ?? '',
       summary: u.summary ?? '',
+      salaryExpectation: u.salaryExpectation ?? '',
+      salaryCurrency: u.salaryCurrency ?? 'USD',
+      visaStatus: u.visaStatus ?? '',
+      noticePeriod: u.noticePeriod ?? '',
+      workPreference: u.workPreference ?? '',
+      relocationOpen: Boolean(u.relocationOpen),
     });
     const su = user as { skills?: string[] } | null;
     setSkills(Array.isArray(su?.skills) ? su!.skills : []);
@@ -191,6 +197,102 @@ const ProfileTab = () => {
         </Grid>
       </Grid>
 
+      <Typography sx={{ ...profileTab.sectionTitle, fontSize: 15, mb: 1.5 }}>
+        {t('Application Defaults')}
+      </Typography>
+      <Grid container spacing={1.5} sx={{ mb: 4 }}>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <TextField
+            fullWidth
+            size="small"
+            label={t('Salary expectation')}
+            placeholder="e.g. 80,000 - 100,000"
+            value={details.salaryExpectation}
+            onChange={setDetail('salaryExpectation')}
+            sx={profileTab.textField}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 2 }}>
+          <TextField
+            select
+            fullWidth
+            size="small"
+            label={t('Currency')}
+            value={details.salaryCurrency}
+            onChange={(e) => setDetails((d) => ({ ...d, salaryCurrency: e.target.value }))}
+            sx={profileTab.textField}
+          >
+            {['USD', 'EGP', 'EUR', 'GBP', 'AED', 'SAR'].map((c) => (
+              <MenuItem key={c} value={c}>
+                {c}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            select
+            fullWidth
+            size="small"
+            label={t('Visa / Work status')}
+            value={details.visaStatus}
+            onChange={(e) => setDetails((d) => ({ ...d, visaStatus: e.target.value }))}
+            sx={profileTab.textField}
+          >
+            <MenuItem value="">{t('Not specified')}</MenuItem>
+            <MenuItem value="citizen">{t('Citizen / PR')}</MenuItem>
+            <MenuItem value="work_permit">{t('Work Permit / Valid Visa')}</MenuItem>
+            <MenuItem value="requires_sponsorship">{t('Requires Visa Sponsorship')}</MenuItem>
+          </TextField>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <TextField
+            select
+            fullWidth
+            size="small"
+            label={t('Notice period')}
+            value={details.noticePeriod}
+            onChange={(e) => setDetails((d) => ({ ...d, noticePeriod: e.target.value }))}
+            sx={profileTab.textField}
+          >
+            <MenuItem value="">{t('Not specified')}</MenuItem>
+            <MenuItem value="immediate">{t('Immediate')}</MenuItem>
+            <MenuItem value="2_weeks">{t('2 Weeks')}</MenuItem>
+            <MenuItem value="1_month">{t('1 Month')}</MenuItem>
+            <MenuItem value="2_months">{t('2 Months')}</MenuItem>
+            <MenuItem value="3_months">{t('3 Months')}</MenuItem>
+          </TextField>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <TextField
+            select
+            fullWidth
+            size="small"
+            label={t('Work preference')}
+            value={details.workPreference}
+            onChange={(e) => setDetails((d) => ({ ...d, workPreference: e.target.value }))}
+            sx={profileTab.textField}
+          >
+            <MenuItem value="">{t('Any')}</MenuItem>
+            <MenuItem value="remote">{t('Remote')}</MenuItem>
+            <MenuItem value="hybrid">{t('Hybrid')}</MenuItem>
+            <MenuItem value="onsite">{t('On-site')}</MenuItem>
+            <MenuItem value="flexible">{t('Flexible')}</MenuItem>
+          </TextField>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 4 }} sx={{ display: 'flex', alignItems: 'center' }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={details.relocationOpen}
+                onChange={(e) => setDetails((d) => ({ ...d, relocationOpen: e.target.checked }))}
+              />
+            }
+            label={t('Open to relocation')}
+          />
+        </Grid>
+      </Grid>
+
       <Typography sx={{ ...profileTab.sectionTitle, fontSize: 15, mb: 0.5 }}>
         {t('Skills')}
       </Typography>
@@ -248,24 +350,15 @@ const ProfileTab = () => {
         </Button>
       </Box>
 
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>{t('Delete User Account')}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {t(
-              'Are you absolutely sure you want to delete your account? This action involves wiping all records, personal details, and CVs. This cannot be undone.'
-            )}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} color="inherit">
-            {t('Cancel')}
-          </Button>
-          <Button onClick={handleDeleteAccount} variant="contained" sx={profileTab.confirmDeleteButton}>
-            {t('Delete')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        title={t('Delete User Account')}
+        message={t(
+          'Are you absolutely sure you want to delete your account? This action involves wiping all records, personal details, and CVs. This cannot be undone.'
+        )}
+        onConfirm={handleDeleteAccount}
+        onClose={() => setDeleteDialogOpen(false)}
+      />
     </Box>
   );
 };

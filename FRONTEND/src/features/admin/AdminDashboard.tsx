@@ -21,12 +21,12 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5fa", p: { xs: 2, md: 4 } }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: COLORS.bgLight, p: { xs: 2, md: 4 } }}>
       <Box sx={{ maxWidth: 1200, mx: "auto" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 2, mb: 2 }}>
           <Typography
             variant="h4"
-            sx={{ fontFamily: TYPOGRAPHY.fontSerif, color: COLORS.textPrimary, flex: 1 }}
+            sx={{ fontFamily: TYPOGRAPHY.fontSerif, color: COLORS.textPrimary, flex: 1, fontSize: { xs: "1.6rem", md: "2.125rem" } }}
           >
             {t('Admin Dashboard')}
           </Typography>
@@ -43,8 +43,11 @@ const AdminDashboard = () => {
         <Tabs
           value={tab}
           onChange={(_, v) => setTab(v)}
-          sx={{ mb: 3, "& .MuiTab-root": { fontWeight: 600, textTransform: "none" } }}
-          TabIndicatorProps={{ sx: { bgcolor: COLORS.primary } }}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          sx={{ mb: 3, "& .MuiTab-root": { fontWeight: 600, textTransform: "none", minWidth: "auto" } }}
+          TabIndicatorProps={{ sx: { bgcolor: COLORS.primarySurface } }}
         >
           {TABS.map((name) => (
             <Tab key={name} label={t(name)} />

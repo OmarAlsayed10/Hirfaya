@@ -14,10 +14,10 @@ interface Props {
 
 const STATUS_CONFIG = {
   PENDING: {
-    icon: <HourglassTopIcon sx={{ fontSize: 48, color: "#f59e0b" }} />,
+    icon: <HourglassTopIcon sx={{ fontSize: 48, color: COLORS.warning }} />,
     label: "Under Review",
-    color: "#f59e0b",
-    bgcolor: "#fffbeb",
+    color: COLORS.warning,
+    bgcolor: COLORS.warningSoft,
     message:
       "Your payment is being reviewed. We'll send a confirmation email within 24 hours.",
   },
@@ -29,10 +29,10 @@ const STATUS_CONFIG = {
     message: "Your Pro plan is now active. Enjoy all premium features!",
   },
   REJECTED: {
-    icon: <CancelIcon sx={{ fontSize: 48, color: "#dc2626" }} />,
+    icon: <CancelIcon sx={{ fontSize: 48, color: COLORS.danger }} />,
     label: "Rejected",
-    color: "#dc2626",
-    bgcolor: "#fef2f2",
+    color: COLORS.danger,
+    bgcolor: COLORS.dangerSoft,
     message: "Your payment could not be verified.",
   },
 };
@@ -56,7 +56,7 @@ export const PaymentStatusCard = ({ status, loading, onRetry }: Props) => {
         <Button
           variant="contained"
           onClick={onRetry}
-          sx={{ mt: 2, bgcolor: COLORS.primary }}
+          sx={{ mt: 2, bgcolor: COLORS.primarySurface }}
         >
           {t('Start Payment')}
         </Button>
@@ -86,7 +86,7 @@ export const PaymentStatusCard = ({ status, loading, onRetry }: Props) => {
         label={t(cfg.label)}
         sx={{
           bgcolor: cfg.color,
-          color: "#fff",
+          color: COLORS.onAccent,
           fontWeight: 700,
           fontSize: TYPOGRAPHY.sizeSm,
         }}
@@ -119,12 +119,12 @@ export const PaymentStatusCard = ({ status, loading, onRetry }: Props) => {
         <Box
           sx={{
             p: 1.5,
-            bgcolor: "#fee2e2",
+            bgcolor: COLORS.dangerSoft,
             borderRadius: RADIUS.md,
             width: "100%",
           }}
         >
-          <Typography variant="body2" sx={{ color: "#7f1d1d" }}>
+          <Typography variant="body2" sx={{ color: COLORS.dangerDark }}>
             {t('Reason:')} {status.rejectionReason}
           </Typography>
         </Box>
@@ -134,7 +134,7 @@ export const PaymentStatusCard = ({ status, loading, onRetry }: Props) => {
         <Button
           variant="contained"
           onClick={onRetry}
-          sx={{ bgcolor: COLORS.primary, "&:hover": { bgcolor: COLORS.primaryDark } }}
+          sx={{ bgcolor: COLORS.primarySurface, "&:hover": { bgcolor: COLORS.primarySurfaceDark } }}
         >
           {t('Try Again')}
         </Button>

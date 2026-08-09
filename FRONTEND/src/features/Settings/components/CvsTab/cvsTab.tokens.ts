@@ -11,6 +11,14 @@ const cvsTab = {
     transition: '0.2s',
     '&:hover': { borderColor: 'primary.main' },
   },
+  cardActions: {
+    position: 'absolute',
+    top: 4,
+    insetInlineEnd: 4,
+    zIndex: 3,
+    display: 'flex',
+    gap: 0.25,
+  },
   cardPreview: {
     height: 60,
     bgcolor: 'primary.50',

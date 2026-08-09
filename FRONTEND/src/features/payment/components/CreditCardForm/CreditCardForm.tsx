@@ -76,7 +76,7 @@ export const CreditCardForm = ({
             justifyContent: "center",
             gap: 1,
             p: 3,
-            border: `2px dashed ${fileError ? "#d32f2f" : COLORS.borderMedium}`,
+            border: `2px dashed ${fileError ? COLORS.danger : COLORS.borderMedium}`,
             borderRadius: RADIUS.lg,
             cursor: loading ? "not-allowed" : "pointer",
             bgcolor: screenshot ? COLORS.bgIconTinted : "transparent",
@@ -100,7 +100,7 @@ export const CreditCardForm = ({
           </Typography>
         </Box>
         {fileError && (
-          <Typography variant="caption" sx={{ color: "#d32f2f", mt: 0.5, display: "block" }}>
+          <Typography variant="caption" sx={{ color: COLORS.danger, mt: 0.5, display: "block" }}>
             {fileError}
           </Typography>
         )}
@@ -129,8 +129,8 @@ export const CreditCardForm = ({
           disabled={loading}
           sx={{
             flex: 2,
-            bgcolor: COLORS.primary,
-            "&:hover": { bgcolor: COLORS.primaryDark },
+            bgcolor: COLORS.primarySurface,
+            "&:hover": { bgcolor: COLORS.primarySurfaceDark },
           }}
           startIcon={
             loading ? <CircularProgress size={16} color="inherit" /> : null
