@@ -1,5 +1,9 @@
 export interface CVParams {
-  // title: string;
+  title?: string;
+  template?: string;
+  sectionOrder?: string[];
+  customSections?: unknown;
+  fontScale?: number;
   personalInfo: {
     firstName: string;
     lastName: string;
@@ -39,6 +43,6 @@ export interface CVParams {
   skills:{
     skills: string[];
     languages?: string;
-    certifications?: string;
+    certifications?: Array<{ name: string; issuer: string; date: string; url: string }>;
   };
 }

@@ -8,11 +8,14 @@ import {
   makePrimaryCV,
   getPrimary,
 } from "../controllers/cvBuilderController";
+import { exportCvPdfController } from "../controllers/cvPdfExportController";
 import { authenticateToken } from "../middleware/validateJWTMiddleware";
 
 const router = Router();
 
 router.post("/save", authenticateToken, saveCV);
+
+router.post("/export-pdf", authenticateToken, exportCvPdfController);
 
 router.get("/user", authenticateToken, getUserCVs);
 

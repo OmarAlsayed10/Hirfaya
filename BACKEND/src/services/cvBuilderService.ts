@@ -2,17 +2,33 @@ import { StatusCodes } from "http-status-codes";
 import { CVParams } from "../types/cvBuilder.types";
 import prisma from "../lib/prisma";
 
+// The font scale reaches the DB straight from the client, so it is clamped to the same
+// range the builder offers rather than trusted.
+const clampFontScale = (value?: number) =>
+  typeof value === "number" && Number.isFinite(value) ? Math.min(1.2, Math.max(0.7, value)) : 1;
+
 // Create CV
 export const createCV = async (cvData: CVParams & { userId: string }) => {
   try {
+    const existingCount = await prisma.cV.count({
+      where: { userId: cvData.userId },
+    });
+    const isPrimary = existingCount === 0;
+
     const cv = await prisma.cV.create({
       data: {
         userId: cvData.userId,
+        title: cvData.title?.trim() || null,
+        template: cvData.template || "classic-cv",
         personalInfo: cvData.personalInfo ?? {},
         experience: cvData.experience ?? [],
         education: cvData.education ?? [],
         projects: cvData.projects ?? [],
         skills: cvData.skills ?? { skills: [], languages: "", certifications: "" },
+        sectionOrder: cvData.sectionOrder ?? [],
+        customSections: (cvData.customSections ?? []) as any,
+        fontScale: clampFontScale(cvData.fontScale),
+        isPrimary,
       },
     });
     return {
@@ -21,6 +37,8 @@ export const createCV = async (cvData: CVParams & { userId: string }) => {
       cv,
     };
   } catch (error) {
+    // A silent catch here turns any schema or stale-client mismatch into an opaque 400.
+    console.error("createCV failed:", error);
     return {
       status: StatusCodes.BAD_REQUEST,
       error: { message: "Failed to create CV" },
@@ -35,6 +53,16 @@ export const getCVsByUser = async (userId: string) => {
       where: { userId },
       orderBy: { createdAt: "desc" },
     });
+    if (cvs && cvs.length > 0) {
+      const hasPrimary = cvs.some((cv) => cv.isPrimary);
+      if (!hasPrimary) {
+        await prisma.cV.update({
+          where: { id: cvs[0].id },
+          data: { isPrimary: true },
+        });
+        cvs[0].isPrimary = true;
+      }
+    }
     return cvs || [];
   } catch (error) {
     return {
@@ -74,11 +102,16 @@ export const updateCV = async (cvId: string, userId: string, cvData: Partial<CVP
     const result = await prisma.cV.updateMany({
       where: { id: cvId, userId },
       data: {
+        ...(cvData.title !== undefined && { title: cvData.title?.trim() || null }),
+        ...(cvData.template !== undefined && { template: cvData.template }),
         ...(cvData.personalInfo && { personalInfo: cvData.personalInfo ?? {} }),
         ...(cvData.experience && { experience: cvData.experience ?? [] }),
         ...(cvData.education && { education: cvData.education ?? [] }),
         ...(cvData.projects && { projects: cvData.projects ?? [] }),
         ...(cvData.skills && { skills: cvData.skills ?? { skills: [], languages: "", certifications: "" } }),
+        ...(cvData.sectionOrder && { sectionOrder: cvData.sectionOrder }),
+        ...(cvData.customSections !== undefined && { customSections: cvData.customSections as any }),
+        ...(cvData.fontScale !== undefined && { fontScale: clampFontScale(cvData.fontScale) }),
       },
     });
     if (result.count === 0) {

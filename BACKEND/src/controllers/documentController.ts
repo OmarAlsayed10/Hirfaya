@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { CustomRequest } from "../middleware/validateJWTMiddleware";
 import { generateCoverLetter } from "../services/coverLetterService";
 import { generateLinkedInBio } from "../services/bioService";
+import { normalizeJobDescription } from "../lib/jobDescriptionNormalizer";
 import { getPrimaryCV } from "../services/cvBuilderService";
 import {
   DOCUMENT_TYPES,
@@ -45,7 +46,7 @@ export const createGeneratedDocument = async (req: Request, res: Response): Prom
 
   const role = cap(req.body.targetRole, 100);
   const company = cap(req.body.targetCompany, 100);
-  const jobDescription = cap(req.body.targetJobDescription, 4000);
+  const jobDescription = normalizeJobDescription(cap(req.body.targetJobDescription, 4000)).plainText;
   if (type === "cover-letter" && !role) {
     res.status(400).json({ message: "targetRole is required for a cover letter." });
     return;
@@ -65,7 +66,7 @@ export const createGeneratedDocument = async (req: Request, res: Response): Prom
 
   const content =
     type === "cover-letter"
-      ? await generateCoverLetter(cvText, { title: role, company, description: jobDescription })
+      ? (await generateCoverLetter(cvText, { title: role, company, description: jobDescription })).letter
       : await generateLinkedInBio(cvText);
 
   if (!content) {

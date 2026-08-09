@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { exportCVController } from "../controllers/cvExportController";
-import { uploadToMemory, uploadMdToMemory } from "../services/importService";
+import { uploadToMemory, uploadMdToMemory, uploadAvatar } from "../services/importService";
 import { importCVController } from "../controllers/cvImportController";
 import { analyzeCVController } from "../controllers/cvAnalaysController";
 import { aiWritingAssist } from "../controllers/AIWritingController";
@@ -8,7 +8,7 @@ import { GrammarController } from "../controllers/grammarCheckerController";
 import { adjustCVController } from "../controllers/cvAdjustController";
 import { exportAdjustedCVController } from "../controllers/exportAdjustedCVController";
 import { cvChatController, interviewAnswersController } from "../controllers/cvChatController";
-import { parseCvController, polishEntryController, conversationalBuildController, importCvController, optimizeCvLengthController, editFieldWithAIController, generateSmartSkillsController } from "../controllers/cvBuilderAssistController";
+import { parseCvController, polishEntryController, conversationalBuildController, importCvController, optimizeCvLengthController, editFieldWithAIController, generateSmartSkillsController, uploadCvPhotoController } from "../controllers/cvBuilderAssistController";
 import { authenticateToken } from "../middleware/validateJWTMiddleware";
 import { requireProUser } from "../middleware/roleMiddleware";
 import { requireCredits, withUserContext } from "../middleware/creditMiddleware";
@@ -17,19 +17,36 @@ import { careerMatchController, careerMatchLimitsController } from "../controlle
 import { importProjectFromUrlController, importProjectFromFileController } from "../controllers/projectImportController";
 import { validateUrlMiddleware, validateFileMiddleware } from "../middleware/projectImportValidator";
 import { projectImportLimiter } from "../middleware/projectImportLimiter";
+import { analyzeRepoController, auditClaimsController, positioningController } from "../controllers/cvEvidenceController";
+
+import {
+  getSkillRoadmapController,
+  getSkillTrendsController,
+  getUserSkillProgressController,
+  updateUserSkillProgressController,
+  deleteUserSkillProgressController,
+} from "../controllers/roadmapController";
+
+import { aiLimiter } from "../middleware/rateLimitMiddleware";
 
 const router = Router();
 router.get("/exports/:cvId", authenticateToken, exportCVController);
 router.post("/upload-cv", authenticateToken, uploadToMemory.single("cv"), importCVController);
 
-router.post("/analyze", uploadToMemory.single("cv"), analyzeCVController);
+router.post("/analyze", aiLimiter, uploadToMemory.single("cv"), analyzeCVController);
 router.get("/career-match/limits", authenticateToken, careerMatchLimitsController);
-router.post("/career-match", authenticateToken, withUserContext, uploadToMemory.single("cv"), careerMatchController);
-router.post("/import-cv", authenticateToken, requireCredits, withUserContext, uploadToMemory.single("cv"), importCvController);
+router.post("/career-match", authenticateToken, aiLimiter, withUserContext, uploadToMemory.single("cv"), careerMatchController);
+router.post("/skill-roadmap", authenticateToken, aiLimiter, getSkillRoadmapController);
+router.get("/skill-trends", authenticateToken, getSkillTrendsController);
+router.get("/skill-progress", authenticateToken, getUserSkillProgressController);
+router.post("/skill-progress", authenticateToken, updateUserSkillProgressController);
+router.delete("/skill-progress", authenticateToken, deleteUserSkillProgressController);
+router.post("/import-cv", authenticateToken, aiLimiter, requireCredits, withUserContext, uploadToMemory.single("cv"), importCvController);
 
 router.post(
   "/import-project-url",
   authenticateToken,
+  aiLimiter,
   projectImportLimiter,
   validateUrlMiddleware,
   requireCredits,
@@ -40,6 +57,7 @@ router.post(
 router.post(
   "/import-project-file",
   authenticateToken,
+  aiLimiter,
   projectImportLimiter,
   uploadMdToMemory.single("readme"),
   validateFileMiddleware,
@@ -49,8 +67,27 @@ router.post(
 );
 
 router.post(
+  "/analyze-repo",
+  authenticateToken,
+  projectImportLimiter,
+  analyzeRepoController
+);
+
+router.post("/audit-claims", authenticateToken, auditClaimsController);
+
+router.post(
+  "/positioning",
+  authenticateToken,
+  aiLimiter,
+  requireCredits,
+  withUserContext,
+  positioningController
+);
+
+router.post(
   "/ai-writing-assist",
   authenticateToken,
+  aiLimiter,
   requireProUser,
   requireCredits,
   withUserContext,
@@ -59,6 +96,7 @@ router.post(
 router.post(
   "/grammarcheck",
   authenticateToken,
+  aiLimiter,
   requireProUser,
   requireCredits,
   withUserContext,
@@ -67,6 +105,7 @@ router.post(
 router.post(
   "/adjust-cv",
   authenticateToken,
+  aiLimiter,
   requireProUser,
   requireCredits,
   withUserContext,
@@ -81,6 +120,7 @@ router.post(
 router.post(
   "/cv-chat",
   authenticateToken,
+  aiLimiter,
   requireProUser,
   requireCredits,
   withUserContext,
@@ -89,16 +129,18 @@ router.post(
 router.post(
   "/interview-answers",
   authenticateToken,
+  aiLimiter,
   requireProUser,
   requireCredits,
   withUserContext,
   interviewAnswersController
 );
-router.post("/parse-cv", authenticateToken, requireProUser, requireCredits, withUserContext, parseCvController);
-router.post("/polish-entry", authenticateToken, requireProUser, requireCredits, withUserContext, polishEntryController);
-router.post("/conversational-build", authenticateToken, requireProUser, requireCredits, withUserContext, conversationalBuildController);
-router.post("/optimize-cv-length", authenticateToken, requireProUser, requireCredits, withUserContext, optimizeCvLengthController);
-router.post("/edit-field-ai", authenticateToken, requireProUser, requireCredits, withUserContext, editFieldWithAIController);
-router.post("/generate-smart-skills", authenticateToken, requireProUser, requireCredits, withUserContext, generateSmartSkillsController);
+router.post("/parse-cv", authenticateToken, aiLimiter, requireProUser, requireCredits, withUserContext, parseCvController);
+router.post("/polish-entry", authenticateToken, aiLimiter, requireProUser, requireCredits, withUserContext, polishEntryController);
+router.post("/conversational-build", authenticateToken, aiLimiter, requireProUser, requireCredits, withUserContext, conversationalBuildController);
+router.post("/optimize-cv-length", authenticateToken, aiLimiter, requireProUser, requireCredits, withUserContext, optimizeCvLengthController);
+router.post("/cv-photo", authenticateToken, uploadAvatar.single("photo"), uploadCvPhotoController);
+router.post("/edit-field-ai", authenticateToken, aiLimiter, requireProUser, requireCredits, withUserContext, editFieldWithAIController);
+router.post("/generate-smart-skills", authenticateToken, aiLimiter, requireProUser, requireCredits, withUserContext, generateSmartSkillsController);
 
 export default router;

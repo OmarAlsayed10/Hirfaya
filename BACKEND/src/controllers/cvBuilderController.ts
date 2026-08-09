@@ -18,7 +18,7 @@ export const saveCV = async (
 ) => {
   try {
     const customReq = req as CustomRequest;
-    const { personalInfo, experience, education, projects, skills } = customReq.body;
+    const { title, template, sectionOrder, customSections, fontScale, personalInfo, experience, education, projects, skills } = customReq.body;
     const userId = customReq.user?.userId;
     const userRole = customReq.user?.role;
 
@@ -42,7 +42,11 @@ export const saveCV = async (
     }
     const result = await createCV({
       userId,
-      // title,
+      title,
+      template,
+      sectionOrder,
+      customSections,
+      fontScale,
       personalInfo,
       experience,
       education,

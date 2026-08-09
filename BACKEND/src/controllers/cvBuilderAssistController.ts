@@ -4,6 +4,7 @@ import { extractText } from "../services/extractTextService";
 import { polishEntry, optimizeCvLength, editFieldWithAI, generateSmartSkills } from "../services/AIWritingService";
 import { conversationalBuild } from "../services/conversationalBuildService";
 import { sendAiError } from "../lib/aiError";
+import { InvalidAiResponseError } from "../lib/aiResponseValidation";
 
 const MAX_TEXT = 30000;
 
@@ -24,6 +25,15 @@ export const importCvController = async (req: Request, res: Response) => {
   } catch (error) {
     sendAiError(res, error, "CV import error", "Failed to import CV");
   }
+};
+
+export const uploadCvPhotoController = (req: Request, res: Response) => {
+  const file = (req as Request & { file?: Express.Multer.File }).file;
+  if (!file?.path) {
+    res.status(400).json({ message: "No photo uploaded" });
+    return;
+  }
+  res.status(200).json({ url: file.path });
 };
 
 export const parseCvController = async (req: Request, res: Response) => {
@@ -54,6 +64,13 @@ export const conversationalBuildController = async (req: Request, res: Response)
     const result = await conversationalBuild(messages, coerceFormData(formData));
     res.status(200).json(result);
   } catch (error) {
+    if (error instanceof InvalidAiResponseError) {
+      res.status(502).json({
+        code: "AI_RESPONSE_INVALID",
+        message: "The AI response could not be verified. Your CV was not updated.",
+      });
+      return;
+    }
     sendAiError(res, error, "Conversational build error", "Failed to process message");
   }
 };
@@ -77,13 +94,13 @@ export const polishEntryController = async (req: Request, res: Response) => {
 };
 
 export const optimizeCvLengthController = async (req: Request, res: Response) => {
-  const { formData } = req.body;
+  const { formData, currentPages } = req.body;
   if (!formData) {
     res.status(400).json({ message: "formData is required" });
     return;
   }
   try {
-    const optimized = await optimizeCvLength(formData);
+    const optimized = await optimizeCvLength(formData, Number(currentPages) || 2);
     res.status(200).json({ formData: optimized });
   } catch (error) {
     sendAiError(res, error, "Optimize CV length error", "Failed to optimize CV length");

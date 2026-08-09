@@ -3,6 +3,8 @@ import { z } from "zod";
 import { groqChat, MODELS } from "../lib/groqChat";
 import { parseAiResponse } from "../lib/aiResponseValidation";
 import { sanitizeReadmeContent } from "../middleware/projectImportValidator";
+import { evidenceGroundedDescription } from "../lib/evidenceGrounding";
+import { PROJECT_OWNERSHIP, ProjectOwnership, coerceProjectOwnership } from "./projectOwnership";
 
 export interface ImportedProject {
   name: string;
@@ -10,6 +12,7 @@ export interface ImportedProject {
   demoUrl: string;
   githubUrl: string;
   description: string;
+  ownership: ProjectOwnership;
 }
 
 const ProjectSchema = z.object({
@@ -18,35 +21,12 @@ const ProjectSchema = z.object({
   demoUrl: z.string().default(""),
   githubUrl: z.string().default(""),
   description: z.string().default(""),
+  ownership: z.enum(PROJECT_OWNERSHIP).default("independent"),
 });
 
 const ProjectsResponseSchema = z.object({
   projects: z.array(ProjectSchema),
 });
-
-const NUMBER_PATTERN = /\d+(?:[.,]\d+)*/g;
-const PERCENT_SUFFIX_PATTERN = /^\s*(?:%|percent(?:age)?)/i;
-
-const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-const sourceContainsClaim = (statement: string, numberMatch: RegExpMatchArray, sourceText: string): boolean => {
-  const number = numberMatch[0].replace(/,/g, "");
-  const matchEnd = (numberMatch.index ?? 0) + numberMatch[0].length;
-  const isPercentage = PERCENT_SUFFIX_PATTERN.test(statement.slice(matchEnd));
-  const escapedNumber = escapeRegex(number);
-  const suffix = isPercentage ? "\\s*(?:%|percent(?:age)?)" : "";
-  const claimEnd = isPercentage ? "(?!\\w)" : "\\b";
-  return new RegExp(`\\b${escapedNumber}${suffix}${claimEnd}`, "i").test(sourceText.replace(/,/g, ""));
-};
-
-const statementUsesOnlySourceNumbers = (statement: string, sourceText: string): boolean => {
-  const numberMatches = [...statement.matchAll(NUMBER_PATTERN)];
-  return numberMatches.every((numberMatch) => sourceContainsClaim(statement, numberMatch, sourceText));
-};
-
-const evidenceGroundedDescription = (description: string, sourceText: string): string => {
-  return statementUsesOnlySourceNumbers(description, sourceText) ? description : "";
-};
 
 /**
  * Extracts owner and repository name from GitHub or GitLab URLs.
@@ -227,5 +207,6 @@ ${sanitizedReadme}
     demoUrl: p.demoUrl || "",
     githubUrl: p.githubUrl || publicRepoUrl || "",
     description: evidenceGroundedDescription(p.description || "", sanitizedReadme),
+    ownership: coerceProjectOwnership(p.ownership),
   }));
 }

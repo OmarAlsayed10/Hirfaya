@@ -5,34 +5,102 @@ import {
   parseAiResponse,
   untrustedCandidatePayload,
 } from "../lib/aiResponseValidation";
+import { Language } from "../lib/aiLanguage";
+import { translateProseDetailed } from "./translateProseService";
+import { hasCache, readCache, writeCache } from "../lib/persistentCache";
+
+// matchJobTitle stays in English — it is an industry-standard role name, and the
+// frontend matches on it. Verbatim cvExcerpt/jobRequirement stay as they appear in the CV.
+async function translateAiResult(
+  result: AiResult,
+  language: Language,
+): Promise<{ result: AiResult; complete: boolean }> {
+  const source = [
+    ...result.positiveFeedback,
+    ...result.neutralFeedback,
+    ...result.negativeFeedback,
+    ...result.atsCheckerNotes,
+    ...result.interviewQuestions,
+    ...result.sectionsToImprove.flatMap((item) => [
+      item.section,
+      item.suggestion,
+      item.evidence.rationale,
+    ]),
+  ];
+
+  const { items: translated, complete } = await translateProseDetailed(source, language);
+  if (translated === source) return { result, complete };
+
+  let cursor = 0;
+  const take = <T>(items: T[]) => items.map(() => translated[cursor++]);
+
+  return {
+    complete,
+    result: {
+      ...result,
+      positiveFeedback: take(result.positiveFeedback),
+      neutralFeedback: take(result.neutralFeedback),
+      negativeFeedback: take(result.negativeFeedback),
+      atsCheckerNotes: take(result.atsCheckerNotes),
+      interviewQuestions: take(result.interviewQuestions),
+      sectionsToImprove: result.sectionsToImprove.map((item) => ({
+        ...item,
+        section: translated[cursor++],
+        suggestion: translated[cursor++],
+        evidence: { ...item.evidence, rationale: translated[cursor++] },
+      })),
+    },
+  };
+}
+
+// An over-long string is a formatting problem, not corrupt data: a single verbose CV
+// excerpt used to reject an otherwise-complete analysis. Clamp the length instead.
+// Emptiness, array sizes, and required fields stay strict — those signal real breakage.
+const cappedString = (max: number) =>
+  z
+    .string()
+    .trim()
+    .min(1)
+    .transform((value) =>
+      value.length > max ? `${value.slice(0, max - 1).trimEnd()}…` : value,
+    );
+
+// Too MANY items means the model was verbose — trim to the display budget. Too FEW is a
+// genuinely incomplete answer and still fails, so a short analysis is never passed off
+// as a whole one.
+const cappedArray = <T extends z.ZodTypeAny>(item: T, min: number, max: number) =>
+  z
+    .array(item)
+    .min(min)
+    .transform((values) => values.slice(0, max));
 
 const evidenceSchema = z
   .object({
-    cvExcerpt: z.string().trim().min(1).max(500).nullable(),
-    jobRequirement: z.string().trim().min(1).max(500).nullable(),
-    rationale: z.string().trim().min(1).max(800),
+    cvExcerpt: cappedString(500).nullable(),
+    jobRequirement: cappedString(500).nullable(),
+    rationale: cappedString(800),
   })
   .strip();
 
 export const aiResultSchema = z
   .object({
-    positiveFeedback: z.array(z.string().trim().min(1).max(1000)).min(2).max(4),
-    neutralFeedback: z.array(z.string().trim().min(1).max(1000)).min(1).max(3),
-    negativeFeedback: z.array(z.string().trim().min(1).max(1000)).max(4),
-    sectionsToImprove: z
-      .array(
-        z
-          .object({
-            section: z.string().trim().min(1).max(100),
-            suggestion: z.string().trim().min(1).max(1500),
-            evidence: evidenceSchema,
-          })
-          .strip(),
-      )
-      .max(10),
-    atsCheckerNotes: z.array(z.string().trim().min(1).max(1000)).min(1).max(4),
-    matchJobTitle: z.string().trim().min(1).max(150),
-    interviewQuestions: z.array(z.string().trim().min(1).max(1000)).length(10),
+    positiveFeedback: cappedArray(cappedString(1000), 2, 4),
+    neutralFeedback: cappedArray(cappedString(1000), 1, 3),
+    negativeFeedback: cappedArray(cappedString(1000), 0, 4),
+    sectionsToImprove: cappedArray(
+      z
+        .object({
+          section: cappedString(100),
+          suggestion: cappedString(1500),
+          evidence: evidenceSchema,
+        })
+        .strip(),
+      0,
+      10,
+    ),
+    atsCheckerNotes: cappedArray(cappedString(1000), 1, 4),
+    matchJobTitle: cappedString(150),
+    interviewQuestions: cappedArray(cappedString(1000), 10, 10),
   })
   .strip();
 
@@ -40,37 +108,99 @@ export type AiResult = z.infer<typeof aiResultSchema>;
 
 const CACHE_MAX = 300;
 const responseCache = new Map<string, AiResult>();
-const cacheKey = (cvText: string, targetRole: string, jobDescription: string) =>
+const cacheKey = (
+  cvText: string,
+  targetRole: string,
+  jobDescription: string,
+  language: Language,
+) =>
   createHash("sha256")
     .update(
       JSON.stringify({
         cvText: cvText.trim(),
         targetRole: targetRole.trim(),
         jobDescription: jobDescription.trim(),
+        language,
       }),
     )
     .digest("hex");
 
-export function hasAiResponse(
+const ARABIC_SCRIPT = /[؀-ۿ]/;
+
+// Rows written before partial translations were rejected still sit in the cache, and a
+// stale one is indistinguishable from a good one by key alone — it just serves an English
+// analysis instantly under an Arabic key. Checking the prose on the way out retires those
+// rows on first use instead of requiring the table to be wiped by hand. Short strings can
+// legitimately stay Latin ("React"), so only full sentences have to carry Arabic.
+const looksTranslated = (result: AiResult, language: Language): boolean => {
+  if (language === "en") return true;
+  return [
+    ...result.interviewQuestions,
+    ...result.positiveFeedback,
+    ...result.atsCheckerNotes,
+  ]
+    .filter((item) => item.length > 40)
+    .every((item) => ARABIC_SCRIPT.test(item));
+};
+
+export async function hasAiResponse(
   cvText: string,
   targetRole = "",
   jobDescription = "",
-): boolean {
-  return responseCache.has(cacheKey(cvText, targetRole, jobDescription));
+  language: Language = "en",
+): Promise<boolean> {
+  const key = cacheKey(cvText, targetRole, jobDescription, language);
+  const cached = responseCache.get(key);
+  if (cached) return looksTranslated(cached, language);
+  const stored = await readCache<AiResult>(key);
+  return !!stored && looksTranslated(stored, language);
 }
+
+const rememberAiResult = async (key: string, result: AiResult): Promise<AiResult> => {
+  if (responseCache.size >= CACHE_MAX) {
+    responseCache.delete(responseCache.keys().next().value!);
+  }
+  responseCache.set(key, result);
+  await writeCache(key, result);
+  return result;
+};
 
 export function clearAiResponseCache(): void {
   responseCache.clear();
 }
 
+// Analysis always runs in English so findings and scores never depend on UI language;
+// Arabic is produced by translating this one result, not by re-analysing the CV.
 export async function aiResponse(
   cvText: string,
   targetRole = "",
   jobDescription = "",
+  language: Language = "en",
 ): Promise<AiResult> {
-  const key = cacheKey(cvText, targetRole, jobDescription);
+  const key = cacheKey(cvText, targetRole, jobDescription, language);
   const cached = responseCache.get(key);
-  if (cached) return cached;
+  if (cached && looksTranslated(cached, language)) return cached;
+  if (cached) responseCache.delete(key);
+
+  const stored = await readCache<AiResult>(key);
+  if (stored && looksTranslated(stored, language)) {
+    responseCache.set(key, stored);
+    return stored;
+  }
+  if (stored) console.error("[ai-response] cached result is untranslated, regenerating");
+
+  if (language !== "en") {
+    const english = await aiResponse(cvText, targetRole, jobDescription, "en");
+    const { result, complete } = await translateAiResult(english, language);
+    // Serve a partly-translated analysis rather than nothing, but never store it: a cached
+    // failure outlives the provider hiccup that caused it and the section stays English
+    // for good. Leaving it uncached costs one re-translation and self-heals.
+    if (!complete) {
+      console.error("[ai-response] partial translation, not caching");
+      return result;
+    }
+    return rememberAiResult(key, result);
+  }
 
   const systemPrompt = `You are a senior HR director and ATS compliance expert. Return JSON only.
 
@@ -120,16 +250,14 @@ Return only this JSON shape:
 }`,
       },
     ],
-    temperature: 0.2,
+    // Deterministic: the in-memory cache is lost on restart, so a re-analysis of the
+    // same CV must return the same findings rather than a fresh sampling.
+    temperature: 0,
     response_format: { type: "json_object" },
   });
 
   const raw = response.choices[0].message?.content;
   const result = parseAiResponse(raw ?? "", aiResultSchema);
 
-  if (responseCache.size >= CACHE_MAX) {
-    responseCache.delete(responseCache.keys().next().value!);
-  }
-  responseCache.set(key, result);
-  return result;
+  return rememberAiResult(key, result);
 }
