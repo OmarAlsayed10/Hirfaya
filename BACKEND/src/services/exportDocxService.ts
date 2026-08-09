@@ -1,6 +1,7 @@
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import path from "path";
 import fs from "fs";
+import { coerceCertifications } from "./cvParseService";
 
 // Replace ICV mongoose interface with a plain type
 type CV = {
@@ -35,7 +36,7 @@ type CV = {
   skills: {
     skills?: string[];
     languages?: string | string[];
-    certifications?: string | string[];
+    certifications?: unknown;
   };
 };
 
@@ -49,9 +50,10 @@ async function exportWordCV(CV: CV): Promise<Buffer> {
   const languagesText = Array.isArray(CV.skills?.languages)
     ? CV.skills.languages.join(", ")
     : CV.skills?.languages || "No languages listed";
-  const certificationsText = Array.isArray(CV.skills?.certifications)
-    ? CV.skills.certifications.join(", ")
-    : CV.skills?.certifications || "No certifications listed";
+  const certificationsText =
+    coerceCertifications(CV.skills?.certifications)
+      .map((cert) => [cert.name, cert.issuer, cert.date].filter(Boolean).join(" · "))
+      .join("; ") || "No certifications listed";
 
   const doc = new Document({
     sections: [

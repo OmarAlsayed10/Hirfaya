@@ -1,5 +1,8 @@
 import { Box, Typography } from "@mui/material";
 import FormattedText from "../components/ui/FormattedText";
+import BulletList from "./BulletList";
+import CustomSections from "./CustomSections";
+import { certificationDetail } from "./certificationText";
 
 const LinkedInCV = ({
   name,
@@ -17,9 +20,11 @@ const LinkedInCV = ({
   languages = [],
   certifications = [],
   sectionOrder = ['personal', 'projects', 'experience', 'education', 'skills', 'languages', 'certifications'],
-}) => {
+  customSections = [],
+  printMode = false,
+}: any) => {
   return (
-    <Box sx={{
+    <Box sx={printMode ? {} : {
       backgroundColor: "#f4f7fb",
       display: "flex",
       justifyContent: "center",
@@ -29,9 +34,9 @@ const LinkedInCV = ({
       <Box sx={{
         width: "100%",
         backgroundColor: "#fff",
-        padding: "40px",
-        boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
-        borderRadius: "12px",
+        // Vertical inset comes from the @page margin when printing, so it repeats per page.
+        padding: printMode ? "0 40px" : "40px",
+        ...(printMode ? {} : { boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)", borderRadius: "12px" }),
         fontFamily: `"Segoe UI", Tahoma, Geneva, Verdana, sans-serif`,
         color: "#333",
         lineHeight: 1.6,
@@ -146,11 +151,11 @@ const LinkedInCV = ({
                 }}>
                   {item.company} — {item.years}
                 </Typography>
-                <Typography data-cv-field={`experience.${index}.description`} sx={{
+                <BulletList text={item.description} fieldPath={`experience.${index}.description`} sx={{
                   fontSize: "14px",
                   marginTop: "6px",
                   color: "#444",
-                }}><FormattedText text={item.description} /></Typography>
+                }} />
               </Box>
             ))}
           </Box>
@@ -182,11 +187,11 @@ const LinkedInCV = ({
                   fontSize: "14px",
                   color: "#666",
                 }}>{edu.location}</Typography>
-                <Typography data-cv-field={`education.${index}.description`} sx={{
+                <BulletList text={edu.description} fieldPath={`education.${index}.description`} sx={{
                   fontSize: "14px",
                   marginTop: "6px",
                   color: "#444",
-                }}><FormattedText text={edu.description} /></Typography>
+                }} />
               </Box>
             ))}
           </Box>
@@ -236,13 +241,27 @@ const LinkedInCV = ({
             paddingBottom: "4px",
           }}>Certifications</Typography>
           <Box component="ul" sx={{ listStyle: "none", paddingLeft: "0" }}>
-            {certifications.map((cert, index) => (
-              <Box component="li" key={index}>
-                {cert.name} 
+            {certifications.map((cert: any, index: number) => (
+              <Box component="li" key={index} sx={{ marginBottom: "6px" }}>
+                <Box component="span" sx={{ fontWeight: 600 }}>{cert.name}</Box>
+                {certificationDetail(cert) && (
+                  <Box sx={{ fontSize: "14px", color: "#555" }}>{certificationDetail(cert)}</Box>
+                )}
+                {cert.description && (
+                  <BulletList text={cert.description} sx={{ fontSize: "14px", color: "#555" }} />
+                )}
               </Box>
             ))}
           </Box>
         </Box>
+        <CustomSections
+          sections={customSections}
+          sectionOrder={sectionOrder}
+          headingSx={{ fontSize: "20px", marginBottom: "10px", color: "#004080", borderBottom: "1px solid #ccc", paddingBottom: "4px" }}
+          entryTitleSx={{ fontSize: "16px", fontWeight: "bold", color: "#222" }}
+          entryMetaSx={{ fontSize: "14px", color: "#666" }}
+          bodySx={{ fontSize: "14px", marginTop: "6px", color: "#444" }}
+        />
       </Box>
     </Box>
   );

@@ -1,7 +1,10 @@
-import { useState } from "react";
-import { Box, Typography, Button } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import FormattedText from "../components/ui/FormattedText";
+import BulletList from "./BulletList";
+import CustomSections from "./CustomSections";
+import { certificationDetail } from "./certificationText";
+import { bulletLines } from "./bulletLines";
 
 const PAGE_HEIGHT = 1123;
 const PAGE_WIDTH = 794;
@@ -23,7 +26,7 @@ const HEADING = {
 
 function Bullets({ text, fieldPath }: { text: string; fieldPath: string }) {
   if (!text) return null;
-  const lines = text.split("\n").map((l) => l.replace(/^[-•*]\s*/, "").trim()).filter(Boolean);
+  const lines = bulletLines(text);
   if (lines.length <= 1) {
     return <Typography data-cv-field={fieldPath} sx={{ fontFamily: SERIF, fontSize: "0.88rem", color: "#000", lineHeight: 1.4 }}><FormattedText text={text} /></Typography>;
   }
@@ -55,6 +58,7 @@ function EntryHeader({ left, right, subLeft, subRight }: { left: string; right?:
 
 const HarvardCV = ({
   name,
+  professionalTitle,
   email,
   phone,
   location,
@@ -68,17 +72,19 @@ const HarvardCV = ({
   experience,
   education,
   projects = [],
-  pageCount = 1,
   sectionOrder = ['personal', 'projects', 'experience', 'education', 'skills', 'languages', 'certifications'],
+  customSections = [],
+  printMode = false,
+  activePage = 1,
 }: any) => {
   const { t } = useTranslation();
-  const [activePage, setActivePage] = useState(1);
   const contact = [location, phone, email, linkedin, github, portfolio].filter(Boolean).join("  •  ");
 
   const fullContent = (
     <Box sx={{ p: { xs: 5, sm: 6 }, boxSizing: "border-box", display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ textAlign: "center", mb: 1 }}>
         <Typography sx={{ fontFamily: SERIF, fontSize: "1.7rem", fontWeight: 700, color: "#000", lineHeight: 1.1 }}>{name || "Your Name"}</Typography>
+        {professionalTitle && <Typography data-cv-field="personalInfo.professionalTitle" sx={{ fontFamily: SERIF, fontSize: "0.95rem", fontStyle: "italic", color: "#000", mt: 0.3 }}>{professionalTitle}</Typography>}
         {contact && <Typography sx={{ fontFamily: SERIF, fontSize: "0.82rem", color: "#000", mt: 0.5 }}>{contact}</Typography>}
       </Box>
 
@@ -147,13 +153,31 @@ const HarvardCV = ({
       {certifications && certifications.length > 0 && (
         <Box data-cv-section="certifications" sx={{ order: sectionOrder.indexOf('certifications') }}>
           <Typography draggable data-cv-drag-handle sx={HEADING}>{t('Certifications')}</Typography>
-          <Typography sx={{ fontFamily: SERIF, fontSize: "0.88rem", color: "#000", lineHeight: 1.4 }}>
-            {certifications.map((certification: any) => certification.name).join(", ")}
-          </Typography>
+          {certifications.map((cert: any, index: number) => (
+            <Typography key={index} sx={{ fontFamily: SERIF, fontSize: "0.88rem", color: "#000", lineHeight: 1.4 }}>
+              <Box component="span" sx={{ fontWeight: 700 }}>{cert.name}</Box>
+              {certificationDetail(cert) ? `, ${certificationDetail(cert)}` : ""}
+              {cert.description && (
+                <BulletList text={cert.description} sx={{ fontFamily: SERIF, fontSize: "0.85rem", color: "#000", lineHeight: 1.35 }} />
+              )}
+            </Typography>
+          ))}
         </Box>
       )}
+      <CustomSections
+        sections={customSections}
+        sectionOrder={sectionOrder}
+        headingSx={HEADING}
+        entryTitleSx={{ fontFamily: SERIF, fontSize: "0.92rem", fontWeight: 700, color: "#000" }}
+        entryMetaSx={{ fontFamily: SERIF, fontSize: "0.88rem", fontStyle: "italic", color: "#000" }}
+        bodySx={{ fontFamily: SERIF, fontSize: "0.88rem", color: "#000", lineHeight: 1.4 }}
+      />
     </Box>
   );
+
+  // Printing hands pagination to the browser, so the fixed-height clipped page frame
+  // and the page switcher are dropped and the content flows.
+  if (printMode) return fullContent;
 
   const pageContainerStyle = {
     backgroundColor: "#fff",
@@ -168,78 +192,14 @@ const HarvardCV = ({
     overflow: "hidden",
   };
 
-  if (pageCount > 1) {
-    const pages = Array.from({ length: pageCount }, (_, i) => i + 1);
-
-    return (
-      <Box sx={{ backgroundColor: "#f5f4ef", p: { xs: 2, md: 4 }, display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-        <Box sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 2,
-          mb: 4,
-          backgroundColor: "rgba(255, 255, 255, 0.95)",
-          backdropFilter: "blur(10px)",
-          p: "8px 16px",
-          borderRadius: "40px",
-          border: "1.5px solid rgba(0, 0, 0, 0.1)",
-          boxShadow: "0 8px 30px rgba(0, 0, 0, 0.08)"
-        }}>
-          <Typography sx={{ fontSize: "0.85rem", color: "#666", fontWeight: 800, mr: 1, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-            {t('Document View')}:
-          </Typography>
-          {pages.map((page) => (
-            <Button
-              key={page}
-              onClick={() => setActivePage(page)}
-              variant="text"
-              sx={{
-                borderRadius: "30px",
-                textTransform: "none",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                px: 3,
-                py: 1,
-                minWidth: 120,
-                backgroundColor: activePage === page ? "#1a1a18" : "transparent",
-                color: activePage === page ? "#fff" : "#555",
-                boxShadow: activePage === page ? "0 4px 15px rgba(0, 0, 0, 0.15)" : "none",
-                "&:hover": {
-                  backgroundColor: activePage === page ? "#333" : "rgba(0, 0, 0, 0.05)",
-                  color: activePage === page ? "#fff" : "#1a1a18",
-                },
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-              }}
-            >
-              <Typography sx={{ fontSize: "0.88rem", fontWeight: 800, lineHeight: 1.2 }}>
-                {t("Page")} {page}
-              </Typography>
-              <Typography sx={{ fontSize: "0.68rem", opacity: activePage === page ? 0.9 : 0.6, fontWeight: 500, mt: 0.2 }}>
-                {page} / {pageCount}
-              </Typography>
-            </Button>
-          ))}
-        </Box>
-
-        <Box sx={pageContainerStyle}>
-          <Box sx={{
-            width: "100%",
-            transform: `translateY(-${(activePage - 1) * PAGE_HEIGHT}px)`,
-            transition: "transform 0.3s ease",
-          }}>
-            {fullContent}
-          </Box>
-        </Box>
-      </Box>
-    );
-  }
-
   return (
     <Box sx={{ backgroundColor: "#f5f4ef", p: { xs: 2, md: 4 }, display: "flex", justifyContent: "center" }}>
-      <Box sx={pageContainerStyle}>
-        <Box sx={{ width: "100%" }}>
+      <Box data-cv-page sx={pageContainerStyle}>
+        <Box sx={{
+          width: "100%",
+          transform: `translateY(-${(activePage - 1) * PAGE_HEIGHT}px)`,
+          transition: "transform 0.3s ease",
+        }}>
           {fullContent}
         </Box>
       </Box>

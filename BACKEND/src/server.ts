@@ -29,6 +29,7 @@ import { blockBannedIp } from "./middleware/ipBanMiddleware";
 import { startCronJobs } from "./services/cronService";
 import { loadBanCache } from "./lib/banCache";
 import prisma from "./lib/prisma";
+import { closeBrowser } from "./services/pdfExportService";
 
 const app = express();
 const port = process.env.PORT;
@@ -38,6 +39,7 @@ app.use(
   cors({
     origin: process.env.CLIENT_URL,
     credentials: true,
+    exposedHeaders: ["X-Page-Count"],
   })
 );
 app.use(cookieParser());
@@ -104,3 +106,13 @@ start();
 process.on("beforeExit", async () => {
   await prisma.$disconnect();
 });
+
+// Chrome runs as its own OS process. Without this it outlives every restart and deploy,
+// and the machine slowly fills with orphaned browsers.
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.on(signal, async () => {
+    await closeBrowser();
+    await prisma.$disconnect().catch(() => undefined);
+    process.exit(0);
+  });
+}

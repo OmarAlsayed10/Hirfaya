@@ -6,19 +6,29 @@ export function cvFormToPdfProps(formData: BuilderFormData) {
     name: `${p.firstName || ''} ${p.lastName || ''}`.trim(),
     email: p.email || '',
     phone: [p.phoneCode, p.phone].filter(Boolean).join(' '),
-    location: [p.city, p.country].filter(Boolean).join(', '),
+    town: p.town || '',
+    city: p.city || '',
+    country: p.country || '',
+    location: [p.town, p.city, p.country].filter(Boolean).join(', '),
     professionalTitle: p.professionalTitle || '',
     linkedin: p.linkedin || '',
     github: p.github || '',
     portfolio: p.portfolio || '',
+    photo: p.photo || '',
     summary: p.ProfessionalSummary || '',
     skills: formData.skills.skills.join(', '),
     languages: formData.skills.languages
       ? formData.skills.languages.split(',').map((l) => ({ name: l.trim() }))
       : [],
     certifications: formData.skills.certifications
-      ? formData.skills.certifications.split(',').map((c) => ({ name: c.trim() }))
-      : [],
+      .filter((cert) => cert.name.trim())
+      .map((cert) => ({
+        name: cert.name.trim(),
+        issuer: cert.issuer.trim(),
+        date: cert.date.trim(),
+        url: cert.url.trim(),
+        description: (cert.description || '').trim(),
+      })),
     experience: formData.experience.map((exp) => ({
       role: exp.jobTitle || '',
       company: exp.company || '',
@@ -36,6 +46,9 @@ export function cvFormToPdfProps(formData: BuilderFormData) {
       location: edu.location || '',
       description: edu.description || '',
     })),
+    customSections: (formData.customSections || []).filter(
+      (section) => section.title.trim() || section.items.some((item) => item.title.trim() || item.description.trim()),
+    ),
     projects: formData.projects.map((proj) => ({
       name: proj.name || '',
       technologies: proj.technologies || '',

@@ -12,6 +12,7 @@ Font.register({
 });
 
 export const isPdfRtl = () => i18n.language === "ar";
+
 export const pdfLangStyle = () =>
   i18n.language === "ar" ? { fontFamily: "Cairo", direction: "rtl" as const } : {};
 export const tp = (key: string) => i18n.t(key);

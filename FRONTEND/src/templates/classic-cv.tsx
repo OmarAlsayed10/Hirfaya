@@ -1,7 +1,9 @@
-import { useState } from "react";
-import { Box, Typography, Button } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import FormattedText from "../components/ui/FormattedText";
+import BulletList from "./BulletList";
+import CustomSections from "./CustomSections";
+import { certificationDetail } from "./certificationText";
 
 const PAGE_HEIGHT = 1123;
 const PAGE_WIDTH = 794;
@@ -22,11 +24,12 @@ const ClassicCV = ({
   experience,
   education,
   projects = [],
-  pageCount = 1,
   sectionOrder = ['personal', 'projects', 'experience', 'education', 'skills', 'languages', 'certifications'],
+  customSections = [],
+  printMode = false,
+  activePage = 1,
 }: any) => {
   const { t } = useTranslation();
-  const [activePage, setActivePage] = useState(1);
 
   const fullContent = (
     <Box sx={{
@@ -66,7 +69,7 @@ const ClassicCV = ({
               <Box component="li" key={index} sx={{ marginBottom: '12px', color: "#6b6b66" }}>
                 <Typography sx={{ color: "#1a1a18" }}><Box component="span" sx={{ fontWeight: 500 }}>{exp.role}</Box> at {exp.company}</Typography>
                 <Typography sx={{ fontSize: "0.85rem", mb: 0.5 }}>{exp.years} | {exp.location}</Typography>
-                <Typography data-cv-field={`experience.${index}.description`} sx={{ color: "#1a1a18", fontSize: "0.95rem" }}><FormattedText text={exp.description} /></Typography>
+                <BulletList text={exp.description} fieldPath={`experience.${index}.description`} sx={{ color: "#1a1a18", fontSize: "0.95rem" }} />
               </Box>
             ))}
           </Box>
@@ -89,7 +92,7 @@ const ClassicCV = ({
                     {proj.githubUrl && <a href={proj.githubUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#007acc', textDecoration: 'none' }}>GitHub</a>}
                   </Typography>
                 )}
-                <Typography data-cv-field={`projects.${index}.description`} sx={{ color: "#1a1a18", fontSize: "0.95rem" }}><FormattedText text={proj.description} /></Typography>
+                <BulletList text={proj.description} fieldPath={`projects.${index}.description`} sx={{ color: "#1a1a18", fontSize: "0.95rem" }} />
               </Box>
             ))}
           </Box>
@@ -104,7 +107,7 @@ const ClassicCV = ({
               <Box component="li" key={index} sx={{ marginBottom: '12px', color: "#6b6b66" }}>
                 <Typography sx={{ color: "#1a1a18" }}><Box component="strong" sx={{ fontWeight: 500 }}>{edu.institution}</Box> — {edu.degree}</Typography>
                 <Typography sx={{ fontSize: "0.85rem", mb: 0.5 }}>{edu.startYear} to {edu.endYear} | {edu.location}</Typography>
-                <Typography data-cv-field={`education.${index}.description`} sx={{ color: "#1a1a18", fontSize: "0.95rem" }}><FormattedText text={edu.description} /></Typography>
+                <BulletList text={edu.description} fieldPath={`education.${index}.description`} sx={{ color: "#1a1a18", fontSize: "0.95rem" }} />
               </Box>
             ))}
           </Box>
@@ -134,13 +137,33 @@ const ClassicCV = ({
           <Typography draggable data-cv-drag-handle variant="h2" sx={{ color: "#6b6b66", fontSize: '0.85rem', fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", mb: 1 }}>{t('Certifications')}</Typography>
           <Box component="ul" sx={{ paddingLeft: "16px", m: 0, color: "#1a1a18" }}>
             {certifications.map((cert: any, index: number) => (
-              <Box component="li" key={index} sx={{ fontSize: "0.95rem" }}>{cert.name}</Box>
+              <Box component="li" key={index} sx={{ fontSize: "0.95rem" }}>
+                {cert.name}
+                {certificationDetail(cert) && (
+                  <Box component="span" sx={{ color: "#6b6b66", fontSize: "0.85rem" }}> — {certificationDetail(cert)}</Box>
+                )}
+                {cert.description && (
+                  <BulletList text={cert.description} sx={{ color: "#6b6b66", fontSize: "0.85rem" }} />
+                )}
+              </Box>
             ))}
           </Box>
         </Box>
       )}
+      <CustomSections
+        sections={customSections}
+        sectionOrder={sectionOrder}
+        headingSx={{ color: "#6b6b66", fontSize: "0.85rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", mb: 1.5 }}
+        entryTitleSx={{ color: "#1a1a18", fontWeight: 500 }}
+        entryMetaSx={{ color: "#6b6b66", fontSize: "0.85rem" }}
+        bodySx={{ color: "#1a1a18", fontSize: "0.95rem" }}
+      />
     </Box>
   );
+
+  // Printing hands pagination to the browser, so the fixed-height clipped page frame
+  // and the page switcher are dropped and the content flows.
+  if (printMode) return fullContent;
 
   const pageContainerStyle = {
     backgroundColor: "#fff",
@@ -155,83 +178,14 @@ const ClassicCV = ({
     overflow: "hidden",
   };
 
-  if (pageCount > 1) {
-    const pages = Array.from({ length: pageCount }, (_, i) => i + 1);
-
-    return (
-      <Box sx={{ backgroundColor: "#f5f4ef", p: { xs: 2, md: 4 }, display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-        <Box sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 2,
-          mb: 4,
-          backgroundColor: "rgba(255, 255, 255, 0.95)",
-          backdropFilter: "blur(10px)",
-          p: "8px 16px",
-          borderRadius: "40px",
-          border: "1.5px solid rgba(0, 0, 0, 0.1)",
-          boxShadow: "0 8px 30px rgba(0, 0, 0, 0.08)"
-        }}>
-          <Typography sx={{ fontSize: "0.85rem", color: "#666", fontWeight: 800, mr: 1, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-            {t('Document View')}:
-          </Typography>
-          {pages.map((page) => (
-            <Button
-              key={page}
-              onClick={() => setActivePage(page)}
-              variant="text"
-              sx={{
-                borderRadius: "30px",
-                textTransform: "none",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                px: 3,
-                py: 1,
-                minWidth: 120,
-                backgroundColor: activePage === page ? "#1a1a18" : "transparent",
-                color: activePage === page ? "#fff" : "#555",
-                boxShadow: activePage === page ? "0 4px 15px rgba(0, 0, 0, 0.15)" : "none",
-                "&:hover": {
-                  backgroundColor: activePage === page ? "#333" : "rgba(0, 0, 0, 0.05)",
-                  color: activePage === page ? "#fff" : "#1a1a18",
-                },
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-              }}
-            >
-              <Typography sx={{ fontSize: "0.88rem", fontWeight: 800, lineHeight: 1.2 }}>
-                {t("Page")} {page}
-              </Typography>
-              <Typography sx={{ fontSize: "0.68rem", opacity: activePage === page ? 0.9 : 0.6, fontWeight: 500, mt: 0.2 }}>
-                {page} / {pageCount}
-              </Typography>
-            </Button>
-          ))}
-        </Box>
-
-        <Box sx={pageContainerStyle}>
-          <Box sx={{
-            width: "100%",
-            transform: `translateY(-${(activePage - 1) * PAGE_HEIGHT}px)`,
-            transition: "transform 0.3s ease",
-          }}>
-            {fullContent}
-          </Box>
-        </Box>
-      </Box>
-    );
-  }
-
   return (
-    <Box sx={{
-      backgroundColor: "#f5f4ef",
-      padding: { xs: 2, md: 4 },
-      display: "flex",
-      justifyContent: "center",
-    }}>
-      <Box sx={pageContainerStyle}>
-        <Box sx={{ width: "100%" }}>
+    <Box sx={{ backgroundColor: "#f5f4ef", p: { xs: 2, md: 4 }, display: "flex", justifyContent: "center" }}>
+      <Box data-cv-page sx={pageContainerStyle}>
+        <Box sx={{
+          width: "100%",
+          transform: `translateY(-${(activePage - 1) * PAGE_HEIGHT}px)`,
+          transition: "transform 0.3s ease",
+        }}>
           {fullContent}
         </Box>
       </Box>

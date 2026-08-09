@@ -36,7 +36,7 @@ type CVData = {
     skills: {
         skills?: string[];
         languages?: string | string[];
-        certifications?: string | string[];
+        certifications?: unknown;
     };
 };
 
