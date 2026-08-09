@@ -43,7 +43,7 @@ const BuildTypeChooser = () => {
   const navigate = useNavigate();
 
   return (
-    <Box sx={{ bgcolor: '#f5f4ef', minHeight: '100vh', py: { xs: 5, md: 8 } }}>
+    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: '100vh', py: { xs: 5, md: 8 } }}>
       <Container maxWidth="md">
         <Typography sx={{ fontFamily: TYPOGRAPHY.fontSerif, fontSize: { xs: '1.8rem', md: '2.2rem' }, textAlign: 'center', color: COLORS.textPrimary, mb: 1 }}>
           {t('What would you like to create?')}
@@ -59,7 +59,7 @@ const BuildTypeChooser = () => {
               onClick={() => navigate(opt.to)}
               sx={{
                 p: 3, borderRadius: RADIUS.lg, border: `2px solid ${COLORS.borderLight}`,
-                bgcolor: '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column',
+                bgcolor: COLORS.bgWhite, cursor: 'pointer', display: 'flex', flexDirection: 'column',
                 transition: 'border-color 0.2s, box-shadow 0.2s',
                 '&:hover': { borderColor: COLORS.primary, boxShadow: '0 6px 20px rgba(0,0,0,0.06)' },
               }}

@@ -1,4 +1,4 @@
-import { Box, CircularProgress, ThemeProvider } from "@mui/material";
+import { Box, CircularProgress, CssBaseline, ThemeProvider } from "@mui/material";
 import { Provider } from "react-redux";
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-router-dom";
 import Error from "./pages/error";
@@ -6,22 +6,27 @@ import store from "./redux/store/store";
 import Layout from "./pages/layout";
 import GetStarted from "./features/GetStart/GetStart";
 import Builder from "./features/Builder/Builder";
-import { theme } from "./utils/theme";
+import { buildTheme } from "./utils/theme";
+import { ThemeModeProvider } from "./context/ThemeModeContext";
+import { useThemeMode } from "./hooks/useThemeMode";
+import "./theme/palette.css";
 import Home from "./features/Home/Home";
 import LoginPage from "./features/Auth/LoginPage";
 import RegisterPage from "./features/Auth/RegisterPage";
 import GoogleAuthSuccess from "./features/Auth/GoogleAuthSuccess";
+import ForgotPasswordPage from "./features/Auth/ForgotPasswordPage";
 import GrammarCheck from "./features/GrammarCheck/GrammarCheck";
 import CVAnalysisPage from "./pages/CVAnalysisPage";
 import JobRadarPage from "./pages/JobRadarPage";
+import ApplicationWorkspacePage from "./pages/ApplicationWorkspacePage";
 import CareerMatchPage from "./pages/CareerMatchPage";
+import RoadmapPage from "./pages/RoadmapPage";
 import { FileProvider } from "./context/fileContext.jsx";
-import { TemplateProvider } from "./context/choosenTempContext.jsx";
 import ProtectedRoute from "./guard/ProtectedRoute.jsx";
 import { useAuth } from "./hooks/useAuth.js";
 import "./i18n";
 import { useTranslation } from "react-i18next";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { PreviewProvider } from "./context/previewContext.jsx";
 import ChatBot from "./features/chatBot/ChatBot";
 import ProPaymentForm from "./features/payment/Payment";
@@ -34,6 +39,7 @@ import OnboardingWizard from "./features/Onboarding/OnboardingWizard";
 import BuildTypeChooser from "./features/Create/BuildTypeChooser";
 import ProseDocumentEditor from "./features/Create/ProseDocumentEditor";
 import TemplatesPage from "./pages/Templates";
+import PrintCV from "./pages/PrintCV";
 import HelpCenter from "./pages/HelpCenter";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
@@ -42,6 +48,19 @@ import AdminDashboard from "./features/admin/AdminDashboard";
 import AdminRoute from "./guard/AdminRoute";
 import PaidRoute from "./guard/PaidRoute";
 import { FeedbackProvider } from "./context/FeedbackContext";
+import { COLORS } from "./theme/tokens";
+
+const ThemedApp = ({ router }: { router: ReturnType<typeof createBrowserRouter> }) => {
+  const { mode } = useThemeMode();
+  const theme = useMemo(() => buildTheme(mode), [mode]);
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <RouterProvider router={router} />
+    </ThemeProvider>
+  );
+};
 
 const FeedbackRouterRoot = () => (
   <FeedbackProvider>
@@ -96,8 +115,24 @@ const appRoutes = [
         ),
       },
       { path: "auth/success", element: <GoogleAuthSuccess /> },
+      {
+        path: "documents/:documentId/edit",
+        element: (
+          <ProtectedRoute>
+            <ProseDocumentEditor />
+          </ProtectedRoute>
+        ),
+      },
       { path: "grammarCheck", element: <GrammarCheck /> },
       { path: "cv-analysis", element: <CVAnalysisPage /> },
+      {
+        path: "roadmap",
+        element: (
+          <ProtectedRoute>
+            <RoadmapPage />
+          </ProtectedRoute>
+        ),
+      },
       {
         path: "career-match",
         element: (
@@ -111,6 +146,14 @@ const appRoutes = [
         element: (
           <ProtectedRoute>
             <JobRadarPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "applications/:matchId",
+        element: (
+          <ProtectedRoute>
+            <ApplicationWorkspacePage />
           </ProtectedRoute>
         ),
       },
@@ -152,8 +195,10 @@ const appRoutes = [
       { path: "privacy", element: <PrivacyPage /> },
     ],
   },
+  { path: "print", element: <PrintCV /> },
   { path: "register", element: <RegisterPage /> },
   { path: "login", element: <LoginPage /> },
+  { path: "forgot-password", element: <ForgotPasswordPage /> },
   {
     path: "admin",
     element: (
@@ -193,20 +238,18 @@ function App() {
           height: "100vh",
         }}
       >
-        <CircularProgress sx={{ color: "#2a5c45" }} />
+        <CircularProgress sx={{ color: COLORS.primary }} />
       </Box>
     );
   }
   return (
     <Provider store={store}>
       <PreviewProvider>
-        <TemplateProvider>
-          <FileProvider>
-            <ThemeProvider theme={theme}>
-              <RouterProvider router={router} />
-            </ThemeProvider>
-          </FileProvider>
-        </TemplateProvider>
+        <FileProvider>
+          <ThemeModeProvider>
+            <ThemedApp router={router} />
+          </ThemeModeProvider>
+        </FileProvider>
       </PreviewProvider>
     </Provider>
   );
