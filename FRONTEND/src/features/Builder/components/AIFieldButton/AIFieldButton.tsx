@@ -9,13 +9,13 @@ import { useAuth } from '../../../../hooks/useAuth';
 import { AI_ENDPOINTS } from '../../../../constants/endpoints';
 import type { RootState } from '../../../../redux/store/store';
 import { isProUser } from '../../../../utils/proAccess';
+import { COLORS } from "../../../../theme/tokens";
 
 type Section = 'summary' | 'experience' | 'skills' | 'education';
 
-const GENERATE_LABEL: Record<Section, string> = {
+const GENERATE_LABEL: Record<Exclude<Section, 'skills'>, string> = {
   summary: 'Professional Summary',
   experience: 'Work Experience',
-  skills: 'Skills',
   education: 'Education',
 };
 
@@ -23,7 +23,7 @@ interface AIFieldButtonProps {
   section: Section;
   raw?: string;
   jobTitle?: string;
-  onResult: (text: string) => void;
+  onResult: (value: string | string[]) => void;
 }
 
 const AIFieldButton = ({ section, raw = '', jobTitle = '', onResult }: AIFieldButtonProps) => {
@@ -41,6 +41,17 @@ const AIFieldButton = ({ section, raw = '', jobTitle = '', onResult }: AIFieldBu
     }
     setLoading(true);
     try {
+      // Skills are extracted from CV evidence as a real list, not prose that gets split.
+      if (section === 'skills') {
+        const { data } = await axios.post(
+          AI_ENDPOINTS.generateSmartSkills,
+          { formData },
+          { withCredentials: true },
+        );
+        if (Array.isArray(data?.skills)) onResult(data.skills);
+        return;
+      }
+
       const hasNotes = raw.trim().length > 3;
       if (hasNotes) {
         const { data } = await axios.post(
@@ -68,8 +79,8 @@ const AIFieldButton = ({ section, raw = '', jobTitle = '', onResult }: AIFieldBu
   return (
     <Tooltip title={raw.trim() ? t('Polish with AI') : t('Generate with AI')}>
       <span>
-        <IconButton onClick={run} disabled={loading} size="small" sx={{ color: '#2a5c45' }}>
-          {loading ? <CircularProgress size={16} sx={{ color: '#2a5c45' }} /> : <Sparkles size={18} />}
+        <IconButton onClick={run} disabled={loading} size="small" sx={{ color: COLORS.primary }}>
+          {loading ? <CircularProgress size={16} sx={{ color: COLORS.primary }} /> : <Sparkles size={18} />}
         </IconButton>
       </span>
     </Tooltip>

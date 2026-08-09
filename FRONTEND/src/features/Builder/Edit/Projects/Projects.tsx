@@ -5,6 +5,7 @@ import {
   IconButton,
   Stack,
   Tooltip,
+  Collapse,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -145,15 +146,27 @@ const tokens = {
     fontSize: '1rem',
     textAlign: 'start' as const,
   },
-  deleteButton: { color: '#ff4444' },
+  deleteButton: { color: COLORS.danger },
   row: { display: 'flex', gap: '12px' },
   halfWidth: { flex: 1, minWidth: 0 },
   fullWidth: { flex: 1, minWidth: 0 },
-  emptyText: { color: '#666', fontStyle: 'italic', textAlign: 'start' as const },
+  emptyText: { color: COLORS.textSecondary, fontStyle: 'italic', textAlign: 'start' as const },
 };
 
 import { Sparkles } from '../../../../components/icons/MuiIcons';
 import ProjectImportModal, { ImportedProjectData } from './ProjectImportModal';
+import { RepoEvidencePanel, RepoEvidence } from './RepoEvidencePanel';
+import { EntryChipRow, EntryToolbar } from '../../components/EntryChip';
+
+const OWNERSHIP_PREFIX: Record<string, string> = {
+  sole: 'Sole engineer',
+  primary: 'Primary engineer',
+  major: 'Major contributor',
+  contributor: 'Contributor',
+};
+
+const evidenceMonth = (iso: string) =>
+  iso ? new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }) : '';
 
 const Projects = () => {
   const { t } = useTranslation();
@@ -164,6 +177,7 @@ const Projects = () => {
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isEvidenceOpen, setIsEvidenceOpen] = useState(false);
 
   const { control, watch, setValue } = useForm<ProjectsFormData>({
     resolver: zodResolver(projectsSchema),
@@ -197,6 +211,31 @@ const Projects = () => {
     setActiveIndex(fields.length);
   };
 
+  const handleEvidenceConfirmed = (evidence: RepoEvidence) => {
+    const author = evidence.matchedAuthor;
+    const ownership = evidence.ownership ? OWNERSHIP_PREFIX[evidence.ownership] : '';
+    const range = [evidenceMonth(evidence.firstCommit), evidenceMonth(evidence.lastCommit)]
+      .filter(Boolean)
+      .join(' – ');
+
+    const lines = [
+      author && ownership
+        ? `• ${ownership}, ${author.commits} of ${evidence.totalCommits} commits${range ? ` (${range})` : ''}.`
+        : '',
+      evidence.description ? `• ${evidence.description}` : '',
+    ].filter(Boolean);
+
+    append({
+      name: evidence.repo,
+      technologies: evidence.languages.slice(0, 6).join(', '),
+      demoUrl: '',
+      githubUrl: evidence.repoUrl,
+      description: lines.join('\n'),
+    });
+    setActiveIndex(fields.length);
+    setIsEvidenceOpen(false);
+  };
+
   const removeProject = (index: number) => {
     remove(index);
     setActiveIndex((prev) => Math.max(0, Math.min(prev, fields.length - 2)));
@@ -226,14 +265,21 @@ const Projects = () => {
             startIcon={<Sparkles size={18} />}
             onClick={() => setIsImportModalOpen(true)}
             sx={{
-              bgcolor: COLORS.primary,
-              color: '#fff',
+              bgcolor: COLORS.primarySurface,
+              color: COLORS.onAccent,
               textTransform: 'none',
               px: 2,
-              '&:hover': { bgcolor: COLORS.primaryDark },
+              '&:hover': { bgcolor: COLORS.primarySurfaceDark },
             }}
           >
             {t('Import with AI')}
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => setIsEvidenceOpen((open) => !open)}
+            sx={tokens.addButton}
+          >
+            {t('Verify with commits')}
           </Button>
           <Button variant="outlined" startIcon={<AddIcon />} onClick={addProject} sx={tokens.addButton}>
             {t('Add Project')}
@@ -247,38 +293,18 @@ const Projects = () => {
         onImportSuccess={handleImportSuccess}
       />
 
+      <Collapse in={isEvidenceOpen} unmountOnExit>
+        <Box sx={{ mb: 2 }}>
+          <RepoEvidencePanel onEvidenceConfirmed={handleEvidenceConfirmed} />
+        </Box>
+      </Collapse>
+
       <Box sx={tokens.entriesBox}>
-        {fields.length > 0 && (
-          <Stack direction="row" spacing={1} sx={{ mb: 2, overflowX: 'auto', pb: 1, pt: 0.5, '::-webkit-scrollbar': { height: 6 } }}>
-            {fields.map((field, index) => {
-              const label = `${t('Project')} ${index + 1}`;
-              return (
-                <Button
-                  key={field.id}
-                  onClick={() => setActiveIndex(index)}
-                  variant={activeIndex === index ? 'contained' : 'outlined'}
-                  size="small"
-                  sx={{
-                    borderRadius: 20,
-                    textTransform: 'none',
-                    whiteSpace: 'nowrap',
-                    px: 2,
-                    py: 0.5,
-                    bgcolor: activeIndex === index ? COLORS.primary : 'transparent',
-                    color: activeIndex === index ? '#fff' : COLORS.textSecondary,
-                    borderColor: activeIndex === index ? COLORS.primary : COLORS.borderMedium,
-                    '&:hover': {
-                      bgcolor: activeIndex === index ? COLORS.primaryDark : COLORS.primaryAlpha12,
-                      borderColor: COLORS.primary,
-                    }
-                  }}
-                >
-                  {label}
-                </Button>
-              );
-            })}
-          </Stack>
-        )}
+        <EntryChipRow
+          labels={fields.map((_, index) => watch(`projects.${index}.name`) || `${t('Project')} ${index + 1}`)}
+          activeIndex={activeIndex}
+          onSelect={setActiveIndex}
+        />
 
         {fields.map((field, index) => {
           if (index !== activeIndex) return null;
@@ -288,25 +314,14 @@ const Projects = () => {
                 <Typography variant="h6" sx={tokens.itemTitle}>
                   {t('Project')} {index + 1}
                 </Typography>
-                <Stack direction="row" spacing={0.25}>
-                  <Tooltip title={t('Move up')}>
-                    <span>
-                      <IconButton onClick={() => moveProject(-1)} disabled={index === 0} size="small">
-                        <KeyboardArrowUpIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip title={t('Move down')}>
-                    <span>
-                      <IconButton onClick={() => moveProject(1)} disabled={index === fields.length - 1} size="small">
-                        <KeyboardArrowDownIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <IconButton onClick={() => removeProject(index)} sx={tokens.deleteButton} aria-label={t('Delete project')}>
-                    <DeleteIcon />
-                  </IconButton>
-                </Stack>
+                <EntryToolbar
+                  onMove={moveProject}
+                  onDelete={() => removeProject(index)}
+                  isFirst={index === 0}
+                  isLast={index === fields.length - 1}
+                  deleteLabel={t('Delete project')}
+                  deleteSx={tokens.deleteButton}
+                />
               </Box>
 
               {/* Row 1: Project Name + Technologies */}

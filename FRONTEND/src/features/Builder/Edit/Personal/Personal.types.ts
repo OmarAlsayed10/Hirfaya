@@ -9,9 +9,11 @@ export interface PersonalFormData {
   phone: string;
   country?: string;
   city: string;
+  town?: string;
   ProfessionalSummary?: string;
   linkedin?: string;
   github?: string;
   portfolio?: string;
+  photo?: string;
 }
 

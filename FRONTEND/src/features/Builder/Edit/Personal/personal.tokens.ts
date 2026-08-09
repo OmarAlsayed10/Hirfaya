@@ -16,7 +16,8 @@ const personal = {
   },
   row: {
     display: 'flex',
-    gap: '12px',
+    flexDirection: { xs: 'column', sm: 'row' },
+    gap: { xs: 0, sm: '12px' },
   },
   halfWidth: {
     flex: 1,

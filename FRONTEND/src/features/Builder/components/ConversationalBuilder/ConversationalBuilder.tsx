@@ -72,8 +72,8 @@ const ConversationalBuilder = ({ open, onClose, onUpdate }: Props) => {
           <Box key={i} sx={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start', mb: 1.5 }}>
             <Box sx={{
               maxWidth: '80%', px: 2, py: 1.2, borderRadius: '14px',
-              bgcolor: m.role === 'user' ? COLORS.primary : '#fff',
-              color: m.role === 'user' ? '#fff' : COLORS.textPrimary,
+              bgcolor: m.role === 'user' ? COLORS.primary : COLORS.bgWhite,
+              color: m.role === 'user' ? COLORS.onAccent : COLORS.textPrimary,
               border: m.role === 'user' ? 'none' : `1px solid ${COLORS.borderLight}`,
               fontSize: '0.9rem', lineHeight: 1.5, whiteSpace: 'pre-wrap',
             }}>
@@ -83,7 +83,7 @@ const ConversationalBuilder = ({ open, onClose, onUpdate }: Props) => {
         ))}
         {loading && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 1.5 }}>
-            <Box sx={{ px: 2, py: 1.2, borderRadius: '14px', bgcolor: '#fff', border: `1px solid ${COLORS.borderLight}` }}>
+            <Box sx={{ px: 2, py: 1.2, borderRadius: '14px', bgcolor: COLORS.bgWhite, border: `1px solid ${COLORS.borderLight}` }}>
               <CircularProgress size={16} sx={{ color: COLORS.primary }} />
             </Box>
           </Box>
@@ -106,9 +106,9 @@ const ConversationalBuilder = ({ open, onClose, onUpdate }: Props) => {
             width: 40,
             height: 40,
             flexShrink: 0,
-            bgcolor: COLORS.primary,
-            color: '#fff',
-            '&:hover': { bgcolor: COLORS.primaryDark },
+            bgcolor: COLORS.primarySurface,
+            color: COLORS.onAccent,
+            '&:hover': { bgcolor: COLORS.primarySurfaceDark },
             '&.Mui-disabled': { bgcolor: COLORS.borderMedium },
           }}
         >

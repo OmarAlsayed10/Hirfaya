@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 export interface PersonalInfo {
   firstName: string;
@@ -8,11 +8,13 @@ export interface PersonalInfo {
   phone: string;
   country?: string;
   city: string;
+  town?: string;
   professionalTitle: string;
   ProfessionalSummary: string;
   linkedin?: string;
   github?: string;
   portfolio?: string;
+  photo?: string;
 }
 
 export interface ExperienceItem {
@@ -35,10 +37,33 @@ export interface EducationItem {
 
 export interface ProjectItem { name: string; technologies: string; demoUrl: string; githubUrl: string; description: string; }
 
+export interface CertificationItem {
+  name: string;
+  issuer: string;
+  date: string;
+  url: string;
+  description: string;
+}
+
 export interface SkillsData {
   skills: string[];
   languages: string;
-  certifications: string;
+  certifications: CertificationItem[];
+}
+
+export interface CustomSectionItem {
+  title: string;
+  subtitle: string;
+  date: string;
+  description: string;
+}
+
+// A user-named section (Courses, Internships, Volunteering…) holding the same repeatable
+// entry shape the built-in sections use, so every template can render it the same way.
+export interface CustomSection {
+  id: string;
+  title: string;
+  items: CustomSectionItem[];
 }
 
 export interface BuilderFormData {
@@ -47,16 +72,30 @@ export interface BuilderFormData {
   education: EducationItem[];
   projects: ProjectItem[];
   skills: SkillsData;
+  customSections: CustomSection[];
 }
 
-export type CvSection = "personal" | "projects" | "experience" | "education" | "skills" | "languages" | "certifications";
+export type BuiltInSection = "personal" | "projects" | "experience" | "education" | "skills" | "languages" | "certifications";
+
+// Custom sections join the same ordering list as `custom:<id>`, so drag-to-reorder, the
+// stepper and every template treat them exactly like the built-in ones.
+export type CvSection = BuiltInSection | `custom:${string}`;
+
+export const customSectionId = (section: string): string | null =>
+  section.startsWith("custom:") ? section.slice("custom:".length) : null;
 
 export interface CvBuilderState {
   formData: BuilderFormData;
+  currentCvId: string | null;
+  title: string;
+  template: string;
   myCvs: any[];
   pageCount: number;
+  fontScale: number;
   sectionOrder: CvSection[];
 }
+
+export const DEFAULT_TEMPLATE = "classic-cv";
 
 const emptyPersonalInfo = (): PersonalInfo => ({
   firstName: "",
@@ -66,11 +105,13 @@ const emptyPersonalInfo = (): PersonalInfo => ({
   phone: "",
   country: "",
   city: "",
+  town: "",
   professionalTitle: "",
   ProfessionalSummary: "",
   linkedin: "",
   github: "",
   portfolio: "",
+  photo: "",
 });
 
 export const createEmptyBuilderFormData = (): BuilderFormData => ({
@@ -78,8 +119,18 @@ export const createEmptyBuilderFormData = (): BuilderFormData => ({
   experience: [],
   education: [],
   projects: [],
-  skills: { skills: [], languages: "", certifications: "" },
+  skills: { skills: [], languages: "", certifications: [] },
+  customSections: [],
 });
+
+export const createEmptyCustomSectionItem = (): CustomSectionItem => ({
+  title: "",
+  subtitle: "",
+  date: "",
+  description: "",
+});
+
+export const createEmptyCertification = (): CertificationItem => ({ name: "", issuer: "", date: "", url: "", description: "" });
 
 const isRecord = (input: unknown): input is Record<string, unknown> =>
   typeof input === "object" && input !== null && !Array.isArray(input);
@@ -87,14 +138,41 @@ const isRecord = (input: unknown): input is Record<string, unknown> =>
 const recordArray = <T>(input: unknown): T[] =>
   Array.isArray(input) ? input.filter(isRecord) as T[] : [];
 
+const text = (input: unknown): string => (typeof input === "string" ? input : "");
+
+// Certifications used to be one comma-separated string; saved CVs still hold that shape.
+const normalizeCertifications = (input: unknown): CertificationItem[] => {
+  if (typeof input === "string") {
+    return input
+      .split(",")
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .map((name) => ({ ...createEmptyCertification(), name }));
+  }
+  if (!Array.isArray(input)) return [];
+  return input
+    .map((entry) => {
+      if (typeof entry === "string") return { ...createEmptyCertification(), name: entry.trim() };
+      if (!isRecord(entry)) return null;
+      return {
+        name: text(entry.name),
+        issuer: text(entry.issuer),
+        date: text(entry.date),
+        url: text(entry.url),
+        description: text(entry.description),
+      };
+    })
+    .filter((entry): entry is CertificationItem => entry !== null);
+};
+
 const normalizeSkills = (input: unknown): SkillsData => {
-  if (!isRecord(input)) return { skills: [], languages: "", certifications: "" };
+  if (!isRecord(input)) return { skills: [], languages: "", certifications: [] };
   return {
     skills: Array.isArray(input.skills)
       ? input.skills.filter((skill): skill is string => typeof skill === "string")
       : [],
-    languages: typeof input.languages === "string" ? input.languages : "",
-    certifications: typeof input.certifications === "string" ? input.certifications : "",
+    languages: text(input.languages),
+    certifications: normalizeCertifications(input.certifications),
   };
 };
 
@@ -109,28 +187,150 @@ export const normalizeBuilderFormData = (input: unknown): BuilderFormData => {
     education: recordArray<EducationItem>(source.education),
     projects: recordArray<ProjectItem>(source.projects),
     skills: normalizeSkills(source.skills),
+    customSections: normalizeCustomSections(source.customSections),
   };
 };
 
-const initialState: CvBuilderState = {
+const normalizeCustomSections = (input: unknown): CustomSection[] =>
+  recordArray<Record<string, unknown>>(input)
+    .map((section) => ({
+      id: text(section.id) || createSectionId(),
+      title: text(section.title),
+      items: recordArray<Record<string, unknown>>(section.items).map((item) => ({
+        title: text(item.title),
+        subtitle: text(item.subtitle),
+        date: text(item.date),
+        description: text(item.description),
+      })),
+    }))
+    .filter((section) => section.title || section.items.length > 0);
+
+const createSectionId = () => Math.random().toString(36).slice(2, 10);
+
+export const cvBuilderInitialState: CvBuilderState = {
   formData: createEmptyBuilderFormData(),
+  currentCvId: null,
+  title: "",
+  template: DEFAULT_TEMPLATE,
   myCvs: [],
   pageCount: 1,
+  fontScale: 1,
   sectionOrder: ["personal", "projects", "experience", "education", "skills", "languages", "certifications"],
+};
+
+const ALL_SECTIONS: CvSection[] = ["personal", "projects", "experience", "education", "skills", "languages", "certifications"];
+
+// Section order and font scale come back from untrusted places (localStorage, the API). Every
+// built-in section must be present; custom entries are kept only when the CV still holds the
+// section they point at, and any missing one is appended so it never becomes unreachable.
+const sanitizeSectionOrder = (value: unknown, customSections: CustomSection[] = []): CvSection[] => {
+  const stored: unknown[] = Array.isArray(value) ? value : [];
+  const customIds = customSections.map((section) => `custom:${section.id}`);
+  const known = new Set<string>([...ALL_SECTIONS, ...customIds]);
+
+  const kept = stored.filter((section): section is CvSection => typeof section === "string" && known.has(section));
+  if (!ALL_SECTIONS.every((section) => kept.includes(section))) {
+    return [...cvBuilderInitialState.sectionOrder, ...customIds] as CvSection[];
+  }
+
+  const missing = customIds.filter((id) => !kept.includes(id as CvSection)) as CvSection[];
+  return [...kept, ...missing];
+};
+
+// Rebuilds a builder slice from an untrusted localStorage blob; anything unrecognised falls back to defaults.
+export const hydrateBuilderDraft = (raw: string | null): CvBuilderState | undefined => {
+  if (!raw) return undefined;
+  try {
+    const draft = JSON.parse(raw);
+    if (!isRecord(draft)) return undefined;
+    const draftForm = normalizeBuilderFormData(draft.formData);
+    return {
+      ...cvBuilderInitialState,
+      formData: draftForm,
+      currentCvId: typeof draft.currentCvId === "string" ? draft.currentCvId : null,
+      title: typeof draft.title === "string" ? draft.title : "",
+      template: typeof draft.template === "string" && draft.template ? draft.template : DEFAULT_TEMPLATE,
+      fontScale: clampFontScale(Number(draft.fontScale)),
+      sectionOrder: sanitizeSectionOrder(draft.sectionOrder, draftForm.customSections),
+    };
+  } catch {
+    return undefined;
+  }
 };
 
 // Reducers index formData by a dynamic `section` key; cast to a loose record for that.
 type LooseForm = Record<string, any>;
 
+export const FONT_SCALE_MIN = 0.7;
+export const FONT_SCALE_MAX = 1.2;
+
+// Rounded fine enough that a typed target size like 14.5px lands on 14.5px, not 14.4px.
+const clampFontScale = (value: number): number =>
+  Number.isFinite(value) ? Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, Math.round(value * 10000) / 10000)) : 1;
+
 export const cvBuilderSlice = createSlice({
   name: "cvBuilder",
-  initialState,
+  initialState: cvBuilderInitialState,
   reducers: {
     updateFormData: (state, action: PayloadAction<unknown>) => {
       state.formData = normalizeBuilderFormData(action.payload);
     },
+    loadCv: (state, action: PayloadAction<Record<string, any>>) => {
+      const cv = action.payload;
+      state.formData = normalizeBuilderFormData(cv);
+      state.currentCvId = cv.id ?? cv._id ?? null;
+      state.title = typeof cv.title === "string" ? cv.title : "";
+      state.template = typeof cv.template === "string" && cv.template ? cv.template : DEFAULT_TEMPLATE;
+      state.fontScale = clampFontScale(Number(cv.fontScale));
+      state.sectionOrder = sanitizeSectionOrder(cv.sectionOrder, state.formData.customSections);
+    },
+    resetCv: (state) => {
+      state.formData = createEmptyBuilderFormData();
+      state.currentCvId = null;
+      state.title = "";
+      state.template = DEFAULT_TEMPLATE;
+      state.fontScale = 1;
+      state.sectionOrder = cvBuilderInitialState.sectionOrder;
+    },
+    setCurrentCvId: (state, action: PayloadAction<string | null>) => {
+      state.currentCvId = action.payload;
+    },
+    setCvTitle: (state, action: PayloadAction<string>) => {
+      state.title = action.payload;
+    },
+    setTemplate: (state, action: PayloadAction<string>) => {
+      state.template = action.payload;
+    },
     setPageCount: (state, action: PayloadAction<number>) => {
       state.pageCount = action.payload;
+    },
+    setFontScale: (state, action: PayloadAction<number>) => {
+      state.fontScale = clampFontScale(action.payload);
+    },
+    addCustomSection: (state, action: PayloadAction<string>) => {
+      const id = createSectionId();
+      state.formData.customSections.push({
+        id,
+        title: action.payload.trim() || "New Section",
+        items: [createEmptyCustomSectionItem()],
+      });
+      state.sectionOrder.push(`custom:${id}`);
+    },
+    renameCustomSection: (state, action: PayloadAction<{ id: string; title: string }>) => {
+      const section = state.formData.customSections.find((entry) => entry.id === action.payload.id);
+      if (section) section.title = action.payload.title;
+    },
+    setCustomSectionItems: (state, action: PayloadAction<{ id: string; items: CustomSectionItem[] }>) => {
+      const section = state.formData.customSections.find((entry) => entry.id === action.payload.id);
+      if (section) section.items = action.payload.items;
+    },
+    // The section and its place in the order have to go together, or the stepper keeps a
+    // step that renders nothing.
+    removeCustomSection: (state, action: PayloadAction<string>) => {
+      state.formData.customSections = state.formData.customSections.filter(
+        (entry) => entry.id !== action.payload,
+      );
+      state.sectionOrder = state.sectionOrder.filter((section) => section !== `custom:${action.payload}`);
     },
     moveCvSection: (state, action: PayloadAction<{ from: number; to: number }>) => {
       const { from, to } = action.payload;
@@ -185,7 +385,17 @@ export const cvBuilderSlice = createSlice({
 
 export const {
   updateFormData,
+  loadCv,
+  resetCv,
+  setCurrentCvId,
+  setCvTitle,
+  setTemplate,
   setPageCount,
+  setFontScale,
+  addCustomSection,
+  renameCustomSection,
+  setCustomSectionItems,
+  removeCustomSection,
   moveCvSection,
   updateSection,
   updateArraySection,

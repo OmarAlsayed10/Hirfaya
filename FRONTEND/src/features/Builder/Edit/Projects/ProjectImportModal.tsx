@@ -238,10 +238,10 @@ export const ProjectImportModal: React.FC<ProjectImportModalProps> = ({
                   disabled={loading || !repoUrl.trim()}
                   startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Sparkles size={20} />}
                   sx={{
-                    bgcolor: COLORS.primary,
+                    bgcolor: COLORS.primarySurface,
                     py: 1.2,
                     textTransform: "none",
-                    "&:hover": { bgcolor: COLORS.primaryDark },
+                    "&:hover": { bgcolor: COLORS.primarySurfaceDark },
                   }}
                 >
                   {loading ? t("Analyzing & Generating...") : t("Import Project")}
@@ -271,7 +271,7 @@ export const ProjectImportModal: React.FC<ProjectImportModalProps> = ({
                     justifyContent: "center",
                     width: "100%",
                     boxSizing: "border-box",
-                    border: `2px dashed ${selectedFile || isDragging ? COLORS.primary : COLORS.borderMedium || "#ccc"}`,
+                    border: `2px dashed ${selectedFile || isDragging ? COLORS.primary : COLORS.borderMedium || COLORS.borderMedium}`,
                     borderRadius: RADIUS.md,
                     p: 4,
                     textAlign: "center",
@@ -307,10 +307,10 @@ export const ProjectImportModal: React.FC<ProjectImportModalProps> = ({
                   disabled={loading || !selectedFile}
                   startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Sparkles size={20} />}
                   sx={{
-                    bgcolor: COLORS.primary,
+                    bgcolor: COLORS.primarySurface,
                     py: 1.2,
                     textTransform: "none",
-                    "&:hover": { bgcolor: COLORS.primaryDark },
+                    "&:hover": { bgcolor: COLORS.primarySurfaceDark },
                   }}
                 >
                   {loading ? t("Processing File...") : t("Upload & Generate")}
@@ -370,7 +370,7 @@ export const ProjectImportModal: React.FC<ProjectImportModalProps> = ({
             <Button
               onClick={handleConfirmAdd}
               variant="contained"
-              sx={{ bgcolor: COLORS.primary, "&:hover": { bgcolor: COLORS.primaryDark } }}
+              sx={{ bgcolor: COLORS.primarySurface, "&:hover": { bgcolor: COLORS.primarySurfaceDark } }}
             >
               {t("Add to Resume")}
             </Button>

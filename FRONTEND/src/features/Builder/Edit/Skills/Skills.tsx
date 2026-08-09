@@ -25,7 +25,7 @@ const Skills = () => {
   const dispatch = useDispatch();
   const seededProfileSkills = useRef(false);
   const formDataSkills = useSelector(
-    (state: RootState) => state.cvBuilder?.formData?.skills || { skills: [], languages: '', certifications: '' },
+    (state: RootState) => state.cvBuilder?.formData?.skills || { skills: [], languages: '', certifications: [] },
   );
   const professionalTitle = useSelector(
     (state: RootState) => state.cvBuilder?.formData?.personalInfo?.professionalTitle || '',
@@ -56,9 +56,12 @@ const Skills = () => {
     setValue('skills', profileSkills);
   }, [user, getValues, setValue]);
 
-  const addAISkills = (text: string) => {
+  const addAISkills = (value: string | string[]) => {
     const current = getValues('skills') || [];
-    const suggested = text.split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
+    const suggested = (Array.isArray(value) ? value : value.split(/[,\n]/))
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (suggested.length === 0) return;
     const merged = [...current];
     suggested.forEach((s) => { if (!merged.includes(s)) merged.push(s); });
     skillsUndo.pushChange(current);

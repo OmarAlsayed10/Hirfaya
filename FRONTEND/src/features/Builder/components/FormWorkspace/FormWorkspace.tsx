@@ -6,24 +6,29 @@ import Projects from '../../Edit/Projects/Projects';
 import Experience from '../../Edit/Experience';
 import Education from '../../Edit/Education';
 import Skills from '../../Edit/Skills';
-import { CertificationsSection, LanguagesSection } from '../../Edit/Skills/TextListSection';
+import Certifications from '../../Edit/Certifications';
+import { LanguagesSection } from '../../Edit/Skills/TextListSection';
+import CustomSection from '../../Edit/CustomSection/CustomSection';
 import formWorkspace from './formWorkspace.tokens';
 import type { FormWorkspaceProps } from './FormWorkspace.types';
-import type { CvSection } from '../../../../redux/store/slices/cvBuilderSlice';
+import { customSectionId } from '../../../../redux/store/slices/cvBuilderSlice';
+import type { BuiltInSection } from '../../../../redux/store/slices/cvBuilderSlice';
 
-const sectionViews: Record<CvSection, typeof Personal> = {
+const sectionViews: Record<BuiltInSection, typeof Personal> = {
   personal: Personal,
   projects: Projects,
   experience: Experience,
   education: Education,
   skills: Skills,
   languages: LanguagesSection,
-  certifications: CertificationsSection,
+  certifications: Certifications,
 };
 
 export const FormWorkspace = ({ activeStep, stepCount, sectionOrder, onBack, onNext, onFinish }: FormWorkspaceProps) => {
   const { t } = useTranslation();
-  const StepView = sectionViews[sectionOrder[activeStep]] ?? Personal;
+  const section = sectionOrder[activeStep];
+  const customId = section ? customSectionId(section) : null;
+  const StepView = sectionViews[section as BuiltInSection] ?? Personal;
   const isLast = activeStep === stepCount - 1;
   const isFirst = activeStep === 0;
 
@@ -31,7 +36,7 @@ export const FormWorkspace = ({ activeStep, stepCount, sectionOrder, onBack, onN
     <>
       <Box sx={formWorkspace.stepContent}>
         <Box sx={{ maxWidth: 480 }}>
-          <StepView />
+          {customId ? <CustomSection sectionId={customId} /> : <StepView />}
         </Box>
       </Box>
       <Box sx={{ ...formWorkspace.navigationRow, justifyContent: isFirst ? 'flex-end' : 'space-between' }}>

@@ -12,12 +12,12 @@ const formWorkspace = {
   },
   backButton: { textTransform: 'none', px: 3, borderRadius: 2, color: COLORS.textSecondary },
   nextButton: {
-    bgcolor: COLORS.primary,
+    bgcolor: COLORS.primarySurface,
     textTransform: 'none',
     px: 4,
     borderRadius: 2,
     boxShadow: 'none',
-    '&:hover': { bgcolor: COLORS.primaryDark },
+    '&:hover': { bgcolor: COLORS.primarySurfaceDark },
   },
 } as const;
 

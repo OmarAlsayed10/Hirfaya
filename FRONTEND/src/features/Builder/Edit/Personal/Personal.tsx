@@ -1,4 +1,6 @@
-import { Box, Typography, Stack, Button } from '@mui/material';
+import { Avatar, Box, Typography, Stack, Button, CircularProgress } from '@mui/material';
+import axios from 'axios';
+import { AI_ENDPOINTS } from '../../../../constants/endpoints';
 import EmailIcon from '@mui/icons-material/Email';
 import WorkIcon from '@mui/icons-material/Work';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
@@ -12,11 +14,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import FormInput from '../../../../components/ui/FormInput';
 import AIEditInput from '../../components/AIEditInput/AIEditInput';
+import PhotoCropDialog from '../../components/PhotoCropDialog/PhotoCropDialog';
 import UndoButton from '../../../../components/ui/UndoButton/UndoButton';
 import PhoneInput from '../../../../components/ui/PhoneInput';
 import LocationInput from '../../../../components/ui/LocationInput';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../../../hooks/useAuth';
+import { useTemplate } from '../../../../hooks/useTemplate';
 import { useFieldUndo } from '../../../../hooks/useFieldUndo';
 import personal from './personal.tokens';
 import type { RootState } from '../../../../redux/store/store';
@@ -32,10 +36,12 @@ const personalSchema = z.object({
   phone: z.string().min(7, 'Phone number too short').max(15, 'Phone number too long').regex(/^[0-9]+$/, 'Digits only'),
   country: z.string().optional(),
   city: z.string().min(1, 'City is required'),
+  town: z.string().optional(),
   ProfessionalSummary: z.string().optional(),
   linkedin: z.string().optional(),
   github: z.string().optional(),
   portfolio: z.string().optional(),
+  photo: z.string().optional(),
 });
 
 const Personal = () => {
@@ -48,6 +54,13 @@ const Personal = () => {
   );
 
   const [activeSubTab, setActiveSubTab] = useState<'details' | 'role' | 'summary'>('details');
+  const { choosenTemp } = useTemplate();
+  const supportsPhoto = choosenTemp === 'photo-cv';
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const objectUrlRef = useRef<string | null>(null);
 
   const { control, watch, setValue } = useForm<PersonalFormData>({
     resolver: zodResolver(personalSchema),
@@ -90,6 +103,48 @@ const Personal = () => {
     dispatch(updateSection({ section: 'personalInfo', data: seed }));
   }, [user, personalInfo, setValue, dispatch]);
 
+  const releaseObjectUrl = () => {
+    if (!objectUrlRef.current) return;
+    URL.revokeObjectURL(objectUrlRef.current);
+    objectUrlRef.current = null;
+  };
+
+  useEffect(() => releaseObjectUrl, []);
+
+  const selectPhoto = (file?: File) => {
+    if (photoInputRef.current) photoInputRef.current.value = '';
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setPhotoError(t('Photo must be smaller than 5 MB.'));
+      return;
+    }
+    setPhotoError('');
+    releaseObjectUrl();
+    objectUrlRef.current = URL.createObjectURL(file);
+    setCropSrc(objectUrlRef.current);
+  };
+
+  const closeCrop = () => {
+    releaseObjectUrl();
+    setCropSrc(null);
+  };
+
+  const uploadPhoto = async (blob: Blob) => {
+    setPhotoError('');
+    setPhotoUploading(true);
+    const body = new FormData();
+    body.append('photo', new File([blob], 'cv-photo.jpg', { type: 'image/jpeg' }));
+    try {
+      const response = await axios.post(AI_ENDPOINTS.cvPhoto, body, { withCredentials: true });
+      setValue('photo', response.data.url, { shouldDirty: true });
+      closeCrop();
+    } catch {
+      setPhotoError(t('Could not upload that photo. Please try another image.'));
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
   return (
     <Box sx={{ ...personal.root, maxWidth: '100%' }}>
       <Typography variant="h6" sx={personal.sectionTitle}>
@@ -107,7 +162,7 @@ const Personal = () => {
             whiteSpace: 'nowrap',
             px: 2,
             bgcolor: activeSubTab === 'details' ? COLORS.primary : 'transparent',
-            color: activeSubTab === 'details' ? '#fff' : COLORS.textSecondary,
+            color: activeSubTab === 'details' ? COLORS.onAccent : COLORS.textSecondary,
             borderColor: activeSubTab === 'details' ? COLORS.primary : COLORS.borderMedium,
             '&:hover': {
               bgcolor: activeSubTab === 'details' ? COLORS.primaryDark : COLORS.primaryAlpha12,
@@ -127,7 +182,7 @@ const Personal = () => {
             whiteSpace: 'nowrap',
             px: 2,
             bgcolor: activeSubTab === 'role' ? COLORS.primary : 'transparent',
-            color: activeSubTab === 'role' ? '#fff' : COLORS.textSecondary,
+            color: activeSubTab === 'role' ? COLORS.onAccent : COLORS.textSecondary,
             borderColor: activeSubTab === 'role' ? COLORS.primary : COLORS.borderMedium,
             '&:hover': {
               bgcolor: activeSubTab === 'role' ? COLORS.primaryDark : COLORS.primaryAlpha12,
@@ -147,7 +202,7 @@ const Personal = () => {
             whiteSpace: 'nowrap',
             px: 2,
             bgcolor: activeSubTab === 'summary' ? COLORS.primary : 'transparent',
-            color: activeSubTab === 'summary' ? '#fff' : COLORS.textSecondary,
+            color: activeSubTab === 'summary' ? COLORS.onAccent : COLORS.textSecondary,
             borderColor: activeSubTab === 'summary' ? COLORS.primary : COLORS.borderMedium,
             '&:hover': {
               bgcolor: activeSubTab === 'summary' ? COLORS.primaryDark : COLORS.primaryAlpha12,
@@ -161,6 +216,51 @@ const Personal = () => {
 
       {activeSubTab === 'details' && (
         <Box>
+          {supportsPhoto && (
+          <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2.5, minWidth: 0 }}>
+            <Avatar src={watch('photo') || undefined} sx={{ width: 64, height: 64, flexShrink: 0 }} />
+            <Box sx={{ minWidth: 0 }}>
+              <Stack direction="row" spacing={1}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  disabled={photoUploading}
+                  onClick={() => photoInputRef.current?.click()}
+                  startIcon={photoUploading ? <CircularProgress size={14} /> : undefined}
+                >
+                  {watch('photo') ? t('Change Photo') : t('Add Photo')}
+                </Button>
+                {watch('photo') && (
+                  <Button size="small" variant="outlined" onClick={() => setCropSrc(watch('photo') || null)}>
+                    {t('Edit')}
+                  </Button>
+                )}
+                {watch('photo') && (
+                  <Button size="small" color="inherit" onClick={() => setValue('photo', '', { shouldDirty: true })}>
+                    {t('Remove')}
+                  </Button>
+                )}
+              </Stack>
+              <Typography variant="caption" sx={{ color: photoError ? 'error.main' : COLORS.textSecondary, display: 'block', mt: 0.5 }}>
+                {photoError || t('Optional. JPG or PNG, up to 5 MB.')}
+              </Typography>
+            </Box>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => selectPhoto(e.target.files?.[0])}
+            />
+            <PhotoCropDialog
+              src={cropSrc}
+              saving={photoUploading}
+              onCancel={closeCrop}
+              onSave={(blob) => void uploadPhoto(blob)}
+            />
+          </Stack>
+          )}
+
           <Box sx={personal.row}>
             <Box sx={personal.halfWidth}>
               <Controller
@@ -216,6 +316,20 @@ const Personal = () => {
           <PhoneInput control={control as any} />
 
           <LocationInput control={control as any} watch={watch as any} setValue={setValue as any} />
+
+          <Controller
+            name="town"
+            control={control}
+            render={({ field, fieldState: { error } }) => (
+              <FormInput
+                {...field}
+                label={t('Town')}
+                placeholder={t('Type your town')}
+                error={!!error}
+                helperText={error ? t(error.message ?? '') : ''}
+              />
+            )}
+          />
 
           <Controller
             name="linkedin"

@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import classic from '../../../assets/classic.jpg';
 import modern from '../../../assets/modern.jpg';
 import linkedin from '../../../assets/linkedin.jpg';
+import photoCv from '../../../assets/photo-cv.svg';
 export const cvTemplateAction = createAsyncThunk(
     'cvTemplate/getAll',
 
@@ -9,6 +10,7 @@ export const cvTemplateAction = createAsyncThunk(
     async () => {
         return [{ title: 'jake-cv', id: 4, img: classic, pro: true, disc: 'ATS-optimized single-column (recommended)' },
         { title: 'harvard-cv', id: 5, img: classic, pro: true, disc: 'Harvard resume format (serif, single-column)' },
+        { title: 'photo-cv', id: 6, img: photoCv, pro: true, disc: 'Headshot layout for EU, Middle East and Asia' },
         { title: 'classic-cv', id: 1, img: classic, pro: false, disc: 'discription 1' },
         { title: 'linkedin-cv', id: 2, img: linkedin, pro: false, disc: 'discription 2' },
         { title: 'modern-cv', id: 3, img: modern, pro: true, disc: 'discription 3' },]

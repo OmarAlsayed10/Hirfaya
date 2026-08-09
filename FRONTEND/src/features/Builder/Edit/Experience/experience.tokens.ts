@@ -37,7 +37,7 @@ const experience = {
     textAlign: 'start',
   },
   deleteButton: {
-    color: '#ff4444',
+    color: COLORS.danger,
   },
   row: {
     display: 'flex',
@@ -52,7 +52,7 @@ const experience = {
     minWidth: 0,
   },
   emptyText: {
-    color: '#666',
+    color: COLORS.textSecondary,
     fontStyle: 'italic',
     textAlign: 'start',
   },

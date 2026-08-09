@@ -1,3 +1,5 @@
+import { COLORS } from "../../../../../theme/tokens";
+
 const templateCard = {
   card: (isSelected: boolean) => ({
     width: '100%',
@@ -14,7 +16,7 @@ const templateCard = {
     top: 0,
     left: 0,
     width: '100%',
-    color: 'white',
+    color: COLORS.onAccent,
     px: 1,
     py: 0.5,
     zIndex: 1,
@@ -35,7 +37,7 @@ const templateCard = {
     width: '100%',
     objectFit: 'cover',
     objectPosition: 'top',
-    bgcolor: '#f5f4ef',
+    bgcolor: COLORS.bgLight,
   },
   title: {
     fontWeight: 'bold',

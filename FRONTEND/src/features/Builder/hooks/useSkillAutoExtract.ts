@@ -13,7 +13,7 @@ export const useSkillAutoExtract = () => {
   const dispatch = useDispatch();
   const formData = useSelector((s: RootState) => s.cvBuilder?.formData);
   const experience = formData?.experience || [];
-  const skills = formData?.skills || { skills: [], languages: '', certifications: '' };
+  const skills = formData?.skills || { skills: [], languages: '', certifications: [] };
 
   const everAdded = useRef<Set<string>>(new Set());
   const formDataRef = useRef(formData);
@@ -67,8 +67,8 @@ export const useSkillAutoExtract = () => {
               dispatch(updateSection({ section: 'skills', data: { ...skills, skills: [...currentAI, ...toAddAI] } }));
             }
           }
-        } catch (e) {
-          // ignore error to fail silently
+        } catch (ignoredError) {
+          void ignoredError;
         }
       }
     }, 3000);

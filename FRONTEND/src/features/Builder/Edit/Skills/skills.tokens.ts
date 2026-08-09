@@ -33,7 +33,7 @@ const skills = {
     border: `1px dashed ${COLORS.disabled}`,
     borderRadius: RADIUS.md,
     padding: '8px',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: COLORS.surfaceSubtle,
     display: 'flex',
     justifyContent: 'flex-start',
   },
@@ -43,11 +43,11 @@ const skills = {
     justifyContent: 'flex-start',
   },
   emptyText: {
-    color: '#666',
+    color: COLORS.textSecondary,
     fontStyle: 'italic',
   },
   chipDeleteIcon: {
-    color: '#ff4444',
+    color: COLORS.danger,
   },
 } as const;
 

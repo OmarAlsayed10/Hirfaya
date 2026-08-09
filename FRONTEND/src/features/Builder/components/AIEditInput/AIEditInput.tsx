@@ -44,6 +44,7 @@ const QUICK_CHIPS: Record<string, string[]> = {
   summary: ['Write summary', 'Make shorter', 'Add keywords', 'More professional'],
   education: ['Write description', 'Add coursework', 'Make concise'],
   skills: ['Suggest skills', 'Add keywords'],
+  languages: ['Format properly', 'Add proficiency level'],
 };
 
 const AIEditInput = ({ section, currentContent, context, onResult }: AIEditInputProps) => {
@@ -139,9 +140,11 @@ const AIEditInput = ({ section, currentContent, context, onResult }: AIEditInput
           sx={{
             border: `1px solid ${COLORS.primaryAlpha35}`,
             borderRadius: RADIUS.lg,
-            bgcolor: '#fafdf8',
+            bgcolor: COLORS.surfaceSubtle,
             overflow: 'hidden',
             transition: 'all 0.2s ease',
+            // Without this the panel butts straight against the field below it.
+            mb: 1.25,
           }}
         >
           {/* Header */}
@@ -193,7 +196,7 @@ const AIEditInput = ({ section, currentContent, context, onResult }: AIEditInput
                   height: 26,
                   fontSize: '0.72rem',
                   fontWeight: 500,
-                  bgcolor: '#fff',
+                  bgcolor: COLORS.bgWhite,
                   border: `1px solid ${COLORS.borderMedium}`,
                   color: COLORS.textSecondary,
                   '& .MuiChip-icon': { color: COLORS.primaryLight },
@@ -228,7 +231,7 @@ const AIEditInput = ({ section, currentContent, context, onResult }: AIEditInput
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: RADIUS.md,
-                  bgcolor: '#fff',
+                  bgcolor: COLORS.bgWhite,
                   fontSize: '0.82rem',
                   '& fieldset': { borderColor: COLORS.borderMedium },
                   '&:hover fieldset': { borderColor: COLORS.primary },
@@ -245,16 +248,16 @@ const AIEditInput = ({ section, currentContent, context, onResult }: AIEditInput
               disabled={loading || !prompt.trim()}
               size="small"
               sx={{
-                bgcolor: COLORS.primary,
-                color: '#fff',
+                bgcolor: COLORS.primarySurface,
+                color: COLORS.onAccent,
                 width: 32,
                 height: 32,
-                '&:hover': { bgcolor: COLORS.primaryDark },
-                '&.Mui-disabled': { bgcolor: COLORS.disabled, color: '#999' },
+                '&:hover': { bgcolor: COLORS.primarySurfaceDark },
+                '&.Mui-disabled': { bgcolor: COLORS.disabled, color: COLORS.textSecondary },
               }}
             >
               {loading ? (
-                <CircularProgress size={16} sx={{ color: '#fff' }} />
+                <CircularProgress size={16} sx={{ color: COLORS.onAccent }} />
               ) : (
                 <SendIcon sx={{ fontSize: 16 }} />
               )}

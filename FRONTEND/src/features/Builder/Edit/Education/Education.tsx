@@ -21,8 +21,8 @@ import education from './education.tokens';
 import type { RootState } from '../../../../redux/store/store';
 import type { Control, UseFormSetValue } from 'react-hook-form';
 import type { EducationFormData } from './Education.types';
-import { COLORS } from '../../../../theme/tokens';
 import { useFieldUndo } from '../../../../hooks/useFieldUndo';
+import { EntryChipRow, EntryToolbar } from '../../components/EntryChip';
 import type { useTranslation as useTranslationType } from 'react-i18next';
 
 interface EducationDescriptionFieldProps {
@@ -155,38 +155,11 @@ const Education = () => {
       </Stack>
 
       <Box sx={education.entriesBox}>
-        {fields.length > 0 && (
-          <Stack direction="row" spacing={1} sx={{ mb: 2, overflowX: 'auto', pb: 1, pt: 0.5, '::-webkit-scrollbar': { height: 6 } }}>
-            {fields.map((field, index) => {
-              const item = watch(`education.${index}`);
-              const label = item?.institution || `${t('Education')} ${index + 1}`;
-              return (
-                <Button
-                  key={field.id}
-                  onClick={() => setActiveIndex(index)}
-                  variant={activeIndex === index ? 'contained' : 'outlined'}
-                  size="small"
-                  sx={{
-                    borderRadius: 20,
-                    textTransform: 'none',
-                    whiteSpace: 'nowrap',
-                    px: 2,
-                    py: 0.5,
-                    bgcolor: activeIndex === index ? COLORS.primary : 'transparent',
-                    color: activeIndex === index ? '#fff' : COLORS.textSecondary,
-                    borderColor: activeIndex === index ? COLORS.primary : COLORS.borderMedium,
-                    '&:hover': {
-                      bgcolor: activeIndex === index ? COLORS.primaryDark : COLORS.primaryAlpha12,
-                      borderColor: COLORS.primary,
-                    }
-                  }}
-                >
-                  {label}
-                </Button>
-              );
-            })}
-          </Stack>
-        )}
+        <EntryChipRow
+          labels={fields.map((_, index) => watch(`education.${index}`)?.institution || `${t('Education')} ${index + 1}`)}
+          activeIndex={activeIndex}
+          onSelect={setActiveIndex}
+        />
 
         {fields.map((field, index) => {
           if (index !== activeIndex) return null;

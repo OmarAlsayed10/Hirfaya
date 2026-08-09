@@ -35,7 +35,7 @@ const education = {
     fontSize: '1rem',
   },
   deleteButton: {
-    color: '#ff4444',
+    color: COLORS.danger,
   },
   row: {
     display: 'flex',

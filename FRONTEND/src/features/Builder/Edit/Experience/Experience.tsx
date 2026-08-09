@@ -5,6 +5,7 @@ import {
   IconButton,
   Stack,
   Tooltip,
+  Collapse,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -18,13 +19,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import FormInput from '../../../../components/ui/FormInput';
 import AIEditInput from '../../components/AIEditInput/AIEditInput';
+import { ClaimAuditPanel } from '../ClaimAuditPanel';
+import { EntryChipRow, EntryToolbar } from '../../components/EntryChip';
 import UndoButton from '../../../../components/ui/UndoButton/UndoButton';
 import { useEffect, useState } from 'react';
 import experience from './experience.tokens';
 import type { RootState } from '../../../../redux/store/store';
 import type { Control, UseFormSetValue } from 'react-hook-form';
 import type { ExperienceFormData } from './Experience.types';
-import { COLORS } from '../../../../theme/tokens';
 import { useFieldUndo } from '../../../../hooks/useFieldUndo';
 import { useTranslation as useTranslationType } from 'react-i18next';
 
@@ -117,8 +119,13 @@ const Experience = () => {
   const experiences = useSelector(
     (state: RootState) => state.cvBuilder?.formData?.experience || [],
   );
+  const projects = useSelector((state: RootState) => state.cvBuilder?.formData?.projects || []);
+  const summary = useSelector(
+    (state: RootState) => state.cvBuilder?.formData?.personalInfo?.ProfessionalSummary || '',
+  );
 
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isAuditOpen, setIsAuditOpen] = useState(false);
 
   const { control, watch, setValue } = useForm<ExperienceFormData>({
     resolver: zodResolver(experienceSchema),
@@ -160,44 +167,42 @@ const Experience = () => {
           {t('Work Experience')}
         </Typography>
 
-        <Button variant="outlined" startIcon={<AddIcon />} onClick={addExperience} sx={experience.addButton}>
-          {t('Add Experience')}
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="outlined"
+            onClick={() => setIsAuditOpen((open) => !open)}
+            sx={experience.addButton}
+          >
+            {t('Check my claims')}
+          </Button>
+          <Button variant="outlined" startIcon={<AddIcon />} onClick={addExperience} sx={experience.addButton}>
+            {t('Add Experience')}
+          </Button>
+        </Stack>
       </Stack>
 
+      <Collapse in={isAuditOpen} unmountOnExit>
+        <Box sx={{ mb: 2 }}>
+          <ClaimAuditPanel
+            cv={{
+              summary,
+              experience: experiences.map((entry: { description?: string }) => ({
+                description: entry.description || '',
+              })),
+              projects: projects.map((entry: { description?: string }) => ({
+                description: entry.description || '',
+              })),
+            }}
+          />
+        </Box>
+      </Collapse>
+
       <Box sx={experience.entriesBox}>
-        {fields.length > 0 && (
-          <Stack direction="row" spacing={1} sx={{ mb: 2, overflowX: 'auto', pb: 1, pt: 0.5, '::-webkit-scrollbar': { height: 6 } }}>
-            {fields.map((field, index) => {
-              const item = watch(`experience.${index}`);
-              const label = item?.jobTitle || `${t('Experience')} ${index + 1}`;
-              return (
-                <Button
-                  key={field.id}
-                  onClick={() => setActiveIndex(index)}
-                  variant={activeIndex === index ? 'contained' : 'outlined'}
-                  size="small"
-                  sx={{
-                    borderRadius: 20,
-                    textTransform: 'none',
-                    whiteSpace: 'nowrap',
-                    px: 2,
-                    py: 0.5,
-                    bgcolor: activeIndex === index ? COLORS.primary : 'transparent',
-                    color: activeIndex === index ? '#fff' : COLORS.textSecondary,
-                    borderColor: activeIndex === index ? COLORS.primary : COLORS.borderMedium,
-                    '&:hover': {
-                      bgcolor: activeIndex === index ? COLORS.primaryDark : COLORS.primaryAlpha12,
-                      borderColor: COLORS.primary,
-                    }
-                  }}
-                >
-                  {label}
-                </Button>
-              );
-            })}
-          </Stack>
-        )}
+        <EntryChipRow
+          labels={fields.map((_, index) => watch(`experience.${index}`)?.jobTitle || `${t('Experience')} ${index + 1}`)}
+          activeIndex={activeIndex}
+          onSelect={setActiveIndex}
+        />
 
         {fields.map((field, index) => {
           if (index !== activeIndex) return null;
@@ -207,25 +212,14 @@ const Experience = () => {
                 <Typography variant="h6" sx={experience.itemTitle}>
                   {t('Experience')} {index + 1}
                 </Typography>
-                <Stack direction="row" spacing={0.25}>
-                  <Tooltip title={t('Move up')}>
-                    <span>
-                      <IconButton onClick={() => moveExperience(-1)} disabled={index === 0} size="small">
-                        <KeyboardArrowUpIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip title={t('Move down')}>
-                    <span>
-                      <IconButton onClick={() => moveExperience(1)} disabled={index === fields.length - 1} size="small">
-                        <KeyboardArrowDownIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <IconButton onClick={() => removeExperience(index)} sx={experience.deleteButton} aria-label={t('Delete experience')}>
-                    <DeleteIcon />
-                  </IconButton>
-                </Stack>
+                <EntryToolbar
+                  onMove={moveExperience}
+                  onDelete={() => removeExperience(index)}
+                  isFirst={index === 0}
+                  isLast={index === fields.length - 1}
+                  deleteLabel={t('Delete experience')}
+                  deleteSx={experience.deleteButton}
+                />
               </Box>
 
               <Box sx={experience.row}>
