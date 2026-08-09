@@ -1,6 +1,7 @@
 import { IconButton, Tooltip } from '@mui/material';
 import UndoIcon from '@mui/icons-material/Undo';
 import { useTranslation } from 'react-i18next';
+import { COLORS } from "../../../theme/tokens";
 
 interface UndoButtonProps {
   onUndo: () => void;
@@ -12,7 +13,7 @@ const UndoButton = ({ onUndo, disabled }: UndoButtonProps) => {
   return (
     <Tooltip title={t('Undo last change')}>
       <span>
-        <IconButton onClick={onUndo} disabled={disabled} size="small" sx={{ color: '#2a5c45' }}>
+        <IconButton onClick={onUndo} disabled={disabled} size="small" sx={{ color: COLORS.primary }}>
           <UndoIcon fontSize="small" />
         </IconButton>
       </span>

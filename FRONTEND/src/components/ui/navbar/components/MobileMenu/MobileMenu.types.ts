@@ -1,9 +1,10 @@
 import { NavPage, NavUser } from '../../Navbar.types';
 
 export interface MobileMenuProps {
-  anchorEl: null | HTMLElement;
+  open: boolean;
   onClose: () => void;
   pages: NavPage[];
+  productPages: NavPage[];
   isAuthenticated: boolean;
   user: NavUser | null;
   onLogout: () => void;

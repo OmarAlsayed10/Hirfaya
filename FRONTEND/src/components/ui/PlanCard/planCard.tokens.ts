@@ -20,8 +20,8 @@ const planCard = {
     position: 'absolute' as const,
     top: -15,
     right: 20,
-    bgcolor: COLORS.primary,
-    color: COLORS.bgWhite,
+    bgcolor: COLORS.primarySurface,
+    color: COLORS.onAccent,
     px: 2,
     py: 0.5,
     borderRadius: RADIUS.xs,
@@ -104,10 +104,10 @@ const planCard = {
   btnPro: {
     py: 1.5,
     borderRadius: RADIUS.sm,
-    bgcolor: COLORS.primary,
-    color: COLORS.bgWhite,
+    bgcolor: COLORS.primarySurface,
+    color: COLORS.onAccent,
     boxShadow: 'none',
-    '&:hover': { bgcolor: COLORS.primaryDark, boxShadow: 'none' },
+    '&:hover': { bgcolor: COLORS.primarySurfaceDark, boxShadow: 'none' },
   },
 } as const;
 

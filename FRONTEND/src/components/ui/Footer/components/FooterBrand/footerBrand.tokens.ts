@@ -5,14 +5,14 @@ const footerBrand = {
   logoIconBox: {
     width: 32,
     height: 32,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primarySurface,
     borderRadius: RADIUS.md,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoIcon: { color: COLORS.bgWhite, fontSize: '18px' },
-  logoText: { color: COLORS.bgWhite, letterSpacing: '-0.3px' },
+  logoIcon: { color: COLORS.onAccent, fontSize: '18px' },
+  logoText: { color: COLORS.onAccent, letterSpacing: '-0.3px' },
   subtitle: {
     color: COLORS.primaryMuted,
     lineHeight: 1.8,

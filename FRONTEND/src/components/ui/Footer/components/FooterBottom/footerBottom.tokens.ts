@@ -9,7 +9,7 @@ const footerBottom = {
     justifyContent: 'space-between',
     gap: 1,
   },
-  copyright: { mx: 'auto', color: '#4d7a62', fontSize: '0.82rem' },
+  copyright: { mx: 'auto', color: COLORS.primaryMuted, fontSize: '0.82rem' },
 } as const;
 
 export default footerBottom;

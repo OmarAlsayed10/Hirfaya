@@ -1,42 +1,92 @@
-import { Box, Typography, Button, MenuItem, Switch } from '@mui/material';
+import { useState } from 'react';
+import { Box, Button, Menu, MenuItem } from '@mui/material';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { useTranslation } from 'react-i18next';
-import i18n from '../../../../../i18n';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import UserMenu from '../UserMenu';
+import LanguageToggle from '../../../LanguageToggle';
+import ThemeToggle from '../../../ThemeToggle';
 import { DesktopNavProps } from './DesktopNav.types';
 import desktopNav from './desktopNav.tokens';
+import { isActivePath } from '../../isActivePath';
 import { useFeedback } from '../../../../../context/FeedbackContext';
 import { hasPaidAccess } from '../../../../../utils/proAccess';
 
-const DesktopNav = ({ pages, isAuthenticated, user, onLogout }: DesktopNavProps) => {
+const DesktopNav = ({ pages, productPages, isAuthenticated, user, onLogout }: DesktopNavProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const currentLang = i18n.language;
+  const { pathname } = useLocation();
   const { showEntitlement } = useFeedback();
-
-  const toggleLanguage = () => {
-    i18n.changeLanguage(currentLang === 'en' ? 'ar' : 'en');
-  };
+  const [productsAnchor, setProductsAnchor] = useState<null | HTMLElement>(null);
 
   const isAdmin = user?.role === 'admin';
   const isActivePro = hasPaidAccess(user);
+  const productsActive = productPages.some((page) => isActivePath(pathname, page.href));
+
+  const openPage = (page: { href: string; requiresPaid?: boolean }) => {
+    if (page.requiresPaid && !isActivePro) {
+      showEntitlement('PRO_REQUIRED');
+      return;
+    }
+    navigate(page.href);
+  };
 
   return (
     <Box sx={desktopNav.root}>
-      {pages.map((page) => (
-        <Typography
+      {pages.slice(0, 1).map((page) => (
+        <Button
           key={page.label}
-          onClick={() => {
-            if (page.requiresPaid && !isActivePro) {
-              showEntitlement('PRO_REQUIRED');
-              return;
-            }
-            navigate(page.href);
-          }}
-          sx={desktopNav.navLink}
+          onClick={() => openPage(page)}
+          aria-current={isActivePath(pathname, page.href) ? 'page' : undefined}
+          sx={desktopNav.navLink(isActivePath(pathname, page.href))}
         >
           {page.label}
-        </Typography>
+        </Button>
+      ))}
+
+      <Button
+        onClick={(e) => setProductsAnchor(e.currentTarget)}
+        endIcon={<KeyboardArrowDownIcon />}
+        aria-haspopup="menu"
+        aria-expanded={Boolean(productsAnchor)}
+        aria-current={productsActive ? 'page' : undefined}
+        sx={desktopNav.navLink(productsActive)}
+      >
+        {t('Products')}
+      </Button>
+
+      <Menu
+        anchorEl={productsAnchor}
+        open={Boolean(productsAnchor)}
+        onClose={() => setProductsAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+        slotProps={{ paper: { sx: desktopNav.productsPaper } }}
+      >
+        {productPages.map((page) => (
+          <MenuItem
+            key={page.label}
+            onClick={() => {
+              setProductsAnchor(null);
+              openPage(page);
+            }}
+            selected={isActivePath(pathname, page.href)}
+            sx={desktopNav.productsItem(isActivePath(pathname, page.href))}
+          >
+            {page.label}
+          </MenuItem>
+        ))}
+      </Menu>
+
+      {pages.slice(1).map((page) => (
+        <Button
+          key={page.label}
+          onClick={() => openPage(page)}
+          aria-current={isActivePath(pathname, page.href) ? 'page' : undefined}
+          sx={desktopNav.navLink(isActivePath(pathname, page.href))}
+        >
+          {page.label}
+        </Button>
       ))}
 
       {!isAuthenticated && (
@@ -45,23 +95,8 @@ const DesktopNav = ({ pages, isAuthenticated, user, onLogout }: DesktopNavProps)
         </Button>
       )}
 
-      {!isAuthenticated && (
-        <MenuItem>
-          <Box sx={desktopNav.langBox}>
-            <Typography sx={desktopNav.langLabel}>
-              {currentLang === 'ar' ? 'ع' : 'En'}
-            </Typography>
-            <Switch checked={currentLang === 'ar'} onChange={toggleLanguage} color="primary" />
-          </Box>
-        </MenuItem>
-      )}
-
       {isAdmin && (
-        <Button
-          variant="contained"
-          onClick={() => navigate('/admin')}
-          sx={desktopNav.ctaBtn}
-        >
+        <Button variant="contained" onClick={() => navigate('/admin')} sx={desktopNav.ctaBtn}>
           {t('Admin')}
         </Button>
       )}
@@ -85,6 +120,10 @@ const DesktopNav = ({ pages, isAuthenticated, user, onLogout }: DesktopNavProps)
           {t('Go Pro')}
         </Button>
       )}
+
+      <ThemeToggle />
+
+      <LanguageToggle />
 
       {isAuthenticated && <UserMenu user={user} onLogout={onLogout} />}
     </Box>

@@ -9,7 +9,14 @@ const formInput = {
     textAlign: 'start' as const,
     fontSize: '0.85rem',
   },
-  row: { display: 'flex', alignItems: 'flex-start', gap: '8px' },
+  row: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '8px',
+    minWidth: 0,
+    // Inputs carry an intrinsic min-width; without this they refuse to shrink on narrow screens.
+    '& .MuiFormControl-root': { minWidth: 0 },
+  },
   iconWrapper: { mt: 0.5 },
   iconWrapperMultiline: { mt: 1.5 },
   icon: { color: COLORS.textMuted, fontSize: '1rem' },

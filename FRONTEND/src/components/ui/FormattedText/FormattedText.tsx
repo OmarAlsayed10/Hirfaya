@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Box } from '@mui/material';
 
-const FORMAT_PATTERN = /(\*\*([^*]+)\*\*|__([^_]+)__|\^\^([^\^]+)\^\^|\[\[large\]\]([\s\S]+?)\[\[\/large\]\]|\[\[small\]\]([\s\S]+?)\[\[\/small\]\])/g;
+const FORMAT_PATTERN = /(\*\*([^*]+)\*\*|__([^_]+)__|\^\^([^^]+)\^\^|\[\[large\]\]([\s\S]+?)\[\[\/large\]\]|\[\[small\]\]([\s\S]+?)\[\[\/small\]\])/g;
 
 const formatPart = (match: RegExpExecArray, key: number): ReactNode => {
   if (match[2]) return <Box component="strong" key={key}><FormattedText text={match[2]} /></Box>;
@@ -14,7 +14,7 @@ const formatPart = (match: RegExpExecArray, key: number): ReactNode => {
 export const stripTextFormatting = (text: string): string => text
   .replace(/\*\*([^*]+)\*\*/g, '$1')
   .replace(/__([^_]+)__/g, '$1')
-  .replace(/\^\^([^\^]+)\^\^/g, '$1')
+  .replace(/\^\^([^^]+)\^\^/g, '$1')
   .replace(/\[\[(?:large|small)\]\]([\s\S]+?)\[\[\/(?:large|small)\]\]/g, '$1');
 
 const FormattedText = ({ text }: { text: string }) => {

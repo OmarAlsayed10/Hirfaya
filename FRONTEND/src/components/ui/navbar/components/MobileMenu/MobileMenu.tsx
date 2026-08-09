@@ -1,107 +1,221 @@
-import { Box, Menu, MenuItem, Typography, Button, Switch, Avatar } from '@mui/material';
+import {
+  Avatar,
+  Box,
+  Button,
+  Chip,
+  Divider,
+  Drawer,
+  IconButton,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  ListSubheader,
+  Typography,
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
+import { User, FileText, Files } from '../../../../icons/MuiIcons';
 import { useTranslation } from 'react-i18next';
-import i18n from '../../../../../i18n';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { MobileMenuProps } from './MobileMenu.types';
+import LanguageToggle from '../../../LanguageToggle';
+import ThemeToggle from '../../../ThemeToggle';
 import mobileMenu from './mobileMenu.tokens';
+import { isActivePath } from '../../isActivePath';
 import { useFeedback } from '../../../../../context/FeedbackContext';
 import { hasPaidAccess } from '../../../../../utils/proAccess';
+import { displayName } from '../../../../../utils/displayName';
+import { AVATAR_COLORS } from '../../../../../theme/tokens';
 
-const MobileMenu = ({ anchorEl, onClose, pages, isAuthenticated, user, onLogout }: MobileMenuProps) => {
-  const { t } = useTranslation();
+const MobileMenu = ({ open, onClose, pages, productPages, isAuthenticated, user, onLogout }: MobileMenuProps) => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const currentLang = i18n.language;
-  const isRTL = currentLang === 'ar';
+  const { pathname } = useLocation();
   const { showEntitlement } = useFeedback();
 
   const isAdmin = user?.role === 'admin';
   const isActivePro = hasPaidAccess(user);
+  const u = user as (typeof user & { avatarColor?: string; planTier?: string }) | null;
+  const color = u?.avatarColor || AVATAR_COLORS[0];
+  const initial = user?.firstName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U';
+  const planLabel = isAdmin ? 'ADMIN' : (u?.planTier || (isActivePro ? 'pro' : 'basic')).toUpperCase();
 
-  const toggleLanguage = () => {
-    i18n.changeLanguage(currentLang === 'en' ? 'ar' : 'en');
+  const go = (path: string) => {
+    onClose();
+    navigate(path);
   };
 
+  const openPage = (page: { href: string; requiresPaid?: boolean }) => {
+    onClose();
+    if (page.requiresPaid && !isActivePro) {
+      showEntitlement('PRO_REQUIRED');
+      return;
+    }
+    navigate(page.href);
+  };
+
+  const accountLinks = [
+    { label: 'Profile', icon: <User size={17} />, to: '/settings' },
+    { label: 'My CVs', icon: <FileText size={17} />, to: '/settings?tab=cv' },
+    { label: 'Documents', icon: <Files size={17} />, to: '/settings?tab=documents' },
+  ];
+
   return (
-    <Menu
-      id="mobile-menu"
-      anchorEl={anchorEl}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-      open={Boolean(anchorEl)}
+    <Drawer
+      anchor={i18n.language === 'ar' ? 'right' : 'left'}
+      open={open}
       onClose={onClose}
-      sx={mobileMenu.menu}
+      slotProps={{ paper: { sx: mobileMenu.paper } }}
     >
+      <Box sx={mobileMenu.topBar}>
+        <Typography sx={mobileMenu.brand}>Hirfaya</Typography>
+        <IconButton onClick={onClose} aria-label={t('Close')} size="small">
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Box>
+
       {isAuthenticated && (
-        <MenuItem>
-          <Avatar src={user?.photo || ''} sx={{ bgcolor: 'primary.main', marginInlineEnd: 1 }}>
-            {user?.firstName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase()}
+        <Box sx={mobileMenu.account}>
+          <Avatar src={user?.photo || ''} sx={{ ...mobileMenu.avatar, bgcolor: color }}>
+            {initial}
           </Avatar>
-          {user?.firstName || user?.email?.split('@')[0]}
-        </MenuItem>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <Typography sx={mobileMenu.userName} noWrap>
+                {displayName(user?.firstName, user?.lastName)}
+              </Typography>
+              <Chip label={planLabel} size="small" color="primary" sx={mobileMenu.planChip} />
+            </Box>
+            <Typography sx={mobileMenu.userEmail} noWrap>{user?.email}</Typography>
+          </Box>
+        </Box>
       )}
 
-      {pages.map((page) => (
-        <MenuItem
-          key={page.label}
-          onClick={() => {
-            onClose();
-            if (page.requiresPaid && !isActivePro) {
-              showEntitlement('PRO_REQUIRED');
-              return;
-            }
-            navigate(page.href);
-          }}>
-          <Typography textAlign="center">{page.label}</Typography>
-        </MenuItem>
-      ))}
+      <Box sx={mobileMenu.scrollArea}>
+        <List disablePadding>
+          {pages.slice(0, 1).map((page) => (
+            <ListItemButton
+              key={page.label}
+              selected={isActivePath(pathname, page.href)}
+              onClick={() => openPage(page)}
+              sx={mobileMenu.navItem(isActivePath(pathname, page.href))}
+            >
+              <ListItemText
+                primary={page.label}
+                slotProps={{ primary: { sx: mobileMenu.itemLabel } }}
+              />
+            </ListItemButton>
+          ))}
+        </List>
 
-      <MenuItem>
-        <Box sx={mobileMenu.langBox}>
-          <Typography sx={mobileMenu.langLabel}>{isRTL ? 'ع' : 'En'}</Typography>
-          <Switch checked={currentLang === 'ar'} onChange={toggleLanguage} color="primary" />
-        </Box>
-      </MenuItem>
+        <List
+          disablePadding
+          subheader={<ListSubheader disableSticky sx={mobileMenu.sectionLabel}>{t('Products')}</ListSubheader>}
+        >
+          {productPages.map((page) => (
+            <ListItemButton
+              key={page.label}
+              selected={isActivePath(pathname, page.href)}
+              onClick={() => openPage(page)}
+              sx={{ ...mobileMenu.nestedItem, ...mobileMenu.navItem(isActivePath(pathname, page.href)) }}
+            >
+              <ListItemText
+                primary={page.label}
+                slotProps={{ primary: { sx: mobileMenu.itemLabel } }}
+              />
+            </ListItemButton>
+          ))}
+        </List>
 
-      {!isAuthenticated && (
-        <MenuItem onClick={() => { onClose(); navigate('/login'); }}>
-          <Button fullWidth variant="contained">
+        <Divider sx={mobileMenu.divider} />
+
+        <List disablePadding>
+          {pages.slice(1).map((page) => (
+            <ListItemButton
+              key={page.label}
+              selected={isActivePath(pathname, page.href)}
+              onClick={() => openPage(page)}
+              sx={mobileMenu.navItem(isActivePath(pathname, page.href))}
+            >
+              <ListItemText
+                primary={page.label}
+                slotProps={{ primary: { sx: mobileMenu.itemLabel } }}
+              />
+            </ListItemButton>
+          ))}
+        </List>
+
+        {isAuthenticated && (
+          <>
+            <Divider sx={mobileMenu.divider} />
+            <List
+              disablePadding
+              subheader={<ListSubheader disableSticky sx={mobileMenu.sectionLabel}>{t('Account')}</ListSubheader>}
+            >
+              {accountLinks.map((link) => (
+                <ListItemButton key={link.to} onClick={() => go(link.to)} sx={mobileMenu.nestedItem}>
+                  <ListItemIcon sx={mobileMenu.itemIcon}>{link.icon}</ListItemIcon>
+                  <ListItemText primary={t(link.label)} slotProps={{ primary: { sx: mobileMenu.itemLabel } }} />
+                </ListItemButton>
+              ))}
+            </List>
+          </>
+        )}
+      </Box>
+
+      <Divider />
+
+      <Box sx={mobileMenu.langRow}>
+        <Typography sx={mobileMenu.langLabel}>{t('Language')}</Typography>
+        <LanguageToggle />
+      </Box>
+
+      <Box sx={mobileMenu.langRow}>
+        <Typography sx={mobileMenu.langLabel}>{t('Theme')}</Typography>
+        <ThemeToggle />
+      </Box>
+
+      <Divider />
+
+      <Box sx={mobileMenu.footer}>
+        {!isAuthenticated && (
+          <Button fullWidth variant="contained" onClick={() => go('/login')}>
             {t('LogIn')}
           </Button>
-        </MenuItem>
-      )}
+        )}
 
-      {isAdmin && (
-        <MenuItem onClick={() => { onClose(); navigate('/admin'); }}>
-          <Button fullWidth variant="contained">
+        {isAdmin && (
+          <Button fullWidth variant="contained" onClick={() => go('/admin')}>
             {t('Admin')}
           </Button>
-        </MenuItem>
-      )}
+        )}
 
-      {!isAdmin && isActivePro && (
-        <MenuItem onClick={() => { onClose(); navigate('/settings?tab=plan'); }}>
-          <Button fullWidth variant="contained">
-            {t('Pro')}
-          </Button>
-        </MenuItem>
-      )}
-
-      {isAuthenticated && !isAdmin && !isActivePro && (
-        <MenuItem onClick={() => { onClose(); navigate('/payment-check'); }}>
-          <Button fullWidth variant="outlined">
+        {isAuthenticated && !isAdmin && !isActivePro && (
+          <Button fullWidth variant="outlined" onClick={() => go('/payment-check')}>
             {t('Go Pro')}
           </Button>
-        </MenuItem>
-      )}
+        )}
 
-      {isAuthenticated && (
-        <MenuItem onClick={() => { onClose(); onLogout(); }}>
-          <LogoutOutlinedIcon sx={{ mr: 1 }} />
-          {t('Logout')}
-        </MenuItem>
-      )}
-    </Menu>
+        {!isAdmin && isActivePro && (
+          <Button fullWidth variant="contained" onClick={() => go('/settings?tab=plan')}>
+            {t('Pro')}
+          </Button>
+        )}
+
+        {isAuthenticated && (
+          <Button
+            fullWidth
+            color="error"
+            startIcon={<LogoutOutlinedIcon fontSize="small" />}
+            onClick={() => { onClose(); onLogout(); }}
+            sx={mobileMenu.logout}
+          >
+            {t('Logout')}
+          </Button>
+        )}
+      </Box>
+    </Drawer>
   );
 };
 

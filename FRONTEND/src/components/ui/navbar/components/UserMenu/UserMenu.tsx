@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { Box, IconButton, Typography, Switch, Popover, Avatar, Chip, Divider } from '@mui/material';
-import { User, FileText, Files, Briefcase, Settings, LogOut, Globe } from "../../../../icons/MuiIcons";
+import { Box, IconButton, Typography, Popover, Avatar, Chip, Divider, ListItemIcon, ListItemText, MenuItem, MenuList } from '@mui/material';
+import { User, FileText, Files, LogOut } from "../../../../icons/MuiIcons";
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../../../i18n';
 import { useNavigate } from 'react-router-dom';
@@ -26,14 +26,11 @@ const UserMenu = ({ user, onLogout }: UserMenuProps) => {
 
   const close = () => setAnchorEl(null);
   const go = (path: string) => { close(); navigate(path); };
-  const toggleLanguage = () => i18n.changeLanguage(currentLang === 'en' ? 'ar' : 'en');
 
   const LINKS = [
     { label: 'Profile', icon: <User size={17} />, to: '/settings' },
     { label: 'My CVs', icon: <FileText size={17} />, to: '/settings?tab=cv' },
     { label: 'Documents', icon: <Files size={17} />, to: '/settings?tab=documents' },
-    { label: 'Career Match', icon: <Briefcase size={17} />, to: '/career-match' },
-    { label: 'Job Radar', icon: <Briefcase size={17} />, to: '/job-radar' },
   ];
 
   return (
@@ -67,33 +64,23 @@ const UserMenu = ({ user, onLogout }: UserMenuProps) => {
           </Box>
         </Box>
 
-        <Box sx={{ py: 0.5 }}>
+        <MenuList sx={{ py: 0.5 }}>
           {LINKS.map((l) => (
-            <Box key={l.to} onClick={() => go(l.to)} sx={userMenu.item}>
-              {l.icon}
-              <Typography sx={userMenu.itemLabel}>{t(l.label)}</Typography>
-            </Box>
+            <MenuItem key={l.to} onClick={() => go(l.to)}>
+              <ListItemIcon sx={userMenu.itemIcon}>{l.icon}</ListItemIcon>
+              <ListItemText primary={t(l.label)} slotProps={{ primary: { sx: userMenu.itemLabel } }} />
+            </MenuItem>
           ))}
-        </Box>
+        </MenuList>
 
         <Divider />
 
-        <Box sx={userMenu.langRow}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Globe size={17} />
-            <Typography sx={userMenu.itemLabel}>{currentLang === 'ar' ? 'العربية' : 'English'}</Typography>
-          </Box>
-          <Switch inputProps={{ "aria-label": "Switch language" }} size="small" checked={currentLang === 'ar'} onChange={toggleLanguage} color="primary" />
-        </Box>
-
-        <Divider />
-
-        <Box sx={{ py: 0.5 }}>
-          <Box onClick={() => { onLogout(); close(); }} sx={{ ...userMenu.item, color: 'error.main' }}>
-            <LogOut size={17} />
-            <Typography sx={userMenu.itemLabel}>{t('Logout')}</Typography>
-          </Box>
-        </Box>
+        <MenuList sx={{ py: 0.5 }}>
+          <MenuItem onClick={() => { onLogout(); close(); }}>
+            <ListItemIcon sx={userMenu.logoutIcon}><LogOut size={17} /></ListItemIcon>
+            <ListItemText primary={t('Logout')} slotProps={{ primary: { sx: userMenu.logoutLabel } }} />
+          </MenuItem>
+        </MenuList>
       </Popover>
     </>
   );

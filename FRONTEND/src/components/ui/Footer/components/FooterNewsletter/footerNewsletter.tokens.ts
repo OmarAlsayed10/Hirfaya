@@ -2,7 +2,7 @@ import { COLORS, RADIUS } from '../../../../../theme/tokens';
 
 const footerNewsletter = {
   title: {
-    color: COLORS.bgWhite,
+    color: COLORS.onAccent,
     fontWeight: 700,
     letterSpacing: '1.2px',
     fontSize: '0.72rem',
@@ -20,16 +20,16 @@ const footerNewsletter = {
       '&:hover fieldset': { borderColor: COLORS.primary },
       '&.Mui-focused fieldset': { borderColor: COLORS.primary },
     },
-    '& input::placeholder': { color: '#4d7a62', opacity: 1 },
+    '& input::placeholder': { color: COLORS.primaryMuted, opacity: 1 },
   },
   subscribeBtn: {
-    backgroundColor: COLORS.primary,
-    color: COLORS.bgWhite,
+    backgroundColor: COLORS.primarySurface,
+    color: COLORS.onAccent,
     borderRadius: RADIUS.md,
     py: 1,
     boxShadow: 'none',
     fontSize: '0.82rem',
-    '&:hover': { backgroundColor: COLORS.primaryDark, boxShadow: 'none' },
+    '&:hover': { backgroundColor: COLORS.primarySurfaceDark, boxShadow: 'none' },
   },
 } as const;
 

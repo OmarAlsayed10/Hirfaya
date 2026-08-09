@@ -2,7 +2,7 @@ import { COLORS } from '../../../../../theme/tokens';
 
 const footerLinks = {
   title: {
-    color: COLORS.bgWhite,
+    color: COLORS.onAccent,
     fontWeight: 700,
     letterSpacing: '1.2px',
     fontSize: '0.72rem',

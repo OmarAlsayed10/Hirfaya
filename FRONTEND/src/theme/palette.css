@@ -1,0 +1,98 @@
+:root {
+  color-scheme: light;
+
+  --color-primary: #2a5c45;
+  --color-primary-dark: #1e4332;
+  --color-primary-light: #3d8b65;
+  --color-primary-muted: #7a9e8e;
+  --color-primary-pale: #c8d9ce;
+  --color-primary-a12: rgba(42, 92, 69, 0.12);
+  --color-primary-a20: rgba(42, 92, 69, 0.2);
+  --color-primary-a35: rgba(42, 92, 69, 0.35);
+
+  --color-text-primary: #1a1a18;
+  --color-text-secondary: #6b6b66;
+  --color-text-dark: #222222;
+  --color-text-medium: #444444;
+  --color-text-muted: #555555;
+
+  --color-bg-light: #f5f4ef;
+  --color-bg-dark: #0f1f17;
+  --color-bg-white: #ffffff;
+  --color-bg-icon-tinted: #e8f2ec;
+  --color-bg-hover: rgba(26, 26, 24, 0.05);
+  --color-bg-raised: #ffffff;
+  --color-on-accent: #ffffff;
+
+  --color-border-light: rgba(26, 26, 24, 0.1);
+  --color-border-medium: rgba(26, 26, 24, 0.18);
+  --color-border-dark: rgba(26, 26, 24, 0.2);
+
+  --color-disabled: #e0e0e0;
+  --color-gold: #ffd700;
+  --color-gold-light: #fff8dc;
+
+  --color-danger: #dc2626;
+  --color-danger-dark: #b91c1c;
+  --color-danger-soft: #fee2e2;
+  --color-danger-border: #fca5a5;
+  --color-warning: #f59e0b;
+  --color-icon-idle: rgba(26, 26, 24, 0.32);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-primary: #4e9d76;
+  --color-primary-dark: #3d8b65;
+  --color-primary-light: #6fbb94;
+  --color-primary-muted: #85a898;
+  --color-primary-pale: #2b4438;
+  --color-primary-a12: rgba(110, 187, 148, 0.14);
+  --color-primary-a20: rgba(110, 187, 148, 0.24);
+  --color-primary-a35: rgba(110, 187, 148, 0.4);
+
+  --color-text-primary: #f0eee9;
+  --color-text-secondary: #a8a49c;
+  --color-text-dark: #f0eee9;
+  --color-text-medium: #d6d2ca;
+  --color-text-muted: #b3aea5;
+
+  --color-bg-light: #191714;
+  --color-bg-dark: #0f0d0b;
+  --color-bg-white: #222018;
+  --color-bg-icon-tinted: #23302a;
+  --color-bg-hover: rgba(255, 253, 248, 0.07);
+  --color-bg-raised: #2b2820;
+  --color-on-accent: #f7f5f0;
+
+  --color-border-light: rgba(240, 238, 233, 0.12);
+  --color-border-medium: rgba(240, 238, 233, 0.2);
+  --color-border-dark: rgba(240, 238, 233, 0.26);
+
+  --color-disabled: #3a3630;
+  --color-gold: #ffd700;
+  --color-gold-light: #4a4327;
+
+  --color-danger: #f87171;
+  --color-danger-dark: #ef4444;
+  --color-danger-soft: #40201f;
+  --color-danger-border: #7f2d2d;
+  --color-warning: #fbbf24;
+  --color-icon-idle: rgba(240, 238, 233, 0.4);
+}
+
+body {
+  background-color: var(--color-bg-light);
+  color: var(--color-text-primary);
+}
+
+/* A flat near-black reads cheap and hides depth, so dark mode gets a soft warm
+   wash off the top corners with the base colour underneath for scroll overflow. */
+:root[data-theme='dark'] body {
+  background-image:
+    radial-gradient(1100px 620px at 12% -8%, rgba(78, 157, 118, 0.1), transparent 60%),
+    radial-gradient(900px 520px at 92% 4%, rgba(120, 108, 84, 0.09), transparent 62%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}

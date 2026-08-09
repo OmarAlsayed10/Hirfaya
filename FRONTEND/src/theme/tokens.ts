@@ -1,32 +1,56 @@
+// Every colour resolves through a CSS variable defined in theme/palette.css, so the
+// light/dark palettes swap without any call site changing. Literal hex belongs only
+// where the output must never follow the UI theme (CV previews, generated PDFs).
 export const COLORS = {
-  primary: '#2a5c45',
-  primaryDark: '#1e4332',
-  primaryLight: '#3d8b65',
-  primaryMuted: '#7a9e8e',
-  primaryPale: '#c8d9ce',
-  primaryAlpha12: 'rgba(42,92,69,0.12)',
-  primaryAlpha20: 'rgba(42,92,69,0.2)',
-  primaryAlpha35: 'rgba(42,92,69,0.35)',
+  primary: 'var(--color-primary)',
+  primaryDark: 'var(--color-primary-dark)',
+  // Filled/button green. Darker than `primary` in dark mode so white label text
+  // clears 4.5:1; `primary` stays lighter for accents sitting ON a dark page.
+  primarySurface: 'var(--color-primary-surface)',
+  primarySurfaceDark: 'var(--color-primary-surface-dark)',
+  primaryLight: 'var(--color-primary-light)',
+  primaryMuted: 'var(--color-primary-muted)',
+  primaryPale: 'var(--color-primary-pale)',
+  primaryAlpha12: 'var(--color-primary-a12)',
+  primaryAlpha20: 'var(--color-primary-a20)',
+  primaryAlpha35: 'var(--color-primary-a35)',
 
-  textPrimary: '#1a1a18',
-  textSecondary: '#6b6b66',
-  textDark: '#222',
-  textMedium: '#444',
-  textMuted: '#555',
+  textPrimary: 'var(--color-text-primary)',
+  textSecondary: 'var(--color-text-secondary)',
+  textDark: 'var(--color-text-dark)',
+  textMedium: 'var(--color-text-medium)',
+  textMuted: 'var(--color-text-muted)',
 
-  bgLight: '#f5f4ef',
-  bgDark: '#0f1f17',
-  bgWhite: '#ffffff',
-  bgIconTinted: '#e8f2ec',
-  bgHover: 'rgba(26,26,24,0.05)',
+  bgLight: 'var(--color-bg-light)',
+  bgDark: 'var(--color-bg-dark)',
+  bgWhite: 'var(--color-bg-white)',
+  bgIconTinted: 'var(--color-bg-icon-tinted)',
+  bgHover: 'var(--color-bg-hover)',
+  bgRaised: 'var(--color-bg-raised)',
+  // Foreground for text/icons sitting ON primary or on a dark surface: stays
+  // near-white in BOTH themes. bgWhite is a surface and must never be used here.
+  onAccent: 'var(--color-on-accent)',
 
-  borderLight: 'rgba(26,26,24,0.1)',
-  borderMedium: 'rgba(26,26,24,0.18)',
-  borderDark: 'rgba(26,26,24,0.2)',
+  borderLight: 'var(--color-border-light)',
+  borderMedium: 'var(--color-border-medium)',
+  borderDark: 'var(--color-border-dark)',
 
-  disabled: '#e0e0e0',
-  gold: '#FFD700',
-  goldLight: '#FFF8DC',
+  disabled: 'var(--color-disabled)',
+  gold: 'var(--color-gold)',
+  goldLight: 'var(--color-gold-light)',
+
+  danger: 'var(--color-danger)',
+  dangerDark: 'var(--color-danger-dark)',
+  dangerSoft: 'var(--color-danger-soft)',
+  dangerBorder: 'var(--color-danger-border)',
+  warning: 'var(--color-warning)',
+  warningSoft: 'var(--color-warning-soft)',
+  success: 'var(--color-success)',
+  successSoft: 'var(--color-success-soft)',
+  accentOrange: 'var(--color-accent-orange)',
+  accentOrangeSoft: 'var(--color-accent-orange-soft)',
+  surfaceSubtle: 'var(--color-surface-subtle)',
+  iconIdle: 'var(--color-icon-idle)',
 } as const;
 
 // Mirror of the backend avatarColor whitelist (profileService.ts). Keep in sync.

@@ -1,7 +1,90 @@
+import { COLORS } from '../../../../../theme/tokens';
+
 const mobileMenu = {
-  menu: { display: { xs: 'block', md: 'none' } },
-  langBox: { display: 'flex', alignItems: 'center' },
-  langLabel: { fontSize: '14px', mx: 1 },
+  paper: {
+    width: 300,
+    maxWidth: '85vw',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  topBar: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    px: 2,
+    py: 1.5,
+  },
+  brand: {
+    fontFamily: '"DM Serif Display", serif',
+    fontSize: 20,
+    fontWeight: 700,
+    color: COLORS.textPrimary,
+  },
+  account: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 1.5,
+    px: 2,
+    py: 1.75,
+    bgcolor: COLORS.bgLight,
+  },
+  avatar: { width: 42, height: 42, fontWeight: 600 },
+  userName: { fontSize: 14, fontWeight: 700, color: COLORS.textPrimary },
+  planChip: { height: 18, fontSize: 10, fontWeight: 700, '& .MuiChip-label': { px: 0.75 } },
+  userEmail: { fontSize: 12, color: COLORS.textSecondary },
+  scrollArea: { flex: '1 1 auto', overflowY: 'auto', py: 1 },
+  sectionLabel: {
+    px: 2,
+    pt: 1.5,
+    pb: 0.5,
+    lineHeight: 1.6,
+    bgcolor: 'transparent',
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    color: COLORS.textMuted,
+  },
+  nestedItem: { pl: 3 },
+  // A drawer row has no room for an underline, so the current page gets a start-edge
+  // bar plus a tinted background instead.
+  navItem: (active: boolean) => ({
+    position: 'relative',
+    bgcolor: active ? COLORS.primaryAlpha12 : 'transparent',
+    '&.Mui-selected': { bgcolor: COLORS.primaryAlpha12 },
+    '&.Mui-selected:hover': { bgcolor: COLORS.primaryAlpha20 },
+    '& .MuiListItemText-primary': {
+      color: active ? COLORS.primary : COLORS.textMedium,
+      fontWeight: active ? 700 : 500,
+    },
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      insetInlineStart: 0,
+      top: 6,
+      bottom: 6,
+      width: '3px',
+      borderRadius: '0 3px 3px 0',
+      backgroundColor: COLORS.primary,
+      opacity: active ? 1 : 0,
+      transition: 'opacity .18s ease',
+    },
+  }),
+  itemIcon: { minWidth: 30, color: COLORS.textMedium },
+  itemLabel: { fontSize: 14, fontWeight: 500, color: COLORS.textMedium },
+  divider: { my: 0.75 },
+  langRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 2,
+    px: 2,
+    py: 1.25,
+    color: COLORS.textMedium,
+  },
+  langLabel: { fontSize: 14, fontWeight: 500 },
+  footer: { display: 'flex', flexDirection: 'column', gap: 1, p: 2 },
+  logout: { textTransform: 'none', fontSize: 14, fontWeight: 500 },
 } as const;
 
 export default mobileMenu;
