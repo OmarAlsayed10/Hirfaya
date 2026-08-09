@@ -2,14 +2,18 @@ import { Request, Response } from "express";
 import prisma from "../lib/prisma";
 import { CustomRequest } from "../middleware/validateJWTMiddleware";
 import { refreshMatchesForUser, listMatches } from "../services/jobRadarService";
+import { normalizeJobDescription } from "../lib/jobDescriptionNormalizer";
 import { generateCoverLetter } from "../services/coverLetterService";
 import { getPrimaryCV } from "../services/cvBuilderService";
 import { cvToPlainText } from "../services/documentService";
 import { generateVariants } from "../services/cvVariantService";
 import { selectedJobRoles } from "../services/jobCatalogService";
+import { ingestJobs } from "../services/jobIngestionService";
+import { generateScreeningQuestions } from "../services/screeningQuestionService";
 
 const VALID_STATUS = ["matched", "applied", "interview", "offer", "rejected", "dismissed"];
 const MAX_CV_TEXT = 30000;
+const bodyLanguage = (value: unknown): "en" | "ar" => value === "ar" ? "ar" : "en";
 
 const uid = (req: Request): string => (req as CustomRequest).user!.userId;
 
@@ -94,14 +98,16 @@ export const updateMatchStatusController = async (req: Request, res: Response) =
 
 export const refreshMatchesController = async (req: Request, res: Response) => {
   const userId = uid(req);
+  const ingestion = await ingestJobs();
   const count = await refreshMatchesForUser(userId);
   const result = await listMatches(userId, 1);
-  res.status(200).json({ refreshed: count, ...result });
+  res.status(200).json({ refreshed: count, ingestion, ...result });
 };
 
 export const generateCoverLetterController = async (req: Request, res: Response) => {
   const userId = uid(req);
   const { id } = req.params;
+  const language = bodyLanguage(req.body.language);
 
   const match = await prisma.jobMatch.findFirst({ where: { id, userId } });
   if (!match) {
@@ -125,14 +131,28 @@ export const generateCoverLetterController = async (req: Request, res: Response)
     select: { description: true },
   });
 
-  const coverLetter = await generateCoverLetter(cvText.slice(0, MAX_CV_TEXT), {
-    title: match.title,
-    company: match.company,
-    description: job?.description ?? "",
-  });
+  // Reuse the stored English letter when translating so both languages stay the same
+  // letter; regenerating would write a different one (generation is deliberately varied).
+  const { english, letter } = await generateCoverLetter(
+    cvText.slice(0, MAX_CV_TEXT),
+    {
+      title: match.title,
+      company: match.company,
+      description: normalizeJobDescription(job?.description ?? "").plainText,
+    },
+    language,
+    (match as { coverLetter?: string | null }).coverLetter ?? "",
+  );
 
-  const updated = await prisma.jobMatch.update({ where: { id }, data: { coverLetter } });
-  res.status(200).json({ coverLetter: updated.coverLetter });
+  const updated = await (prisma.jobMatch as any).update({
+    where: { id },
+    data:
+      language === "ar" ? { coverLetter: english, coverLetterAr: letter } : { coverLetter: letter },
+  });
+  res.status(200).json({
+    coverLetter: language === "ar" ? updated.coverLetterAr : updated.coverLetter,
+    language,
+  });
 };
 
 export const getAnalyticsController = async (req: Request, res: Response) => {
@@ -226,4 +246,212 @@ export const updateVariantOutcomeController = async (req: Request, res: Response
   });
 
   res.status(200).json({ variant: updated });
+};
+
+export const getMatchDetailsController = async (req: Request, res: Response) => {
+  const userId = uid(req);
+  const { id } = req.params;
+  const match = await prisma.jobMatch.findFirst({ where: { id, userId } });
+  if (!match) {
+    res.status(404).json({ message: "Job match not found." });
+    return;
+  }
+  const job = await prisma.job.findUnique({
+    where: { source_externalId: { source: match.source, externalId: match.externalId } },
+  });
+  const rawDescription = job?.description
+    || `Job Title: ${match.title}\nCompany: ${match.company}\nLocation: ${match.location || "Remote"}\nURL: ${match.url}`;
+  res.status(200).json({
+    match,
+    description: normalizeJobDescription(rawDescription).plainText,
+  });
+};
+
+export const getWorkspaceController = async (req: Request, res: Response) => {
+  const userId = uid(req);
+  const { id } = req.params;
+
+  const match = await prisma.jobMatch.findFirst({ where: { id, userId } });
+  if (!match) {
+    res.status(404).json({ message: "Job match not found." });
+    return;
+  }
+
+  const job = await prisma.job.findUnique({
+    where: { source_externalId: { source: match.source, externalId: match.externalId } },
+  });
+
+  const user = await (prisma.user as any).findUnique({
+    where: { id: userId },
+    select: {
+      firstName: true,
+      lastName: true,
+      email: true,
+      phone: true,
+      title: true,
+      skills: true,
+      salaryExpectation: true,
+      salaryCurrency: true,
+      visaStatus: true,
+      noticePeriod: true,
+      workPreference: true,
+      relocationOpen: true,
+    },
+  });
+
+  const primaryCv = await getPrimaryCV(userId);
+  const cvText = primaryCv ? cvToPlainText(primaryCv) : "";
+
+  const cvVariants = await prisma.cVVariant.findMany({
+    where: { userId, jobMatchId: id },
+    select: { id: true, label: true, content: true, sentCount: true, responseCount: true },
+  });
+
+  const defaultChecklist = [
+    { id: "check-1", label: "Tailored CV ready", done: false },
+    { id: "check-2", label: "Cover letter reviewed", done: false },
+    { id: "check-3", label: "Screening answers prepared", done: false },
+    { id: "check-4", label: "Application submitted on job portal", done: false },
+    { id: "check-5", label: "Follow-up date scheduled", done: false },
+  ];
+
+  const checklist = (match as any).checklist || defaultChecklist;
+
+  res.status(200).json({
+    match,
+    job: {
+      description: normalizeJobDescription(
+        job?.description || `Job Title: ${match.title}\nCompany: ${match.company}\nLocation: ${match.location || "Remote"}\nURL: ${match.url}`,
+      ).plainText,
+    },
+    userProfile: user,
+    primaryCv: primaryCv ? { id: primaryCv.id, text: cvText } : null,
+    cvVariants,
+    checklist,
+    screeningAnswers: (match as any).screeningAnswers || [],
+  });
+};
+
+export const updateWorkspaceController = async (req: Request, res: Response) => {
+  const userId = uid(req);
+  const { id } = req.params;
+  const { checklist, screeningAnswers, notes, reminderAt, selectedCvVariant, status, coverLetter } = req.body;
+
+  const match = await prisma.jobMatch.findFirst({ where: { id, userId } });
+  if (!match) {
+    res.status(404).json({ message: "Match not found." });
+    return;
+  }
+
+  const updateData: any = {};
+  if (checklist !== undefined) updateData.checklist = checklist;
+  if (screeningAnswers !== undefined) updateData.screeningAnswers = screeningAnswers;
+  if (notes !== undefined) updateData.notes = notes;
+  if (reminderAt !== undefined) {
+    updateData.reminderAt = reminderAt ? new Date(reminderAt) : null;
+    updateData.reminderSent = false;
+  }
+  if (selectedCvVariant !== undefined) updateData.selectedCvVariant = selectedCvVariant;
+  if (coverLetter !== undefined) updateData.coverLetter = coverLetter;
+  if (status && VALID_STATUS.includes(status)) {
+    updateData.status = status;
+    if (status === "applied" && !match.appliedAt) {
+      updateData.appliedAt = new Date();
+    }
+  }
+
+  const updated = await (prisma.jobMatch as any).update({
+    where: { id },
+    data: updateData,
+  });
+
+  res.status(200).json({ match: updated });
+};
+
+export const generateScreeningAnswersController = async (req: Request, res: Response) => {
+  const userId = uid(req);
+  const { id } = req.params;
+
+  const match = await prisma.jobMatch.findFirst({ where: { id, userId } });
+  if (!match) {
+    res.status(404).json({ message: "Match not found." });
+    return;
+  }
+
+  const job = await prisma.job.findUnique({
+    where: { source_externalId: { source: match.source, externalId: match.externalId } },
+  });
+
+  const user = await (prisma.user as any).findUnique({
+    where: { id: userId },
+    select: {
+      salaryExpectation: true,
+      salaryCurrency: true,
+      visaStatus: true,
+      noticePeriod: true,
+      workPreference: true,
+      relocationOpen: true,
+    },
+  });
+
+  const primaryCv = await getPrimaryCV(userId);
+  const cvText = primaryCv ? cvToPlainText(primaryCv) : "";
+
+  const questions = await generateScreeningQuestions({
+    jobTitle: match.title,
+    company: match.company,
+    jobDescription: normalizeJobDescription(job?.description ?? "").plainText,
+    cvText,
+    userProfile: user,
+  });
+
+  const updated = await (prisma.jobMatch as any).update({
+    where: { id },
+    data: { screeningAnswers: questions as any },
+  });
+
+  res.status(200).json({ screeningAnswers: (updated as any).screeningAnswers });
+};
+
+export const createCustomMatchController = async (req: Request, res: Response) => {
+  const userId = uid(req);
+  const { title, company, url, description } = req.body;
+
+  const jobTitle = typeof title === "string" ? title.trim() : "";
+  const jobCompany = typeof company === "string" ? company.trim() : "";
+  const jobDescription = typeof description === "string" ? normalizeJobDescription(description).plainText : "";
+  if (!jobTitle || !jobCompany || !jobDescription) {
+    res.status(400).json({ code: "JOB_DETAILS_REQUIRED", message: "Provide a job title, company, and description." });
+    return;
+  }
+  const jobUrl = typeof url === "string" && url.trim() ? url.trim() : "";
+
+  const externalId = `custom_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const source = "manual";
+
+  await prisma.job.create({
+    data: {
+      source,
+      externalId,
+      title: jobTitle,
+      company: jobCompany,
+      url: jobUrl,
+      description: jobDescription,
+    },
+  });
+
+  const match = await (prisma.jobMatch as any).create({
+    data: {
+      userId,
+      source,
+      externalId,
+      title: jobTitle,
+      company: jobCompany,
+      url: jobUrl,
+      status: "matched",
+      analysisStatus: "pending",
+    },
+  });
+
+  res.status(201).json({ match });
 };

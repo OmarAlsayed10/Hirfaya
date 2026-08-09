@@ -11,6 +11,11 @@ import {
   getAnalyticsController,
   generateVariantsController,
   updateVariantOutcomeController,
+  getMatchDetailsController,
+  getWorkspaceController,
+  updateWorkspaceController,
+  generateScreeningAnswersController,
+  createCustomMatchController,
 } from "../controllers/jobRadarController";
 import {
   getJobCatalogController,
@@ -38,6 +43,11 @@ router.post("/submissions", submitJobController);
 router.get("/preference", getPreferenceController);
 router.post("/preference", recalculationLimiter, setPreferenceController);
 router.get("/matches", getMatchesController);
+router.post("/matches/custom", createCustomMatchController);
+router.get("/matches/:id/details", getMatchDetailsController);
+router.get("/matches/:id/workspace", getWorkspaceController);
+router.patch("/matches/:id/workspace", updateWorkspaceController);
+router.post("/matches/:id/screening-answers", generateScreeningAnswersController);
 router.patch("/matches/:id/status", updateMatchStatusController);
 router.post("/refresh", recalculationLimiter, refreshMatchesController);
 router.post("/matches/:id/cover-letter", generateCoverLetterController);

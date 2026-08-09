@@ -11,8 +11,9 @@ import axios from "axios";
 import { useTranslation } from "react-i18next";
 import { JOB_ENDPOINTS } from "../../../constants/endpoints";
 import { useFeedback } from "../../../context/FeedbackContext";
+import { COLORS } from "../../../theme/tokens";
 
-const PRIMARY = "#2a5c45";
+const PRIMARY = COLORS.primary;
 
 type JobField = "title" | "company" | "url" | "description";
 type FieldErrors = Partial<Record<JobField, string>>;
@@ -82,7 +83,7 @@ const JobSubmissionForm = ({ onSubmitted }: JobSubmissionFormProps) => {
       onSubmitted?.();
     } catch (error) {
       const message = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
-      notify(typeof message === "string" ? message : t("Could not submit the job."));
+      notify(typeof message === "string" ? t(message) : t("Could not submit the job."));
     } finally {
       setSubmitting(false);
     }
@@ -90,7 +91,7 @@ const JobSubmissionForm = ({ onSubmitted }: JobSubmissionFormProps) => {
 
   return (
     <Box>
-      <Typography sx={{ color: "#6b6b66", mb: 2.5 }}>
+      <Typography sx={{ color: COLORS.textSecondary, mb: 2.5 }}>
         {t("Know a real vacancy? Send it to us. An admin reviews it before it appears in Job Radar.")}
       </Typography>
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
@@ -106,7 +107,7 @@ const JobSubmissionForm = ({ onSubmitted }: JobSubmissionFormProps) => {
         sx={{ mt: 1 }}
       />
       <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
-        <Button variant="contained" onClick={submit} disabled={submitting} sx={{ bgcolor: PRIMARY, textTransform: "none", fontWeight: "bold", borderRadius: "10px", "&:hover": { bgcolor: "#1e4332" } }}>
+        <Button variant="contained" onClick={submit} disabled={submitting} sx={{ bgcolor: PRIMARY, textTransform: "none", fontWeight: "bold", borderRadius: "10px", "&:hover": { bgcolor: COLORS.primarySurfaceDark } }}>
           {submitting ? t("Sending...") : t("Send for review")}
         </Button>
       </Box>

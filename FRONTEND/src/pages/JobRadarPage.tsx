@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import {
   Box, Container, Typography, Paper, TextField, MenuItem, Button,
   Chip, CircularProgress, Divider, Link, Pagination, Dialog, DialogContent, DialogTitle,
@@ -9,7 +10,7 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import DescriptionIcon from "@mui/icons-material/Description";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import { useTranslation } from "react-i18next";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { JOB_ENDPOINTS } from "../constants/endpoints";
 import { useFeedback } from "../context/FeedbackContext";
 import CoverLetterModal from "../features/JobRadar/components/CoverLetterModal";
@@ -18,8 +19,9 @@ import JobAnalytics from "../features/JobRadar/components/JobAnalytics";
 import JobRadarTargetsPanel, { JobRadarPreference } from "../features/JobRadar/components/JobRadarTargetsPanel";
 import { JobCategoryOption } from "../features/JobRadar/components/RoleCatalogSelector";
 import JobSubmissionForm from "../features/JobRadar/components/JobSubmissionForm";
+import { COLORS } from "../theme/tokens";
 
-const PRIMARY = "#2a5c45";
+const PRIMARY = COLORS.primary;
 
 interface JobMatch {
   id: string;
@@ -28,14 +30,18 @@ interface JobMatch {
   company: string;
   location: string | null;
   url: string;
-  fitScore: number;
+  fitScore: number | null;
+  analysisStatus: string;
   earlyBird: boolean;
   status: string;
+  coverLetter?: string | null;
+  coverLetterAr?: string | null;
 }
 
 const EMPTY_PREF: JobRadarPreference = { roleIds: [], level: "", location: "", remote: false, keywords: "", blocklist: "" };
 
 const JobRadarPage = () => {
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const { notify } = useFeedback();
   const [pref, setPref] = useState<JobRadarPreference>(EMPTY_PREF);
@@ -151,23 +157,23 @@ const JobRadarPage = () => {
 
 
   return (
-    <Box sx={{ bgcolor: "#f5f4ef", minHeight: "100vh", py: { xs: 5, md: 8 } }}>
+    <Box sx={{ bgcolor: COLORS.bgLight, minHeight: "100vh", py: { xs: 5, md: 8 } }}>
       <Container maxWidth={false} disableGutters sx={{ px: { xs: 2, sm: 4, lg: 6 } }}>
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mb: 1, flexWrap: "wrap" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
             <RadarIcon sx={{ color: PRIMARY, fontSize: 34 }} />
-            <Typography variant="h4" sx={{ fontWeight: "bold", color: "#1a1a18" }}>{t("Job Radar")}</Typography>
+            <Typography variant="h4" sx={{ fontWeight: "bold", color: COLORS.textPrimary }}>{t("Job Radar")}</Typography>
           </Box>
           <Button
             variant="contained"
             startIcon={<AddBusinessRoundedIcon />}
             onClick={() => setShareJobOpen(true)}
-            sx={{ bgcolor: PRIMARY, textTransform: "none", fontWeight: 800, borderRadius: "10px", px: 2, "&:hover": { bgcolor: "#1e4332" } }}
+            sx={{ bgcolor: PRIMARY, textTransform: "none", fontWeight: 800, borderRadius: "10px", px: 2, "&:hover": { bgcolor: COLORS.primarySurfaceDark } }}
           >
             {t("Share a job")}
           </Button>
         </Box>
-        <Typography sx={{ color: "#6b6b66", mb: 4 }}>
+        <Typography sx={{ color: COLORS.textSecondary, mb: 4 }}>
           {t("We find fresh, low-competition jobs matched to your CV")}
         </Typography>
         <JobRadarTargetsPanel
@@ -185,7 +191,7 @@ const JobRadarPage = () => {
         </Box>
 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mb: 2, flexWrap: "wrap" }}>
           <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-            {t("Matches")} {total > 0 && <Chip label={total} size="small" sx={{ ml: 1, bgcolor: "rgba(42,92,69,0.12)", color: PRIMARY, fontWeight: 700 }} />}
+            {t("Matches")} {total > 0 && <Chip label={total} size="small" sx={{ ml: 1, bgcolor: COLORS.primaryAlpha12, color: PRIMARY, fontWeight: 700 }} />}
           </Typography>
           <TextField
             select
@@ -206,26 +212,37 @@ const JobRadarPage = () => {
         {loading ? (
           <Box sx={{ textAlign: "center", py: 6 }}><CircularProgress sx={{ color: PRIMARY }} /></Box>
         ) : matches.length === 0 ? (
-          <Paper elevation={0} sx={{ p: 5, borderRadius: "20px", textAlign: "center", border: "1px dashed rgba(0,0,0,0.15)" }}>
-            <Typography sx={{ color: "#6b6b66" }}>{t("No matches yet. Set your targets above and hit Save.")}</Typography>
+          <Paper elevation={0} sx={{ p: 5, borderRadius: "20px", textAlign: "center", border: `1px dashed ${COLORS.borderMedium}` }}>
+            <Typography sx={{ color: COLORS.textSecondary }}>{t("No matches yet. Set your targets above and hit Save.")}</Typography>
           </Paper>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {matches.map((m) => (
-              <Paper key={m.id} elevation={0} sx={{ p: 2.5, borderRadius: "16px", border: "1px solid rgba(0,0,0,0.08)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+              <Paper key={m.id} elevation={0} sx={{ p: 2.5, borderRadius: "16px", border: `1px solid ${COLORS.borderLight}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
                 <Box sx={{ flex: 1, minWidth: 240 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mb: 0.5 }}>
-                    <Link href={m.url} target="_blank" rel="noopener noreferrer" sx={{ fontWeight: "bold", color: "#1a1a18", textDecoration: "none", "&:hover": { color: PRIMARY } }}>
+                    <Link href={m.url} target="_blank" rel="noopener noreferrer" sx={{ fontWeight: "bold", color: COLORS.textPrimary, textDecoration: "none", "&:hover": { color: PRIMARY } }}>
                       {m.title} <OpenInNewIcon sx={{ fontSize: 14, verticalAlign: "middle" }} />
                     </Link>
-                    {m.earlyBird && <Chip label={t("Apply early")} size="small" sx={{ bgcolor: PRIMARY, color: "white", fontWeight: 700, height: 20 }} />}
+                    {m.earlyBird && <Chip label={t("Apply early")} size="small" sx={{ bgcolor: PRIMARY, color: COLORS.onAccent, fontWeight: 700, height: 20 }} />}
                     {m.status === "applied" && <Chip label={t("Applied")} size="small" variant="outlined" sx={{ height: 20, borderColor: PRIMARY, color: PRIMARY }} />}
                   </Box>
-                  <Typography sx={{ color: "#6b6b66", fontSize: "0.85rem" }}>
-                    {m.company}{m.location ? ` \u00b7 ${m.location}` : ""}{" \u00b7 "}{m.source}{" \u00b7 "}<b style={{ color: PRIMARY }}>{m.fitScore}% {t("match")}</b>
+                  <Typography sx={{ color: COLORS.textSecondary, fontSize: "0.85rem" }}>
+                    {m.company}{m.location ? ` \u00b7 ${m.location}` : ""}{" \u00b7 "}{m.source}{" \u00b7 "}<b style={{ color: PRIMARY }}>{m.analysisStatus === "pending" ? t("Analysis required") : `${m.fitScore}% ${t("match")}`}</b>
                   </Typography>
                 </Box>
                 <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => navigate(`/applications/${m.id}`)}
+                    sx={{ textTransform: "none", bgcolor: PRIMARY, color: COLORS.onAccent, fontWeight: 700, "&:hover": { bgcolor: COLORS.primarySurfaceDark } }}
+                  >
+                    {t("Prepare Application")}
+                  </Button>
+                  <Button size="small" startIcon={<CompareArrowsIcon sx={{ fontSize: 16 }} />} onClick={() => navigate(`/career-match?mode=vacancy&jobId=${m.id}&title=${encodeURIComponent(m.title)}`)} sx={{ textTransform: "none", color: PRIMARY, fontWeight: 700, bgcolor: "rgba(42,92,69,0.08)", "&:hover": { bgcolor: "rgba(42,92,69,0.16)" } }}>
+                    {t("Match vacancy")}
+                  </Button>
                   <Button size="small" startIcon={<DescriptionIcon sx={{ fontSize: 16 }} />} onClick={() => setCoverLetterMatch(m)} sx={{ textTransform: "none", color: PRIMARY, fontWeight: 600 }}>
                     {t("Cover letter")}
                   </Button>
@@ -237,7 +254,7 @@ const JobRadarPage = () => {
                       {t("Mark applied")}
                     </Button>
                   )}
-                  <Button size="small" onClick={() => setStatus(m.id, "dismissed")} sx={{ textTransform: "none", color: "#999" }}>
+                  <Button size="small" onClick={() => setStatus(m.id, "dismissed")} sx={{ textTransform: "none", color: COLORS.textSecondary }}>
                     {t("Dismiss")}
                   </Button>
                 </Box>
@@ -265,6 +282,8 @@ const JobRadarPage = () => {
         matchId={coverLetterMatch?.id ?? null}
         matchTitle={coverLetterMatch?.title ?? ""}
         matchCompany={coverLetterMatch?.company ?? ""}
+        coverLetter={coverLetterMatch?.coverLetter ?? null}
+        coverLetterAr={coverLetterMatch?.coverLetterAr ?? null}
       />
       <ABVariantsModal
         open={!!variantsMatch}

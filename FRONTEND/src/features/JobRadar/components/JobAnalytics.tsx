@@ -3,8 +3,9 @@ import { Box, Paper, Typography, CircularProgress } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
 import { JOB_ENDPOINTS } from "../../../constants/endpoints";
+import { COLORS } from "../../../theme/tokens";
 
-const PRIMARY = "#2a5c45";
+const PRIMARY = COLORS.primary;
 
 interface Analytics {
   totals: { matched: number; applied: number; interview: number; offer: number; rejected: number };
@@ -14,9 +15,9 @@ interface Analytics {
 }
 
 const StatCard = ({ label, value }: { label: string; value: string | number }) => (
-  <Paper elevation={0} sx={{ p: 2.5, borderRadius: "16px", border: "1px solid rgba(0,0,0,0.08)", textAlign: "center" }}>
+  <Paper elevation={0} sx={{ p: 2.5, borderRadius: "16px", border: `1px solid ${COLORS.borderLight}`, textAlign: "center" }}>
     <Typography sx={{ fontWeight: "bold", color: PRIMARY, fontSize: "1.6rem", lineHeight: 1.2 }}>{value}</Typography>
-    <Typography sx={{ color: "#6b6b66", fontSize: "0.8rem", mt: 0.5 }}>{label}</Typography>
+    <Typography sx={{ color: COLORS.textSecondary, fontSize: "0.8rem", mt: 0.5 }}>{label}</Typography>
   </Paper>
 );
 
@@ -48,8 +49,8 @@ const JobAnalytics = () => {
 
   if (!hasData) {
     return (
-      <Paper elevation={0} sx={{ p: 4, borderRadius: "20px", textAlign: "center", border: "1px dashed rgba(0,0,0,0.15)" }}>
-        <Typography sx={{ color: "#6b6b66" }}>{t("No analytics yet. Start applying to see your stats here.")}</Typography>
+      <Paper elevation={0} sx={{ p: 4, borderRadius: "20px", textAlign: "center", border: `1px dashed ${COLORS.borderMedium}` }}>
+        <Typography sx={{ color: COLORS.textSecondary }}>{t("No analytics yet. Start applying to see your stats here.")}</Typography>
       </Paper>
     );
   }
@@ -72,7 +73,7 @@ const JobAnalytics = () => {
       </Box>
 
       {byWeek.length > 0 && (
-        <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, borderRadius: "20px", border: "1px solid rgba(0,0,0,0.08)" }}>
+        <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, borderRadius: "20px", border: `1px solid ${COLORS.borderLight}` }}>
           <Typography variant="h6" sx={{ fontWeight: "bold", mb: 3 }}>{t("Applications per week")}</Typography>
           <Box sx={{ display: "flex", alignItems: "flex-end", gap: 2, height: 180 }}>
             {byWeek.map((entry) => (
@@ -88,7 +89,7 @@ const JobAnalytics = () => {
                   />
                 </Box>
                 <Typography sx={{ fontWeight: 700, color: PRIMARY, fontSize: "0.85rem" }}>{entry.applied}</Typography>
-                <Typography sx={{ color: "#6b6b66", fontSize: "0.72rem", textAlign: "center" }}>{entry.week}</Typography>
+                <Typography sx={{ color: COLORS.textSecondary, fontSize: "0.72rem", textAlign: "center" }}>{entry.week}</Typography>
               </Box>
             ))}
           </Box>

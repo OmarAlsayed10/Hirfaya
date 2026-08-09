@@ -10,9 +10,11 @@ import CheckIcon from "@mui/icons-material/Check";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
 import { JOB_ENDPOINTS } from "../../../constants/endpoints";
-import { loadCvOptions, CvOption } from "../cvSource";
+import { loadCvOptions } from "../../../utils/cvOptions";
+import type { CvOption } from "../../../utils/cvOptions";
+import { COLORS } from "../../../theme/tokens";
 
-const PRIMARY = "#2a5c45";
+const PRIMARY = COLORS.primary;
 
 interface Variant {
   id: string;
@@ -91,7 +93,7 @@ const ABVariantsModal = ({ open, onClose, matchId, matchTitle, matchCompany }: A
     if (found) setCvText(found.text);
   };
 
-  const useVariant = async (variantId: string) => {
+  const markVariantUsed = async (variantId: string) => {
     setUsedId(variantId);
     await axios.patch(JOB_ENDPOINTS.variantOutcome(variantId), { sent: true }, { withCredentials: true });
   };
@@ -100,13 +102,13 @@ const ABVariantsModal = ({ open, onClose, matchId, matchTitle, matchCompany }: A
 
   return (
     <Dialog open={open} onClose={close} fullWidth maxWidth="lg" PaperProps={{ sx: { borderRadius: "24px", maxHeight: "90vh" } }}>
-      <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pb: 1, borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
+      <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pb: 1, borderBottom: `1px solid ${COLORS.borderLight}` }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <CompareArrowsIcon sx={{ color: PRIMARY }} />
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: "bold", color: "#1a1a18" }}>{t("Tailor A/B")}</Typography>
+            <Typography variant="h6" sx={{ fontWeight: "bold", color: COLORS.textPrimary }}>{t("Tailor A/B")}</Typography>
             {matchTitle && (
-              <Typography sx={{ color: "#6b6b66", fontSize: "0.85rem" }}>
+              <Typography sx={{ color: COLORS.textSecondary, fontSize: "0.85rem" }}>
                 {matchTitle}{matchCompany ? ` · ${matchCompany}` : ""}
               </Typography>
             )}
@@ -135,8 +137,8 @@ const ABVariantsModal = ({ open, onClose, matchId, matchTitle, matchCompany }: A
             variant="contained"
             onClick={() => generate(cvText)}
             disabled={loading || !cvText.trim()}
-            startIcon={loading ? <CircularProgress size={16} sx={{ color: "white" }} /> : <CompareArrowsIcon />}
-            sx={{ bgcolor: PRIMARY, textTransform: "none", fontWeight: "bold", borderRadius: "10px", "&:hover": { bgcolor: "#1e4332" } }}
+            startIcon={loading ? <CircularProgress size={16} sx={{ color: COLORS.onAccent }} /> : <CompareArrowsIcon />}
+            sx={{ bgcolor: PRIMARY, textTransform: "none", fontWeight: "bold", borderRadius: "10px", "&:hover": { bgcolor: COLORS.primarySurfaceDark } }}
           >
             {loading ? t("Generating...") : variants.length > 0 ? t("Regenerate") : t("Generate")}
           </Button>
@@ -147,17 +149,17 @@ const ABVariantsModal = ({ open, onClose, matchId, matchTitle, matchCompany }: A
         {variants.length > 0 && (
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2.5 }}>
             {variants.map((variant) => (
-              <Box key={variant.id} sx={{ p: 2.5, borderRadius: "16px", border: "1px solid rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", gap: 1.5 }}>
+              <Box key={variant.id} sx={{ p: 2.5, borderRadius: "16px", border: `1px solid ${COLORS.borderLight}`, display: "flex", flexDirection: "column", gap: 1.5 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Chip label={variant.label} size="small" sx={{ bgcolor: PRIMARY, color: "white", fontWeight: 700 }} />
-                  <Typography sx={{ fontWeight: "bold", color: "#1a1a18" }}>{t(VARIANT_TITLES[variant.label])}</Typography>
+                  <Chip label={variant.label} size="small" sx={{ bgcolor: PRIMARY, color: COLORS.onAccent, fontWeight: 700 }} />
+                  <Typography sx={{ fontWeight: "bold", color: COLORS.textPrimary }}>{t(VARIANT_TITLES[variant.label])}</Typography>
                 </Box>
                 <Box
                   component="pre"
                   sx={{
-                    fontFamily: "inherit", fontSize: "0.85rem", lineHeight: 1.65, color: "#1a1a18",
+                    fontFamily: "inherit", fontSize: "0.85rem", lineHeight: 1.65, color: COLORS.textPrimary,
                     whiteSpace: "pre-wrap", wordBreak: "break-word", m: 0, p: 2,
-                    borderRadius: "12px", bgcolor: "#f5f4ef", flex: 1,
+                    borderRadius: "12px", bgcolor: COLORS.bgLight, flex: 1,
                   }}
                 >
                   {variant.content}
@@ -165,10 +167,10 @@ const ABVariantsModal = ({ open, onClose, matchId, matchTitle, matchCompany }: A
                 <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
                   <Button
                     variant="contained"
-                    onClick={() => useVariant(variant.id)}
+                    onClick={() => markVariantUsed(variant.id)}
                     disabled={usedId === variant.id}
                     startIcon={usedId === variant.id ? <CheckIcon /> : undefined}
-                    sx={{ bgcolor: PRIMARY, textTransform: "none", fontWeight: "bold", borderRadius: "10px", "&:hover": { bgcolor: "#1e4332" } }}
+                    sx={{ bgcolor: PRIMARY, textTransform: "none", fontWeight: "bold", borderRadius: "10px", "&:hover": { bgcolor: COLORS.primarySurfaceDark } }}
                   >
                     {usedId === variant.id ? t("Used") : t("Use this")}
                   </Button>

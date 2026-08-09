@@ -20,8 +20,9 @@ import axios from "axios";
 import { useTranslation } from "react-i18next";
 import { JOB_ENDPOINTS } from "../../../constants/endpoints";
 import { useFeedback } from "../../../context/FeedbackContext";
+import { COLORS } from "../../../theme/tokens";
 
-const PRIMARY = "#2a5c45";
+const PRIMARY = COLORS.primary;
 const MAX_SELECTED_ROLES = 5;
 
 export interface JobRoleOption {
@@ -97,7 +98,8 @@ const RoleCatalogSelector = ({ categories, selectedRoleIds, onChange }: RoleCata
       setSuggestionOpen(false);
       notify(t("Suggestion sent for admin review."), "success");
     } catch (error: any) {
-      notify(error.response?.data?.message || t("Could not send your suggestion."));
+      const message = error.response?.data?.message;
+      notify(typeof message === "string" ? t(message) : t("Could not send your suggestion."));
     } finally {
       setSending(false);
     }
@@ -132,19 +134,19 @@ const RoleCatalogSelector = ({ categories, selectedRoleIds, onChange }: RoleCata
                 key={category.id}
                 onClick={() => setActiveCategoryId(category.id)}
                 startIcon={<CategoryRoundedIcon />}
-                endIcon={selectedCount ? <Chip size="small" label={selectedCount} sx={{ color: "white", bgcolor: "rgba(0,0,0,0.18)", fontWeight: 800, "& .MuiChip-label": { color: "white" } }} /> : undefined}
+                endIcon={selectedCount ? <Chip size="small" label={selectedCount} sx={{ color: COLORS.onAccent, bgcolor: COLORS.borderLight, fontWeight: 800, "& .MuiChip-label": { color: COLORS.onAccent } }} /> : undefined}
                 sx={{
                   minWidth: { xs: "max-content", md: "100%" },
                   justifyContent: "flex-start",
                   textTransform: "none",
-                  color: active ? "white" : "text.primary",
+                  color: active ? COLORS.onAccent : "text.primary",
                   bgcolor: active ? PRIMARY : "transparent",
                   borderRadius: 2.5,
                   mb: { md: 0.75 },
                   px: 1.5,
                   paddingInlineEnd: selectedCount ? 5 : 1.5,
                   position: "relative",
-                  "&:hover": { bgcolor: active ? "#1e4332" : "rgba(42,92,69,0.09)" },
+                  "&:hover": { bgcolor: active ? COLORS.primaryDark : "rgba(42,92,69,0.09)" },
                   "& .MuiButton-endIcon": {
                     position: "absolute",
                     insetInlineEnd: 10,
@@ -193,8 +195,8 @@ const RoleCatalogSelector = ({ categories, selectedRoleIds, onChange }: RoleCata
                     px: 1,
                     py: 0.5,
                     border: "1px solid",
-                    borderColor: checked ? PRIMARY : "rgba(0,0,0,0.1)",
-                    bgcolor: checked ? "rgba(42,92,69,0.07)" : "white",
+                    borderColor: checked ? PRIMARY : COLORS.borderLight,
+                    bgcolor: checked ? "rgba(42,92,69,0.07)" : COLORS.bgWhite,
                     borderRadius: 2.5,
                     "& .MuiFormControlLabel-label": { fontWeight: checked ? 700 : 500 },
                   }}
@@ -205,7 +207,7 @@ const RoleCatalogSelector = ({ categories, selectedRoleIds, onChange }: RoleCata
         </Box>
       </Box>
 
-      <Box sx={{ p: 2.25, borderTop: "1px solid rgba(42,92,69,0.12)", bgcolor: "#fbfcfa" }}>
+      <Box sx={{ p: 2.25, borderTop: "1px solid rgba(42,92,69,0.12)", bgcolor: COLORS.bgLight }}>
         <Button
           variant="outlined"
           size="large"
@@ -220,10 +222,10 @@ const RoleCatalogSelector = ({ categories, selectedRoleIds, onChange }: RoleCata
             px: 2,
             textTransform: "none",
             fontWeight: 750,
-            bgcolor: "white",
+            bgcolor: COLORS.bgWhite,
             boxShadow: "0 2px 8px rgba(42,92,69,0.08)",
             "&:hover": {
-              borderColor: "#1e4332",
+              borderColor: COLORS.primaryDark,
               borderWidth: 1.5,
               bgcolor: "rgba(42,92,69,0.06)",
             },

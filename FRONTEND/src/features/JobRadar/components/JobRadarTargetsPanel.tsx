@@ -14,9 +14,10 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import { useTranslation } from "react-i18next";
 import CountrySelect from "../../../components/ui/CountrySelect";
 import RoleCatalogSelector, { JobCategoryOption } from "./RoleCatalogSelector";
+import { COLORS } from "../../../theme/tokens";
 
 const LEVELS = ["Fresh", "Junior", "Mid", "Senior", "Lead"];
-const PRIMARY = "#2a5c45";
+const PRIMARY = COLORS.primary;
 
 export interface JobRadarPreference {
   roleIds: string[];
@@ -56,7 +57,7 @@ const JobRadarTargetsPanel = ({
   };
 
   return (
-    <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, borderRadius: "20px", mb: 4, border: "1px solid rgba(0,0,0,0.08)" }}>
+    <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, borderRadius: "20px", mb: 4, border: `1px solid ${COLORS.borderLight}` }}>
       <Typography variant="h6" sx={{ fontWeight: "bold", mb: 2.5 }}>{t("Your targets")}</Typography>
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
         <Box sx={{ gridColumn: { sm: "1 / -1" } }}>
@@ -112,7 +113,7 @@ const JobRadarTargetsPanel = ({
           variant="contained"
           onClick={() => onSave(draft)}
           disabled={saving || draft.roleIds.length === 0}
-          sx={{ bgcolor: PRIMARY, textTransform: "none", fontWeight: "bold", borderRadius: "10px", "&:hover": { bgcolor: "#1e4332" } }}
+          sx={{ bgcolor: PRIMARY, textTransform: "none", fontWeight: "bold", borderRadius: "10px", "&:hover": { bgcolor: COLORS.primarySurfaceDark } }}
         >
           {saving ? t("Saving...") : t("Save & find jobs")}
         </Button>
