@@ -1,3 +1,4 @@
+import { v2 as cloudinary } from "cloudinary";
 import {
   cloudinaryDeliveryTypeFromUrl,
   cloudinaryPublicIdFromUrl,
@@ -5,6 +6,14 @@ import {
 } from "../importService";
 
 describe("Cloudinary public ID extraction with upload and authenticated URLs", () => {
+  beforeAll(() => {
+    cloudinary.config({
+      cloud_name: "demo",
+      api_key: "test-key",
+      api_secret: "test-secret",
+    });
+  });
+
   test.each([
     [
       "https://res.cloudinary.com/demo/image/upload/v1234567890/avatars/profile.jpg",
