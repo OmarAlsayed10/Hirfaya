@@ -1,7 +1,6 @@
 const REQUIRED = [
   "DATABASE_URL",
   "JWT_SECRET_Key",
-  "SESSION_SECRET",
   "CLIENT_URL",
   "GOOGLE_CLIENT_ID",
   "GOOGLE_CLIENT_SECRET",
@@ -14,10 +13,13 @@ const REQUIRED = [
   "EMAIL_USER",
   "EMAIL_PASS",
   "ADMIN_EMAIL",
-  "ADMIN_SECRET",
   "INSTAPAY_BANK_NAME",
   "INSTAPAY_ACCOUNT_NAME",
   "INSTAPAY_ACCOUNT_NUMBER",
+  "CREDENTIAL_ENCRYPTION_KEY",
+  // Credit pricing refuses to quote without it, so an unset value turns every credit
+  // purchase into a 503 that looks like an outage rather than a missing variable.
+  "USD_TO_EGP_RATE",
 ] as const;
 
 export function validateEnv(): void {

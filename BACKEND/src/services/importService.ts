@@ -18,6 +18,8 @@ interface CloudinaryStorageConfig {
   uploadOptions: (file: Express.Multer.File) => UploadApiOptions;
 }
 
+export type CloudinaryDeliveryType = "upload" | "authenticated";
+
 export interface CloudinaryAsset {
   url: string;
   resourceType: CloudinaryResourceType;
@@ -159,6 +161,7 @@ const paymentScreenshotStorage = new CloudinaryMulterStorage({
   uploadOptions: (file) => ({
     folder: "payment-screenshots",
     format: "jpg",
+    type: "authenticated",
     public_id: `pay-${Date.now()}-${sanitizedFilename(file.originalname)}`,
   }),
 });
@@ -175,13 +178,20 @@ export function cloudinaryPublicIdFromUrl(
 ): string | null {
   try {
     const path = decodeURIComponent(new URL(assetUrl).pathname);
-    const uploadMarker = "/upload/";
-    const uploadIndex = path.indexOf(uploadMarker);
-    if (uploadIndex < 0) return null;
+    let afterMarker: string | null = null;
 
-    const afterUpload = path.slice(uploadIndex + uploadMarker.length);
-    const versionMatch = afterUpload.match(/(?:^|\/)v\d+\/(.+)$/);
-    let publicId = versionMatch?.[1] ?? afterUpload;
+    for (const marker of ["/upload/", "/authenticated/"]) {
+      const idx = path.indexOf(marker);
+      if (idx >= 0) {
+        afterMarker = path.slice(idx + marker.length);
+        break;
+      }
+    }
+
+    if (!afterMarker) return null;
+
+    const versionMatch = afterMarker.match(/(?:^|\/)v\d+\/(.+)$/);
+    let publicId = versionMatch?.[1] ?? afterMarker;
     if (!publicId) return null;
 
     if (resourceType === "image") {
@@ -194,6 +204,48 @@ export function cloudinaryPublicIdFromUrl(
   }
 }
 
+// Delivery type is part of an asset's identity in Cloudinary: a public asset is not
+// reachable, signable, or deletable as an authenticated one. The stored URL is the only
+// record of which kind it is, so it is read back from there rather than assumed.
+export const cloudinaryDeliveryTypeFromUrl = (
+  assetUrl: string,
+): CloudinaryDeliveryType =>
+  assetUrl.includes("/authenticated/") ? "authenticated" : "upload";
+
+export function signedScreenshotUrl(screenshotUrl: string): string | null {
+  try {
+    // Parsed first so a malformed value fails here rather than being mistaken for a legacy
+    // asset and echoed straight back to the caller.
+    const publicId = cloudinaryPublicIdFromUrl(screenshotUrl, "image");
+    if (!publicId) return null;
+
+    // Screenshots uploaded before private delivery are public assets. Signing one as
+    // authenticated produces a URL that resolves to nothing, so the original is returned
+    // until those assets are migrated in Cloudinary and their stored URLs rewritten.
+    if (cloudinaryDeliveryTypeFromUrl(screenshotUrl) === "upload") {
+      return screenshotUrl;
+    }
+
+    const expiresAt = Math.floor(Date.now() / 1000) + 15 * 60;
+    return cloudinary.utils.private_download_url(publicId, "jpg", {
+      resource_type: "image",
+      type: "authenticated",
+      expires_at: expiresAt,
+    });
+  } catch {
+    return null;
+  }
+}
+
+export const withSignedScreenshot = <T extends { screenshotUrl: string | null }>(
+  payment: T,
+): T => ({
+  ...payment,
+  screenshotUrl: payment.screenshotUrl
+    ? signedScreenshotUrl(payment.screenshotUrl)
+    : null,
+});
+
 export async function deleteCloudinaryAsset(asset: CloudinaryAsset): Promise<void> {
   const publicId = cloudinaryPublicIdFromUrl(asset.url, asset.resourceType);
   if (!publicId) {
@@ -202,6 +254,7 @@ export async function deleteCloudinaryAsset(asset: CloudinaryAsset): Promise<voi
 
   await cloudinary.uploader.destroy(publicId, {
     resource_type: asset.resourceType,
+    type: cloudinaryDeliveryTypeFromUrl(asset.url),
   });
 }
 

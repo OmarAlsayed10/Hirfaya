@@ -25,7 +25,7 @@ export default function TermsPage() {
     },
     {
       title: "5. Subscription and Payments",
-      body: `Pro Plan subscriptions are billed on the cycle you select at checkout. All payments are processed securely through our payment provider. Subscriptions auto-renew unless cancelled before the renewal date. Refunds are handled on a case-by-case basis — contact support within 7 days of a charge if you believe you were billed in error.`,
+      body: `Paid plans are bought as a one-time InstaPay transfer covering a fixed period. You submit the transfer reference and receipt, and we review it manually before access is activated - usually within 24 hours. Nothing renews automatically, and we never store or charge a card. Access ends when the paid period expires unless you buy again. Refunds are handled on a case-by-case basis - contact support within 7 days of a transfer if you believe you were charged in error.`,
     },
     {
       title: "6. Intellectual Property",

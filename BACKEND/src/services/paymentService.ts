@@ -1,6 +1,6 @@
 import prisma from "../lib/prisma";
 import { PaymentStatus } from "@prisma/client";
-import { fixedTopupSnapshot } from "./creditPurchaseService";
+import { fixedTopupSnapshot, normalizeReference } from "./creditPurchaseService";
 
 // ─── Plans ────────────────────────────────────────────────────────────────────
 
@@ -90,7 +90,7 @@ export const submitPaymentRequest = async (
       planId,
       amountSnapshot: plan.priceEGP,
       ...fixedTopupSnapshot(plan),
-      referenceNumber,
+      referenceNumber: normalizeReference(referenceNumber),
       screenshotUrl,
     },
     include: { plan: true },
@@ -139,7 +139,8 @@ export const listAllPayments = () =>
 
 export const rejectPaymentRequest = async (
   requestId: string,
-  reason: string
+  reason: string,
+  reviewedByEmail: string
 ) => {
   const request = await prisma.paymentRequest.findUnique({
     where: { id: requestId },
@@ -149,13 +150,42 @@ export const rejectPaymentRequest = async (
   if (!request) throw new Error("NOT_FOUND");
   if (request.status !== PaymentStatus.PENDING) throw new Error("NOT_PENDING");
 
-  return prisma.paymentRequest.update({
-    where: { id: requestId },
+  // Claim the row by status so two admins reviewing at once cannot both send the
+  // user a decision email for the same request.
+  const claimed = await prisma.paymentRequest.updateMany({
+    where: { id: requestId, status: PaymentStatus.PENDING },
     data: {
       status: PaymentStatus.REJECTED,
       rejectionReason: reason,
       reviewedAt: new Date(),
+      reviewedByEmail,
     },
+  });
+  if (claimed.count !== 1) throw new Error("NOT_PENDING");
+
+  return prisma.paymentRequest.findUniqueOrThrow({
+    where: { id: requestId },
     include: { user: true },
   });
 };
+
+// The user's own receipt trail: every submission, what it was for, and how it ended.
+export const listUserPayments = (userId: string) =>
+  prisma.paymentRequest.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    select: {
+      id: true,
+      status: true,
+      amountSnapshot: true,
+      currency: true,
+      purchaseKind: true,
+      grantCreditsSnapshot: true,
+      referenceNumber: true,
+      rejectionReason: true,
+      reviewedAt: true,
+      createdAt: true,
+      plan: { select: { displayName: true, durationDays: true } },
+    },
+  });

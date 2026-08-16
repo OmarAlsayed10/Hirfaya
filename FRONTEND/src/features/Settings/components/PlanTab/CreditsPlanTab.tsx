@@ -17,6 +17,7 @@ import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 import { QUOTA_ENDPOINTS } from "../../../../constants/endpoints";
 import { useFeedback } from "../../../../context/FeedbackContext";
 import type { QuotaStatus, UserQuotaStatus } from "../../../../types/quota";
+import PaymentHistory from "./PaymentHistory";
 
 const CreditStat = ({
   label,
@@ -130,7 +131,13 @@ const CreditsPlanTab = () => {
           <Button variant="contained" onClick={() => navigate("/login")}>{t("Sign in")}</Button>
         </Paper>
       ) : (
-        <SignedInCredits status={status} />
+        <>
+          <SignedInCredits status={status} />
+          <Typography variant="h6" fontWeight={800} mt={5} mb={2}>
+            {t("Payment history")}
+          </Typography>
+          <PaymentHistory />
+        </>
       )}
     </Box>
   );

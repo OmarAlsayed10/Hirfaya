@@ -9,6 +9,10 @@ const esc = (v: unknown): string =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
+// CLIENT_URL is the validated deployment origin; a trailing slash would double up
+// against the path appended to it.
+const clientOrigin = (): string => (process.env.CLIENT_URL ?? "").replace(/\/+$/, "");
+
 interface EmailPayload {
   to: string;
   subject: string;
@@ -21,7 +25,6 @@ interface PaymentAdminNotification {
   userName: string;
   referenceNumber: string;
   amount: string;
-  screenshotUrl: string;
 }
 
 class EmailService {
@@ -115,6 +118,7 @@ class EmailService {
   async sendPaymentReceivedToAdmin(
     details: PaymentAdminNotification
   ): Promise<void> {
+    const adminUrl = `${clientOrigin()}/admin`;
     await this.send({
       to: process.env.ADMIN_EMAIL!,
       subject: `[Hirfaya] New Payment — Ref: ${details.referenceNumber}`,
@@ -130,27 +134,33 @@ class EmailService {
                 <td style="padding:8px;border:1px solid #ddd">${esc(details.amount)} EGP</td></tr>
             <tr><td style="padding:8px;border:1px solid #ddd"><strong>Request ID</strong></td>
                 <td style="padding:8px;border:1px solid #ddd">${esc(details.requestId)}</td></tr>
-            <tr><td style="padding:8px;border:1px solid #ddd"><strong>Screenshot</strong></td>
-                <td style="padding:8px;border:1px solid #ddd"><a href="${esc(details.screenshotUrl)}">View Screenshot</a></td></tr>
+            <tr><td style="padding:8px;border:1px solid #ddd"><strong>Review</strong></td>
+                <td style="padding:8px;border:1px solid #ddd"><a href="${esc(adminUrl)}">View in Admin Dashboard</a></td></tr>
           </table>
           <br/>
-          <p>Use your admin API to approve or reject this request (include <code>X-Admin-Secret</code> header):</p>
-          <code>PATCH /payment/admin/${details.requestId}/approve</code><br/>
-          <code>PATCH /payment/admin/${details.requestId}/reject</code>
+          <p>Use your admin dashboard or API to approve or reject this request.</p>
         </div>
       `,
     });
   }
 
-  async sendPaymentApproved(to: string, firstName: string): Promise<void> {
+  async sendPaymentApproved(
+    to: string,
+    firstName: string,
+    purchase: { displayName: string; durationDays: number; credits: number }
+  ): Promise<void> {
+    const granted =
+      purchase.durationDays > 0
+        ? `<strong>${esc(purchase.displayName)}</strong> is now active for ${purchase.durationDays} days`
+        : `<strong>${purchase.credits} credits</strong> have been added to your balance`;
     await this.send({
       to,
-      subject: "Hirfaya Pro — Payment Approved!",
+      subject: "Hirfaya — Payment Approved!",
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:auto">
           <h2>Congratulations, ${esc(firstName)}!</h2>
-          <p>Your payment has been verified. You now have <strong>full Pro access for 30 days</strong>.</p>
-          <p>Enjoy unlimited CV optimization, AI writing, and interview prep.</p>
+          <p>Your payment has been verified. ${granted}.</p>
+          <p>Enjoy CV optimization, AI writing, and interview prep.</p>
         </div>
       `,
     });
@@ -243,7 +253,7 @@ class EmailService {
             <p style="margin:0;color:#555"><strong>Company:</strong> ${esc(company)}</p>
             ${notes ? `<p style="margin:8px 0 0 0;color:#666"><strong>Notes:</strong> ${esc(notes)}</p>` : ""}
           </div>
-          <p style="margin-top:16px"><a href="${process.env.FRONTEND_URL || "http://localhost:5173"}/applications/${esc(matchId)}" style="background:#2a5c45;color:#fff;padding:10px 18px;text-decoration:none;border-radius:6px;display:inline-block">Open Application Workspace</a></p>
+          <p style="margin-top:16px"><a href="${clientOrigin()}/applications/${esc(matchId)}" style="background:#2a5c45;color:#fff;padding:10px 18px;text-decoration:none;border-radius:6px;display:inline-block">Open Application Workspace</a></p>
         </div>
       `,
     });

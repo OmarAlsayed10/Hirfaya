@@ -4,6 +4,7 @@ import {
   instapayDetailsController,
   submitPaymentController,
   paymentStatusController,
+  paymentHistoryController,
   creditQuoteController,
   customInstapayDetailsController,
   adminListPendingController,
@@ -39,6 +40,7 @@ router.post(
 );
 
 router.get("/status", authenticateToken, paymentStatusController);
+router.get("/history", authenticateToken, paymentHistoryController);
 
 // ─── Admin (role-based JWT) ───────────────────────────────────────────────────
 router.get("/admin/pending", authenticateToken, requireAdmin, adminListPendingController);

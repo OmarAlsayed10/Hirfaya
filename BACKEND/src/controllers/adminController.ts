@@ -10,8 +10,11 @@ import { listAllPayments } from "../services/paymentService";
 import { getAiStatus } from "../services/aiStatusService";
 import { allowance, isRefillTier, monthKey } from "../services/quotaService";
 import { deleteUserAccount } from "../services/accountDeletionService";
+import { withSignedScreenshot } from "../services/importService";
 
-const VALID_TIERS = ["basic", "pro", "ultra"] as const;
+// Must stay in step with the tiers plans are sold under (prisma/seed.ts) and with
+// entitlementService.PAID_TIERS — omitting one makes that tier unassignable by an admin.
+const VALID_TIERS = ["basic", "pass", "pro", "ultra"] as const;
 
 // Admin accounts are unrestricted and must not be ban/revoke/plan targets —
 // this blocks an admin from locking themselves (or another admin) out.
@@ -113,7 +116,10 @@ export const getUserController = async (
     res.status(404).json({ message: "User not found." });
     return;
   }
-  res.status(200).json({ user });
+
+  res.status(200).json({
+    user: { ...user, paymentRequests: user.paymentRequests.map(withSignedScreenshot) },
+  });
 };
 
 export const deleteUserController = async (
@@ -174,7 +180,6 @@ export const revokeProController = async (
   const user = await prisma.user.update({
     where: { id: req.params.id },
     data: {
-      role: "normal user",
       planTier: "basic",
       proExpiresAt: null,
       credits: allowance("basic"),
@@ -220,7 +225,6 @@ export const setPlanController = async (
     where: { id: req.params.id },
     data: {
       planTier,
-      role: isPaid ? "pro user" : "normal user",
       proExpiresAt,
       credits: allowance(planTier),
       creditPeriod: isRefillTier(planTier) ? monthKey() : null,
@@ -304,7 +308,7 @@ export const listAllPaymentsController = async (
   res: Response
 ): Promise<void> => {
   const requests = await listAllPayments();
-  res.status(200).json({ requests });
+  res.status(200).json({ requests: requests.map(withSignedScreenshot) });
 };
 
 // ─── AI status ────────────────────────────────────────────────────────────────

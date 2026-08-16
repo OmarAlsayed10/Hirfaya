@@ -8,6 +8,7 @@ import {
   getLatestPaymentStatus,
   rejectPaymentRequest,
   listPendingPayments,
+  listUserPayments,
 } from "../services/paymentService";
 import {
   approvePaymentRequestAtomically,
@@ -19,6 +20,7 @@ import { assertCommercialPriceIsSafe, PricingConfigurationError } from "../servi
 import { emailService } from "../services/emailService";
 import prisma from "../lib/prisma";
 import { displayName } from "../lib/displayName";
+import { withSignedScreenshot } from "../services/importService";
 
 const PAYMENT_REFERENCE_PATTERN = /^[A-Za-z0-9._\/-]{1,100}$/;
 
@@ -154,7 +156,6 @@ export const submitPaymentController = async (
           userName: displayName(dbUser.firstName, dbUser.lastName),
           referenceNumber: paymentReference,
           amount: request.amountSnapshot.toString(),
-          screenshotUrl: screenshot.path,
         });
       }
     } catch (mailErr) {
@@ -181,6 +182,14 @@ export const submitPaymentController = async (
     }
     if (err.message === "PLAN_NOT_FOUND") {
       res.status(404).json({ message: "Selected plan not found." });
+      return;
+    }
+    if (err.code === "P2002") {
+      res.status(409).json({
+        code: "REFERENCE_ALREADY_USED",
+        message:
+          "That transfer reference has already been submitted. Check the reference number, or contact support if you believe this is an error.",
+      });
       return;
     }
     console.error("Payment submit error:", err);
@@ -211,6 +220,15 @@ export const paymentStatusController = async (
   res.status(200).json({ paymentRequest: record });
 };
 
+export const paymentHistoryController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const user = (req as CustomRequest).user!;
+  const payments = await listUserPayments(user.userId);
+  res.status(200).json({ payments });
+};
+
 // ─── Admin ────────────────────────────────────────────────────────────────────
 
 export const adminListPendingController = async (
@@ -218,7 +236,7 @@ export const adminListPendingController = async (
   res: Response
 ): Promise<void> => {
   const requests = await listPendingPayments();
-  res.status(200).json({ requests });
+  res.status(200).json({ requests: requests.map(withSignedScreenshot) });
 };
 
 export const adminApproveController = async (
@@ -226,15 +244,21 @@ export const adminApproveController = async (
   res: Response
 ): Promise<void> => {
   const { id } = req.params;
+  const reviewer = (req as CustomRequest).user!;
 
   try {
-    const approved = await approvePaymentRequestAtomically(id);
+    const approved = await approvePaymentRequestAtomically(id, reviewer.email);
 
 
 
     await emailService.sendPaymentApproved(
       approved.user.email,
-      approved.user.firstName
+      approved.user.firstName,
+      {
+        displayName: approved.displayName,
+        durationDays: approved.payment.plan?.durationDays ?? 0,
+        credits: approved.payment.grantCreditsSnapshot,
+      }
     );
 
     res.status(200).json({
@@ -263,6 +287,7 @@ export const adminRejectController = async (
 ): Promise<void> => {
   const { id } = req.params;
   const { reason } = req.body;
+  const reviewer = (req as CustomRequest).user!;
 
   if (!reason) {
     res.status(400).json({ message: "Rejection reason is required." });
@@ -270,7 +295,7 @@ export const adminRejectController = async (
   }
 
   try {
-    const rejected = await rejectPaymentRequest(id, reason);
+    const rejected = await rejectPaymentRequest(id, reason, reviewer.email);
 
     await emailService.sendPaymentRejected(
       rejected.user.email,

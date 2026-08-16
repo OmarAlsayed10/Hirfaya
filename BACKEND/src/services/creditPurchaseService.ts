@@ -15,6 +15,11 @@ interface CustomPaymentRequest {
   screenshotUrl: string;
 }
 
+// Uniqueness is enforced on the stored column, so both submission paths must write
+// the same canonical form or "ABC 123" and "abc123" would count as two transfers.
+export const normalizeReference = (reference: string) =>
+  reference.trim().toUpperCase().replace(/\s+/g, "");
+
 const validQuote = (amountEGP: unknown): CreditQuote => {
   const quote = creditQuote(amountEGP);
   if ("code" in quote) throw new Error("INVALID_CREDIT_QUOTE");
@@ -64,14 +69,17 @@ export const submitCustomPaymentRequest = async (request: CustomPaymentRequest) 
       purchaseKind: "CUSTOM_TOPUP",
       grantCreditsSnapshot: quote.credits,
       pricingVersion: quote.pricingVersion,
-      referenceNumber: request.referenceNumber,
+      referenceNumber: normalizeReference(request.referenceNumber),
       screenshotUrl: request.screenshotUrl,
     },
     include: { plan: true },
   });
 };
 
-export const approvePaymentRequestAtomically = async (requestId: string) =>
+export const approvePaymentRequestAtomically = async (
+  requestId: string,
+  reviewedByEmail: string,
+) =>
   prisma.$transaction(async (tx) => {
     const payment = await tx.paymentRequest.findUnique({
       where: { id: requestId },
@@ -82,7 +90,7 @@ export const approvePaymentRequestAtomically = async (requestId: string) =>
 
     const claimed = await tx.paymentRequest.updateMany({
       where: { id: requestId, status: PaymentStatus.PENDING },
-      data: { status: PaymentStatus.APPROVED, reviewedAt: new Date() },
+      data: { status: PaymentStatus.APPROVED, reviewedAt: new Date(), reviewedByEmail },
     });
     if (claimed.count !== 1) throw new Error("NOT_PENDING");
 
@@ -94,13 +102,16 @@ export const approvePaymentRequestAtomically = async (requestId: string) =>
       });
     } else {
       if (!payment.plan) throw new Error("PLAN_NOT_FOUND");
+      // Renewing before the current term ends extends it instead of restarting from
+      // today, so an early renewal never burns the days already paid for.
+      const currentExpiry = payment.user.proExpiresAt?.getTime() ?? 0;
+      const extendFrom = Math.max(Date.now(), currentExpiry);
       const expiresAt = new Date(
-        Date.now() + payment.plan.durationDays * 24 * 60 * 60 * 1000,
+        extendFrom + payment.plan.durationDays * 24 * 60 * 60 * 1000,
       );
       updatedUser = await tx.user.update({
         where: { id: payment.userId },
         data: {
-          role: "pro user",
           planTier: payment.plan.tier,
           proExpiresAt: expiresAt,
           credits: allowance(payment.plan.tier),

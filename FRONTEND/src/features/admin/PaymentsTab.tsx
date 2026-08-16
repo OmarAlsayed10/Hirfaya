@@ -37,6 +37,9 @@ interface PaymentRow {
   purchaseKind: "SUBSCRIPTION" | "FIXED_TOPUP" | "CUSTOM_TOPUP";
   grantCreditsSnapshot: number;
   plan: { displayName: string } | null;
+  reviewedByEmail: string | null;
+  reviewedAt: string | null;
+  rejectionReason: string | null;
 }
 
 const statusColor = (s: string) =>
@@ -115,7 +118,7 @@ const PaymentsTab = () => {
         <Table sx={{ minWidth: 720 }}>
           <TableHead>
             <TableRow sx={{ bgcolor: COLORS.bgLight }}>
-              {["User", "Plan", "Amount", "Ref #", "Receipt", "Date", "Status", "Actions"].map((h) => (
+              {["User", "Plan", "Amount", "Ref #", "Receipt", "Date", "Status", "Reviewed by", "Actions"].map((h) => (
                 <TableCell key={h} sx={{ fontWeight: 700, fontSize: TYPOGRAPHY.sizeSm }}>
                   {t(h)}
                 </TableCell>
@@ -154,6 +157,25 @@ const PaymentsTab = () => {
                 </TableCell>
                 <TableCell>
                   <Chip label={r.status} size="small" sx={{ ...statusColor(r.status), fontWeight: 600 }} />
+                  {r.rejectionReason && (
+                    <Typography variant="caption" sx={{ display: "block", color: COLORS.textSecondary }}>
+                      {r.rejectionReason}
+                    </Typography>
+                  )}
+                </TableCell>
+                <TableCell sx={{ fontSize: TYPOGRAPHY.sizeSm, color: COLORS.textSecondary }}>
+                  {r.reviewedByEmail ? (
+                    <>
+                      {r.reviewedByEmail}
+                      {r.reviewedAt && (
+                        <Typography variant="caption" sx={{ display: "block" }}>
+                          {new Date(r.reviewedAt).toLocaleString()}
+                        </Typography>
+                      )}
+                    </>
+                  ) : (
+                    "—"
+                  )}
                 </TableCell>
                 <TableCell>
                   {r.status === "PENDING" && (
