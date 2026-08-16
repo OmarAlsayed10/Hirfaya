@@ -5,38 +5,38 @@
 Build one immutable image:
 
 ```bash
-docker build -t resume-iq-backend:release ./BACKEND
+docker build -t muhtaraf-backend:release ./BACKEND
 ```
 
 Run the read-only database checks before changing the schema:
 
 ```bash
-docker run --rm --env-file BACKEND/.env resume-iq-backend:release npm run db:preflight
+docker run --rm --env-file BACKEND/.env muhtaraf-backend:release npm run db:preflight
 ```
 
 Create a backup with a PostgreSQL client whose major version is at least the database server version:
 
 ```bash
-DATABASE_URL='postgresql://USER:PASSWORD@HOST:5432/resume_iq' \
-BACKUP_DIR=/srv/resume-iq/backups \
+DATABASE_URL='postgresql://USER:PASSWORD@HOST:5432/muhtaraf' \
+BACKUP_DIR=/srv/muhtaraf/backups \
 bash BACKEND/ops/backup-database.sh
 ```
 
 Apply committed migrations once per release:
 
 ```bash
-docker run --rm --env-file BACKEND/.env resume-iq-backend:release npm run db:deploy
+docker run --rm --env-file BACKEND/.env muhtaraf-backend:release npm run db:deploy
 ```
 
 Start the application only after the migration succeeds:
 
 ```bash
 docker run -d \
-  --name resume-iq-backend \
+  --name muhtaraf-backend \
   --restart unless-stopped \
   --env-file BACKEND/.env \
   -p 3001:3001 \
-  resume-iq-backend:release
+  muhtaraf-backend:release
 ```
 
 The database hostname in `DATABASE_URL` must be reachable from each one-off and application container. Add the same Docker network options to all commands when PostgreSQL runs on a private Docker network.
@@ -56,8 +56,8 @@ A backup is not verified until it restores successfully. Test the newest backup 
 Stop application processes that can write to the target database. Restore into a disposable database first:
 
 ```bash
-DATABASE_URL='postgresql://USER:PASSWORD@HOST:5432/resume_iq_restore_test' \
-RESTORE_FILE=/srv/resume-iq/backups/resume-iq-YYYYMMDDTHHMMSSZ.dump \
+DATABASE_URL='postgresql://USER:PASSWORD@HOST:5432/muhtaraf_restore_test' \
+RESTORE_FILE=/srv/muhtaraf/backups/muhtaraf-YYYYMMDDTHHMMSSZ.dump \
 CONFIRM_DATABASE_RESTORE=restore \
 bash BACKEND/ops/restore-database.sh
 ```
