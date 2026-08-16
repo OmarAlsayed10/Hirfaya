@@ -1,6 +1,3 @@
-import { communityController } from "../communityController";
-import prisma from "../../lib/prisma";
-
 jest.mock("../../lib/prisma", () => ({
   __esModule: true,
   default: {
@@ -15,9 +12,15 @@ jest.mock("../../lib/prisma", () => ({
 describe("communityController", () => {
   let req: any;
   let res: any;
+  let prisma: any;
+  let communityController: typeof import("../communityController").communityController;
 
+  // The controller holds its metrics in a module-level TTL cache, so without a fresh
+  // module per test the second case is served the first one's numbers instead of running.
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetModules();
+    prisma = require("../../lib/prisma").default;
+    communityController = require("../communityController").communityController;
     req = {};
     res = {
       status: jest.fn().mockReturnThis(),
