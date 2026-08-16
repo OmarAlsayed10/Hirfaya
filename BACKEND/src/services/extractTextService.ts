@@ -2,6 +2,7 @@ import mammoth from "mammoth";
 import { extractTextItems, getDocumentProxy, type StructuredTextItem } from "unpdf";
 import fs from "fs";
 import axios from "axios";
+import { orderForReading } from "./readingOrder";
 
 // unpdf's own extractText concatenates PDF text runs with no separator, so any layout that
 // splits a line into runs (columns, right-aligned dates, tabs) comes back as glued words.
@@ -55,7 +56,9 @@ export const extractText = async (fileInput: string | Buffer, mimeType: string):
         if (!isPdf) throw new Error("File is not a valid PDF.");
         const pdf = await getDocumentProxy(new Uint8Array(buffer));
         const extracted = await extractTextItems(pdf);
-        text = normalizePdfText(extracted.items.map(joinPageItems));
+        // Reading order before joining: a two-column page comes out of the PDF interleaved, and
+        // joining it in drawing order glues the columns into gibberish.
+        text = normalizePdfText(extracted.items.map((page) => joinPageItems(orderForReading(page))));
         pageCount = extracted.totalPages;
     } else if (
         mimeType === "application/msword" ||

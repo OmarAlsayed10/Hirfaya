@@ -43,6 +43,7 @@
     "openai": "^4.95.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
+    "pdfjs-dist": "^6.2.108",
     "prisma": "^5.22.0",
     "puppeteer-core": "^23.11.1",
     "unpdf": "^1.8.0",
