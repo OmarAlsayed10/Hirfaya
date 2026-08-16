@@ -1,11 +1,8 @@
-// Run before `prisma db push`:  npx tsx src/scripts/preDeployChecks.ts
-// Both new unique constraints fail to apply if the table already holds collisions.
-// Read-only — reports what would break, changes nothing.
 import prisma from "../lib/prisma";
 
 const main = async () => {
   const duplicateReferences = await prisma.$queryRaw<{ reference: string; count: bigint }[]>`
-    SELECT "referenceNumber" AS reference, count(*) AS count
+    SELECT upper(regexp_replace(trim("referenceNumber"), '\\s+', '', 'g')) AS reference, count(*) AS count
     FROM payment_requests
     WHERE "referenceNumber" IS NOT NULL
     GROUP BY 1 HAVING count(*) > 1
@@ -46,10 +43,14 @@ const main = async () => {
   console.log(
     affected === 0
       ? "None. No backfill needed."
-      : `${affected} account(s) cannot log in until you run:\n  UPDATE "User" SET email = lower(trim(email));`
+      : `${affected} account(s) require an email normalization backfill before deployment.`
   );
 
   console.log();
+
+  if (duplicateReferences.length > 0 || duplicateEmails.length > 0 || affected > 0) {
+    throw new Error("Resolve the reported database conflicts before deployment.");
+  }
 };
 
 main()

@@ -34,3 +34,4 @@ Thumbs.db
 
 # Sample CVs for the extraction audit. Real CVs are personal data — never commit them.
 cv-samples/
+/backups/
