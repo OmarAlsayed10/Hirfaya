@@ -5,7 +5,7 @@ describe("hasPaidAccess", () => {
   const past = new Date(Date.now() - 60_000);
 
   it.each(["pass", "pro", "ultra"])("allows an active %s tier", (planTier) => {
-    expect(hasPaidAccess({ role: "pro user", planTier, proExpiresAt: future })).toBe(true);
+    expect(hasPaidAccess({ role: "normal user", planTier, proExpiresAt: future })).toBe(true);
   });
 
   it("always allows admins", () => {
@@ -14,8 +14,8 @@ describe("hasPaidAccess", () => {
 
   it.each([
     { role: "user", planTier: "basic", proExpiresAt: future },
-    { role: "pro user", planTier: "pro", proExpiresAt: past },
-    { role: "pro user", planTier: "pro", proExpiresAt: null },
+    { role: "normal user", planTier: "pro", proExpiresAt: past },
+    { role: "normal user", planTier: "pro", proExpiresAt: null },
   ])("rejects unpaid, expired, and missing-expiry access", (user) => {
     expect(hasPaidAccess(user)).toBe(false);
   });

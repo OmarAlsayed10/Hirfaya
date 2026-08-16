@@ -125,13 +125,8 @@ const UsersTab = () => {
                     label={u.role}
                     size="small"
                     sx={{
-                      bgcolor:
-                        u.role === "admin"
-                          ? COLORS.warningSoft
-                          : u.role === "pro user"
-                          ? COLORS.primaryAlpha12
-                          : COLORS.bgLight,
-                      color: u.role === "pro user" ? COLORS.primary : COLORS.textPrimary,
+                      bgcolor: u.role === "admin" ? COLORS.warningSoft : COLORS.bgLight,
+                      color: COLORS.textPrimary,
                       fontWeight: 600,
                     }}
                   />

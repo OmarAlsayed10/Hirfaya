@@ -3,8 +3,11 @@ import { creditsForUsage, TokenUsage } from "./creditPricingService";
 
 export const ANON_LIMIT = 1;
 
+// `basic` must match User.credits' schema default: allowance() is what a revoked or
+// downgraded account is reset to, and any higher number here would hand an ex-subscriber
+// more free credits than a brand-new signup gets.
 export const TIER_CREDITS: Record<string, number> = {
-  basic: 200,
+  basic: 20,
   pass: 1500,
   pro: 5000,
   ultra: 15000,

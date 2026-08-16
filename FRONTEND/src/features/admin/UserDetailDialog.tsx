@@ -333,7 +333,7 @@ const UserDetailDialog = ({ userId, onClose, onChanged }: Props) => {
         )}
       </DialogContent>
       <DialogActions sx={{ p: 2, gap: 1, flexWrap: "wrap" }}>
-        {user?.role === "pro user" && (
+        {user && user.role !== "admin" && user.planTier !== "basic" && (
           <Button onClick={revokePro} disabled={busy} sx={{ color: COLORS.textSecondary }}>
             {t('Revoke Pro')}
           </Button>

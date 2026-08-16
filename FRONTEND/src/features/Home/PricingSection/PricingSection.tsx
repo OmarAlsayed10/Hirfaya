@@ -10,8 +10,7 @@ function PricingSection() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const isPro = user?.role === 'pro user';
-  const tier = isAdmin ? 'ultra' : user?.planTier ?? (isPro ? 'pro' : 'basic');
+  const tier = isAdmin ? 'ultra' : user?.planTier ?? 'basic';
   const navigate = useNavigate();
 
   return (

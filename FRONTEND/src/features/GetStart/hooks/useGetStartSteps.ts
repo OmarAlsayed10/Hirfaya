@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
-import { isProUser } from "../../../utils/proAccess";
+import { hasPaidAccess } from "../../../utils/proAccess";
 
 export interface StepData {
   id: number;
@@ -19,7 +19,7 @@ export const useGetStartSteps = () => {
   
   const [activeStep, setActiveStep] = useState(0);
 
-  const isPro = isProUser(user);
+  const isPro = hasPaidAccess(user);
 
   const handleCheckGrammer = () => {
     if (isPro) {

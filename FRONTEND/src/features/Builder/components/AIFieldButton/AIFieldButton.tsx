@@ -8,7 +8,7 @@ import axios from 'axios';
 import { useAuth } from '../../../../hooks/useAuth';
 import { AI_ENDPOINTS } from '../../../../constants/endpoints';
 import type { RootState } from '../../../../redux/store/store';
-import { isProUser } from '../../../../utils/proAccess';
+import { hasPaidAccess } from '../../../../utils/proAccess';
 import { COLORS } from "../../../../theme/tokens";
 
 type Section = 'summary' | 'experience' | 'skills' | 'education';
@@ -30,7 +30,7 @@ const AIFieldButton = ({ section, raw = '', jobTitle = '', onResult }: AIFieldBu
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isPro = isProUser(user);
+  const isPro = hasPaidAccess(user);
   const formData = useSelector((state: RootState) => state.cvBuilder.formData);
   const [loading, setLoading] = useState(false);
 

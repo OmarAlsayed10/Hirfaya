@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { CustomRequest } from "../middleware/validateJWTMiddleware";
+import prisma from "../lib/prisma";
+import { hasPaidAccess } from "../services/entitlementService";
 import {
   createCV,
   getCVsByUser,
@@ -20,14 +22,28 @@ export const saveCV = async (
     const customReq = req as CustomRequest;
     const { title, template, sectionOrder, customSections, fontScale, personalInfo, experience, education, projects, skills } = customReq.body;
     const userId = customReq.user?.userId;
-    const userRole = customReq.user?.role;
 
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
 
-    if (userRole === "normal user") {
+    // Read entitlement from the DB, not the token: a 24h JWT would keep a user who
+    // just upgraded stuck at 2 CVs, and leave a lapsed one saving without limit.
+    const account = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, planTier: true, proExpiresAt: true },
+    });
+
+    // A valid token whose user row is gone (account deleted in another tab) is an auth
+    // failure, not a free-tier save — letting it fall through only defers the error to a
+    // foreign-key violation at insert time.
+    if (!account) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    if (!hasPaidAccess(account)) {
       const userCVs = await getCVsByUser(userId);
       if (!Array.isArray(userCVs)) {
         res.status(500).json({ message: "Failed to fetch user CVs." });

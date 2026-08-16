@@ -11,8 +11,10 @@ const SubscriptionExpiredBanner = () => {
   const { t } = useTranslation();
   const [dismissed, setDismissed] = useState(false);
 
+  // An expiry date the user no longer has access under is exactly a lapsed subscription;
+  // revoking clears the date, so a downgraded account never sees this.
   const isExpired =
-    user?.role === 'pro user' &&
+    !user?.isPro &&
     !!user?.proExpiresAt &&
     new Date(user.proExpiresAt) < new Date();
 

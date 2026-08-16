@@ -4,8 +4,17 @@ import { emailService } from "./emailService";
 import { refreshMatchesForUser } from "./jobRadarService";
 import { ingestJobs } from "./jobIngestionService";
 import { checkDueReminders } from "./reminderScheduler";
+import { PAID_TIERS } from "./entitlementService";
 
 export const startCronJobs = (): void => {
+  // Every job here writes or emails, so running it in more than one process sends
+  // each digest, expiry notice and reminder twice. Unset means "run" — the
+  // single-instance default. Past one instance, set this to "true" on exactly one.
+  if (process.env.CRON_ENABLED === "false") {
+    console.log("[cron] Scheduled jobs disabled on this instance (CRON_ENABLED=false)");
+    return;
+  }
+
   // Every 6 hours — refill the shared public job board from all sources.
   cron.schedule("0 */6 * * *", async () => {
     try {
@@ -55,7 +64,7 @@ export const startCronJobs = (): void => {
 
       const expiring = await prisma.user.findMany({
         where: {
-          role: "pro user",
+          planTier: { in: [...PAID_TIERS] },
           proExpiresAt: { gte: in2Days, lte: in3Days },
         },
         select: { email: true, firstName: true, proExpiresAt: true },

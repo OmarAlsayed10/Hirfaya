@@ -13,8 +13,7 @@ const PricingPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  const isPro = user?.role === "pro user";
-  const tier = isAdmin ? "ultra" : user?.planTier ?? (isPro ? "pro" : "basic");
+  const tier = isAdmin ? "ultra" : user?.planTier ?? "basic";
 
   return (
     <Box sx={{ bgcolor: COLORS.bgLight, minHeight: "100vh", py: 8 }}>

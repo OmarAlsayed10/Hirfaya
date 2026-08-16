@@ -31,7 +31,6 @@ export const activateSubscription = async (
   return prisma.user.update({
     where: { id: userId },
     data: {
-      role: "pro user",
       planTier: plan.tier,
       proExpiresAt: expiresAt,
       credits: allowance(plan.tier),

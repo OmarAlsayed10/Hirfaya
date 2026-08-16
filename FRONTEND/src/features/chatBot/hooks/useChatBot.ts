@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from "../../../hooks/useAuth";
 import { useFeedback } from "../../../context/FeedbackContext";
-import { isProUser } from "../../../utils/proAccess";
+import { hasPaidAccess } from "../../../utils/proAccess";
 import { CHATBOT_ENDPOINTS } from "../../../constants/endpoints";
 export const useChatBot = () => {
     const [messages, setMessages] = useState<any[]>([]);
@@ -13,7 +13,7 @@ export const useChatBot = () => {
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     
     const { user } = useAuth();
-    const isPro = isProUser(user);
+    const isPro = hasPaidAccess(user);
     const { notify, showEntitlement } = useFeedback();
 
     useEffect(() => {

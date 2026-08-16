@@ -13,14 +13,14 @@ import { useAuth } from '../../../../../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import templateCard from './templateCard.tokens';
 import type { TemplateCardProps } from './TemplateCard.types';
-import { isProUser } from '../../../../../utils/proAccess';
+import { hasPaidAccess } from '../../../../../utils/proAccess';
 
 function TemplateCard({ title, img, disc, pro, onCloseDialog }: TemplateCardProps) {
   const { choosenTemp, setChoosenTemp } = useTemplate();
   const { setGoToPreview } = usePreview();
   const { t } = useTranslation();
   const { user } = useAuth();
-  const isPro = isProUser(user);
+  const isPro = hasPaidAccess(user);
 
   const isSelected = choosenTemp === title;
 

@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { cvTemplateAction } from "../redux/store/slices/cvTemplateSlice";
-import { isProUser } from "../utils/proAccess";
+import { hasPaidAccess } from "../utils/proAccess";
 import { useTemplate } from "../hooks/useTemplate";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -28,7 +28,7 @@ const TemplatesPage = () => {
   const { setChoosenTemp } = useTemplate();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const isPro = isProUser(user);
+  const isPro = hasPaidAccess(user);
 
   useEffect(() => {
     dispatch(cvTemplateAction());

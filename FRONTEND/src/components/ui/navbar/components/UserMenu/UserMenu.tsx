@@ -2,7 +2,6 @@ import * as React from 'react';
 import { Box, IconButton, Typography, Popover, Avatar, Chip, Divider, ListItemIcon, ListItemText, MenuItem, MenuList } from '@mui/material';
 import { User, FileText, Files, LogOut } from "../../../../icons/MuiIcons";
 import { useTranslation } from 'react-i18next';
-import i18n from '../../../../../i18n';
 import { useNavigate } from 'react-router-dom';
 import { AVATAR_COLORS } from '../../../../../theme/tokens';
 import { UserMenuProps } from './UserMenu.types';
@@ -13,16 +12,12 @@ const UserMenu = ({ user, onLogout }: UserMenuProps) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const currentLang = i18n.language;
 
   const u = user as (typeof user & { avatarColor?: string; planTier?: string }) | null;
   const color = u?.avatarColor || AVATAR_COLORS[0];
   const initial = user?.firstName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U';
   const isAdmin = user?.role === 'admin';
-  const isPro = user?.role === 'pro user';
-  const planLabel = isAdmin
-    ? 'ADMIN'
-    : (u?.planTier || (isPro ? 'pro' : 'basic')).toUpperCase();
+  const planLabel = isAdmin ? 'ADMIN' : (u?.planTier || 'basic').toUpperCase();
 
   const close = () => setAnchorEl(null);
   const go = (path: string) => { close(); navigate(path); };
