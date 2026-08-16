@@ -1,5 +1,10 @@
 import { contentLines, experienceObjective } from "../cvScoring";
 import { suspiciousColumnLines } from "../cvScoring/textParse";
+import { METRIC_WEIGHT, VERB_WEIGHT } from "../cvScoring/objectiveScores";
+
+// Bound to the source weights, so rebalancing Impact does not need every assertion rewritten.
+const METRIC_MAX = METRIC_WEIGHT;
+const VERB_MAX = VERB_WEIGHT;
 
 const UNWRAPPED_RESUME = `
 Contact
@@ -141,11 +146,11 @@ React, Node.js, SQL, HTML, CSS. No verbs, no numbers.
     // Bullet 1: "Led a team of five developers, delivering a project that cut load times by 40%" (verb = Led, metric = 40)
     // Bullet 2: "Built a microservice processing 1000 requests per second, improving uptime to 99.9%" (verb = Built, metric = 1000)
     // Both bullets contain numbers and start with strong verbs, so:
-    // metricRatio = 2/2 = 1.0 (metric score = 10)
-    // verbRatio = 2/2 = 1.0 (verb score = 5)
+    // metricRatio = 2/2 = 1.0 (metric score = METRIC_MAX)
+    // verbRatio = 2/2 = 1.0 (verb score = VERB_MAX)
     // Total impact score = pct(15, 15) = 100%
-    expect(res.metric).toBe(10);
-    expect(res.verb).toBe(5);
+    expect(res.metric).toBe(METRIC_MAX);
+    expect(res.verb).toBe(VERB_MAX);
   });
 
   it("detects and extracts the Projects section correctly (projBlock parsing regex fix)", () => {
@@ -169,10 +174,10 @@ Degree Info
     // Experience bullets: 1 ("Built map feature for client dashboard")
     // Projects bullets: 2 ("Built a spatial CLI tool...", "Integrated map APIs...")
     // Total bullets: 3
-    // Verb matches: 3 (Built, Built, Integrated) => verbRatio = 1.0 => verb score = 5
-    // Metric matches: "500" in project bullet => metricRatio = 1/3 = 0.33 => metric score = 3
-    expect(res.verb).toBe(5);
-    expect(res.metric).toBe(3);
+    // Verb matches: 3 (Built, Built, Integrated) => verbRatio = 1.0 => verb score = VERB_MAX
+    // Metric matches: "500" in project bullet => metricRatio = 1/3 = 0.33 => metric score = round(0.33 * METRIC_MAX) = 1
+    expect(res.verb).toBe(VERB_MAX);
+    expect(res.metric).toBe(Math.round((1 / 3) * METRIC_MAX));
   });
 
   it("asserts Impact & Results scores at maximum when all real bullets are compliant, despite highly verbose non-bullet metadata in other sections", () => {
@@ -220,10 +225,10 @@ Tools: Docker, Kubernetes, Terraform, Git, GitHub Actions, AWS, GCP
     // 3. "Designed a gateway handling 5000 requests per second with 99.99% uptime" (has verb, has number)
     // 4. "Automated deployments using custom scripts, saving 8 developer hours per week" (has verb, has number)
     // All 4 start with action verbs and have metrics.
-    // Therefore, metricRatio should be 1.0 (metric score = 10) and verbRatio should be 1.0 (verb score = 5).
+    // Therefore, metricRatio should be 1.0 (metric score = METRIC_MAX) and verbRatio should be 1.0 (verb score = VERB_MAX).
     // They must not be diluted by the summary/contact/education/skills sections.
-    expect(res.metric).toBe(10);
-    expect(res.verb).toBe(5);
+    expect(res.metric).toBe(METRIC_MAX);
+    expect(res.verb).toBe(VERB_MAX);
   });
 
   it("asserts Impact & Results scores at maximum on the real-world failing resume fixture", () => {
@@ -278,8 +283,8 @@ Bachelor of Science in Statistics Sep. 2021 – Jul. 2024
 `;
 
     const res = experienceObjective(REAL_FAILING_RESUME);
-    expect(res.metric).toBe(10);
-    expect(res.verb).toBe(5);
+    expect(res.metric).toBe(METRIC_MAX);
+    expect(res.verb).toBe(VERB_MAX);
   });
 
   it("handles PDF-extracted bullets when the bullet marker is on its own line", () => {
@@ -341,8 +346,8 @@ Education
 Bachelor of Science in StatisticsSep. 2021 – Jul. 2024`;
 
     const res = experienceObjective(PDF_EXTRACTED_RESUME);
-    expect(res.metric).toBe(10);
-    expect(res.verb).toBe(5);
+    expect(res.metric).toBe(METRIC_MAX);
+    expect(res.verb).toBe(VERB_MAX);
   });
 });
 

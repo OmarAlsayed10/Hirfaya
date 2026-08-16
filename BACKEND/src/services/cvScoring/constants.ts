@@ -54,7 +54,7 @@ export const LEVEL_EXPECTATIONS: Record<string, string> = {
     "less than 1 year of professional experience. A brand-new graduate/entrant — judge on education, academic/personal projects, internships, and foundational skills. Do NOT penalize a lack of paid work experience — strong projects count fully at this level.",
   Junior:
     "1-2 years of professional experience. Some real work or internship experience, basic quantified impact, solid fundamentals. Personal projects still count.",
-  Mid: "3-5 years of professional experience. Consistent delivery, ownership of features/areas, solid skill set, clear measurable impact across roles.",
+  Mid: "2-5 years of professional experience. Consistent delivery, ownership of features/areas, solid skill set, clear measurable impact across roles.",
   Senior:
     "5-8 years of professional experience. Deep expertise, architecture/strategy decisions, significant quantified business impact, mentoring others.",
   Lead: "8+ years of professional experience. Senior-level expertise PLUS team leadership, cross-functional influence, and org-level impact.",
@@ -62,7 +62,7 @@ export const LEVEL_EXPECTATIONS: Record<string, string> = {
 
 // Required absolute career-strength for each level, on the same 0-100 scale the LLM rates
 // candidateStrength. Strictly increasing, so fit is non-increasing across levels (no inversions).
-// Calibrated: Fresh <1yr, Junior 1-2yr, Mid 3-5yr, Senior 5-8yr, Lead 8+yr.
+// Calibrated: Fresh <1yr, Junior 1-2yr, Mid 2-5yr, Senior 5-8yr, Lead 8+yr.
 export const REQUIRED_STRENGTH: Record<string, number> = {
   Fresh: 8,
   Junior: 25,
@@ -83,7 +83,7 @@ export const NEXT_LEVEL: Record<string, string> = {
 export const LEVEL_YEAR_RANGE: Record<string, string> = {
   Fresh: "less than 1 year",
   Junior: "1–2 years",
-  Mid: "3–5 years",
+  Mid: "2–5 years",
   Senior: "5–8 years",
   Lead: "8+ years",
 };
@@ -91,7 +91,7 @@ export const LEVEL_YEAR_RANGE: Record<string, string> = {
 export const LEVEL_YEAR_RANGE_AR: Record<string, string> = {
   Fresh: "أقل من سنة",
   Junior: "سنة إلى سنتين",
-  Mid: "3–5 سنوات",
+  Mid: "2–5 سنوات",
   Senior: "5–8 سنوات",
   Lead: "8+ سنوات",
 };
@@ -108,6 +108,36 @@ export const SKILL_LEVEL_AR: Record<string, string> = {
 // original list missed — "Handled", "Inspected", "Monitored" — and were marked down for it.
 export const ACTION_VERB =
   /^(achieved|accelerated|administered|advised|analy[sz]ed|architected|arranged|assessed|assisted|audited|authored|automated|briefed|built|championed|collaborated|communicated|compiled|completed|conducted|consolidated|contributed|controlled|converted|coordinated|counseled|created|cut|decreased|defined|delivered|demonstrated|deployed|designed|developed|devised|diagnosed|directed|documented|doubled|drafted|drove|eliminated|engineered|enhanced|ensured|escalated|established|evaluated|examined|executed|expanded|facilitated|forecast|formulated|generated|grew|guided|handled|headed|identified|implemented|improved|increased|influenced|initiated|inspected|installed|instructed|integrated|interpreted|introduced|investigated|launched|led|maintained|managed|maximized|mentored|minimized|modernized|monitored|negotiated|operated|optimized|organized|overhauled|oversaw|performed|pioneered|planned|prepared|presented|prevented|processed|produced|promoted|provided|published|ran|rebuilt|recommended|recorded|recruited|reduced|refactored|reported|researched|resolved|restructured|reviewed|revamped|saved|scaled|scheduled|secured|simplified|sold|sourced|spearheaded|standardi[sz]ed|streamlined|strengthened|supervised|supported|sustained|tested|tracked|trained|transformed|translated|troubleshot|upgraded|validated|verified|wrote)\b/i;
+
+// The list above can never hold every past-tense verb ("Boosted", "Revitalized"), so bullets that
+// did open with a real verb were still called weak. Any -ed opener counts as a verb; the list stays
+// for irregulars (led, built, ran, wrote), and the openers below stay weak because vague duty
+// phrasing is what the check is for.
+export const WEAK_OPENER =
+  /^(responsib\w*|dut(y|ies)|task\w*|help\w*|work\w*|used?|using|participat\w*|involv\w*|various|follow\w*)\b/i;
+
+// The same list in words, because the optimizer prompt has to name them. It used to carry its own
+// hand-written set — "Followed", "Worked on", "Responsible for", "Helped" — which agreed with this
+// regex on two of four. The model dutifully avoided those four and opened a bullet with
+// "Participated", which the regex penalises and the prompt never mentioned. A rule the rewriter is
+// never told cannot be a rule it follows, so both sides now read from here.
+export const WEAK_OPENER_WORDS = [
+  "Responsible for",
+  "Duties included",
+  "Tasked with",
+  "Helped",
+  "Worked on",
+  "Used",
+  "Participated in",
+  "Involved in",
+  "Various",
+  "Followed",
+];
+
+export const startsWithActionVerb = (line: string): boolean => {
+  const text = line.trim();
+  return !WEAK_OPENER.test(text) && (ACTION_VERB.test(text) || /^[a-z]+ed\b/i.test(text));
+};
 
 export const STD_HEADINGS = [
   "experience",

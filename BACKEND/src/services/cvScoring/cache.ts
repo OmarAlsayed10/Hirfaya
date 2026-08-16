@@ -3,7 +3,7 @@ import { LEVELS, Level, ScoreBreakdown } from "./constants";
 import { hasCache } from "../../lib/persistentCache";
 
 export const CACHE_MAX = 500;
-const SCORING_CACHE_VERSION = "2026-07-pipe-list";
+const SCORING_CACHE_VERSION = "2026-08-metric-quarter-weight";
 export const scoreCache = new Map<string, ScoreBreakdown>();
 export function clearScoreCache(): void {
   scoreCache.clear();
@@ -18,15 +18,15 @@ export const hashCV = (text: string, jd: string) =>
 const normLevel = (level: string) =>
   LEVELS.includes(level.trim() as Level) ? level.trim() : "";
 
-// True when this exact CV+role+level was already scored (cache hit) — lets the quota
-// layer serve repeat/identical analyses for free.
+
 export async function hasScore(
   text: string,
   targetRole = "",
   level = "",
   language = "en",
+  pageCount = 0,
 ): Promise<boolean> {
-  const key = hashCV(text, `${targetRole.trim()}|${normLevel(level)}|${language}`);
+  const key = hashCV(text, `${targetRole.trim()}|${normLevel(level)}|${language}|${pageCount}`);
   if (scoreCache.has(key)) return true;
   return hasCache(key);
 }

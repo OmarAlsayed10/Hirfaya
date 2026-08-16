@@ -5,7 +5,7 @@ import {
   PRIMARY_SECTION_ORDER,
   pctClamp,
   SHOULD_DEBUG_CV_SCORING,
-  ACTION_VERB,
+  startsWithActionVerb,
   BULLET_LABEL,
   KEYWORD_SECTION,
 } from "./constants";
@@ -139,6 +139,14 @@ export function formattingLayoutObjective(
         ? "استخدم نمط نقاط موحدًا في كامل السيرة الذاتية"
         : "Use one consistent bullet style throughout",
     );
+  } else if (bulletDetails.bulletCount === 0) {
+    // This branch cost 3 points silently. A CV whose bullet markers are drawn but never written
+    // into the PDF text layer reads as bullet-less to an ATS too, so it needs saying.
+    details.push(
+      isArabic
+        ? "لم نعثر على أي نقاط — اكتب الإنجازات كنقاط بعلامة نصية حقيقية"
+        : "No bullet markers found — list achievements as bullets a parser can read",
+    );
   }
   if (dateStyles.length === 0) {
     details.push(
@@ -252,6 +260,17 @@ export function scoreATSFormatting(
   };
 }
 
+// Numbers count, but only a little. At 10 of 15 they dominated Impact and a CV of well-written
+// bullets with nothing to count scored 40%. At 0 they stopped mattering at all, and a CV with four
+// quantified bullets out of nineteen scored a perfect "Impact & Results" — a dimension claiming to
+// measure results while measuring none. A quarter of the weight is the setting that does neither:
+// a CV with no numbers anywhere loses about 5 points of the total, which is a nudge, not a verdict.
+export const METRIC_WEIGHT = 4;
+export const VERB_WEIGHT = 11;
+
+const CONTENT_METRIC_WEIGHT = 12;
+const CONTENT_VERB_WEIGHT = 38;
+
 export function experienceObjective(
   text: string,
   language: Language = "en",
@@ -285,7 +304,7 @@ export function experienceObjective(
   const combinedBlocks = `${expBlock}\n${projBlock}`.trim();
 
   const bullets = experienceBullets(combinedBlocks || text);
-  const hasVerb = (l: string) => ACTION_VERB.test(l.replace(BULLET_LABEL, ""));
+  const hasVerb = (l: string) => startsWithActionVerb(l.replace(BULLET_LABEL, ""));
 
   const metricRatio = bullets.length
     ? bullets.filter((l) => /\d/.test(l)).length / bullets.length
@@ -293,8 +312,12 @@ export function experienceObjective(
   const verbRatio = bullets.length
     ? bullets.filter(hasVerb).length / bullets.length
     : 0;
-  const metric = Math.round(metricRatio * 10);
-  const verb = Math.round(verbRatio * 5);
+  // Numbers used to carry 10 of the 15 Impact points, so a CV of strong, well-written bullets that
+  // simply had little to count scored 40%. Not every good role produces a percentage — sales and
+  // engineering do, care work and legal support often do not. Quantification is now the smaller
+  // share and stays a recommendation; how the bullets are written carries the weight.
+  const metric = Math.round(metricRatio * METRIC_WEIGHT);
+  const verb = Math.round(verbRatio * VERB_WEIGHT);
 
   if (SHOULD_DEBUG_CV_SCORING) {
     console.log("[cv-score] impact scoring debug", {
@@ -313,8 +336,8 @@ export function experienceObjective(
   if (metricRatio < 0.5)
     tips.push(
       isArabic
-        ? "أضف أرقامًا أو نسبًا مئوية لعدد أكبر من النقاط"
-        : "quantify more bullets with numbers/percentages",
+        ? "اختياري: أرقام أو نسب مئوية في نقاط أكثر ترفع قوة السيرة الذاتية حيث تتوفر أرقام فعلية"
+        : "optional: numbers or percentages in more bullets read stronger, where you have real figures",
     );
   if (verbRatio < 0.6)
     tips.push(
@@ -352,14 +375,15 @@ export function contentQualityObjective(
         ? "أضف قسم Professional Summary بالقرب من أعلى السيرة الذاتية."
         : "Add a Professional Summary section near the top.",
     );
-  if (/\d/.test(summary)) earned += 10;
-  else if (summary)
+  // Same rule as the bullets: suggested, not scored. The points move to whether the summary
+  // actually says something.
+  if (!/\d/.test(summary) && summary)
     gaps.push(
       isArabic
-        ? "أضف نتيجة قابلة للقياس إلى الملخص (نسبة مئوية أو عدد أو مبلغ)."
-        : "Add a quantified result to your summary (a %, count, or $ figure).",
+        ? "اختياري: نتيجة قابلة للقياس في الملخص (نسبة مئوية أو عدد أو مبلغ) تترك انطباعًا أقوى."
+        : "Optional: a quantified result in your summary (a %, count, or $ figure) lands harder.",
     );
-  if (summary.split(/\s+/).filter(Boolean).length >= 20) earned += 5;
+  if (summary.split(/\s+/).filter(Boolean).length >= 20) earned += 15;
   else if (summary)
     gaps.push(
       isArabic
@@ -369,12 +393,12 @@ export function contentQualityObjective(
 
   const metricRatio = exp.bulletCount ? 1 - exp.unquantified / exp.bulletCount : 0;
   const verbRatio = exp.bulletCount ? 1 - exp.noVerb / exp.bulletCount : 0;
-  earned += Math.round(metricRatio * 30 + verbRatio * 20);
+  earned += Math.round(metricRatio * CONTENT_METRIC_WEIGHT + verbRatio * CONTENT_VERB_WEIGHT);
   if (exp.unquantified > 0)
     gaps.push(
       isArabic
-        ? `أضف أرقامًا إلى ${exp.unquantified} من نقاط الخبرة/المشاريع التي لا تحتوي على أي رقم.`
-        : `Quantify ${exp.unquantified} experience/project bullet${exp.unquantified === 1 ? "" : "s"} with no number.`,
+        ? `اختياري: إضافة رقم إلى ${exp.unquantified} من نقاط الخبرة/المشاريع يقوّي السيرة الذاتية حيث تتوفر أرقام فعلية.`
+        : `Optional: adding a number to ${exp.unquantified} experience/project bullet${exp.unquantified === 1 ? "" : "s"} would strengthen them where you have real figures.`,
     );
   if (exp.noVerb > 0)
     gaps.push(

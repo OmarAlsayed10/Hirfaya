@@ -107,6 +107,7 @@ export const aiResultSchema = z
 export type AiResult = z.infer<typeof aiResultSchema>;
 
 const CACHE_MAX = 300;
+const ANALYSIS_VERSION = `${new Date().toISOString().split("T")[0]}-canonical-input`;
 const responseCache = new Map<string, AiResult>();
 const cacheKey = (
   cvText: string,
@@ -117,6 +118,7 @@ const cacheKey = (
   createHash("sha256")
     .update(
       JSON.stringify({
+        version: ANALYSIS_VERSION,
         cvText: cvText.trim(),
         targetRole: targetRole.trim(),
         jobDescription: jobDescription.trim(),

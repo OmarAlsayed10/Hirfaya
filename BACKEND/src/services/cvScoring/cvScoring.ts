@@ -23,9 +23,11 @@ import {
   experienceObjective,
   contentQualityObjective,
   keywordMatchObjective,
+  METRIC_WEIGHT,
+  VERB_WEIGHT,
 } from "./objectiveScores";
 import {
-  estimateYearsExperience,
+  yearsExperience,
   baseStrengthFromYears,
   levelFromYears,
   levelMessage,
@@ -42,9 +44,7 @@ export async function scoreCVWithBreakdown(
   const isArabic = language === "ar";
   const role = targetRole.trim();
   const lvl = LEVELS.includes(level.trim() as Level) ? level.trim() : "";
-  // pageCount is derived from the same CV, so it stays out of the key — adding it would
-  // desync this from hasScore() and silently re-charge the quota gate.
-  const key = hashCV(text, `${role}|${lvl}|${language}`);
+  const key = hashCV(text, `${role}|${lvl}|${language}|${pageCount}`);
   const cached = scoreCache.get(key);
   if (cached) return cached;
 
@@ -178,9 +178,12 @@ export async function scoreCVWithBreakdown(
 
   const fill = (name: string, score: number, base: string[]): string[] => {
     const out = [...base];
+    // The example used to be appended to Impact on any score below 100, so a CV where every bullet
+    // already opened with an action verb was still told to rewrite every bullet with an action
+    // verb. It only makes sense when bullets are actually missing one.
     if (
       name === "Impact & Results" &&
-      score < 100 &&
+      exp.noVerb > 0 &&
       !out.some((t) => /example|e\.g\./i.test(t))
     ) {
       out.push(IMPROVE_HINT[name]);
@@ -192,11 +195,14 @@ export async function scoreCVWithBreakdown(
           ? "ممتاز هنا — لا شيء يمنع الحصول على درجة كاملة."
           : "Strong here — nothing blocking a top score.",
       ];
+    // This used to claim a perfect score was "reserved for exceptional writing", which is not a
+    // rule the scoring implements — it is what gets shown when a dimension scored well and
+    // reported no specific gap. Saying so beats inventing a cap that does not exist.
     if (score >= 85)
       return [
         isArabic
-          ? "قوي — لا يوجد ما يحتاج إصلاحًا هنا؛ الدرجة الكاملة محجوزة للكتابة الاستثنائية."
-          : "Strong — nothing to fix here; a perfect score is reserved for exceptional writing.",
+          ? "قوي — لم نرصد مشكلة محددة هنا."
+          : "Strong — no specific issue flagged here.",
       ];
     return [IMPROVE_HINT[name]];
   };
@@ -222,11 +228,19 @@ export async function scoreCVWithBreakdown(
     mk("Content Quality", contentQuality.score, contentQuality.details),
     mk("ATS Compatibility", atsCompatibility.score, atsCompatibility.details),
     mk("Keyword Match", keywordMatch.score, keywordMatch.details),
-    mk("Grammar & Spelling", pct(q.grammarQuality, 10), [q.grammarTip]),
+    // The grader is asked to name the fix whenever it scores below 10. When it docks a point and
+    // then names nothing, that is the model hedging rather than a fault in the CV — there is no
+    // defect to show the user, so there is nothing to deduct. A real problem still scores as one:
+    // this only forgives the near-perfect-but-silent case.
+    mk(
+      "Grammar & Spelling",
+      q.grammarTip || q.grammarQuality < 8 ? pct(q.grammarQuality, 10) : 100,
+      [q.grammarTip],
+    ),
     mk("Formatting & Layout", formattingLayout.score, formattingLayout.details),
     mk(
       "Impact & Results",
-      pct(exp.metric + exp.verb, 15),
+      pct(exp.metric + exp.verb, METRIC_WEIGHT + VERB_WEIGHT),
       exp.tips.filter((t) =>
         /quantif|number|percentage|action verb|metric|impact/i.test(t),
       ),
@@ -249,7 +263,9 @@ export async function scoreCVWithBreakdown(
 
   // Career strength is anchored to objective years of experience (primary signal),
   // nudged by the LLM's holistic read — so fit tracks real experience, not "nice CV".
-  const yoe = estimateYearsExperience(text);
+  // Falls back to the years the CV states when no date range parses, so an unreadable date block
+  // no longer drops a four-year engineer to Fresh.
+  const yoe = yearsExperience(text);
 
   // Apply a direct skills modifier bonus/penalty to strength
   let skillBonus = 0;

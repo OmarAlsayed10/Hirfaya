@@ -26,7 +26,7 @@ export function headingFamily(line: string): PrimarySection | null {
   )
     return "summary";
   if (
-    /^((work\s+|professional\s+)?experience|employment|work\s*history|employment\s*history)\s*:?\s*$/i.test(
+    /^((work\s+|professional\s+|relevant\s+)?experience|employment|work\s*history|employment\s*history|job\s*history|career\s*history|professional\s*background|responsibilities)\s*:?\s*$/i.test(
       trimmed,
     )
   )
@@ -225,8 +225,11 @@ export function experienceBullets(block: string): string[] {
 // get counted as work experience.
 export function experienceSection(text: string): string {
   const lines = text.split("\n");
+  // Real CVs label this section more loosely than the original list allowed — one in the sample set
+  // headed its entire work history "RESPONSIBILITIES", so we found no section, parsed no dates, and
+  // called a working candidate Fresh.
   const EXP_RE =
-    /^\s*[-•*–▪●‣⁃+>]?\s*(work\s+|professional\s+)?(experience|employment|work\s*history|employment\s*history)\b/i;
+    /^\s*[-•*–▪●‣⁃+>]?\s*(work\s+|professional\s+|relevant\s+)?(experience|employment|work\s*history|employment\s*history|job\s*history|career\s*history|professional\s*background|responsibilities)\b/i;
   const STOP_RE =
     /^\s*[-•*–▪●‣⁃+>]?\s*(education|academic\s*background|studies|degree|skills|technical\s*skills|technologies|expertise|certifications?|courses?|awards?|honors?|references?|languages?|summary|profile|about\s*me|contact)\b/i;
 
@@ -256,8 +259,11 @@ export function projectsSection(text: string): string {
     /^\s*[-•*–▪●‣⁃+>]?\s*(personal\s+|academic\s+|selected\s+|technical\s+)?projects\b/i;
   const STOP_RE =
     /^\s*[-•*–▪●‣⁃+>]?\s*(education|academic\s*background|studies|degree|skills|technical\s*skills|technologies|expertise|certifications?|courses?|awards?|honors?|references?|languages?|summary|profile|about\s*me|contact)\b/i;
+  // Real CVs label this section more loosely than the original list allowed — one in the sample set
+  // headed its entire work history "RESPONSIBILITIES", so we found no section, parsed no dates, and
+  // called a working candidate Fresh.
   const EXP_RE =
-    /^\s*[-•*–▪●‣⁃+>]?\s*(work\s+|professional\s+)?(experience|employment|work\s*history|employment\s*history)\b/i;
+    /^\s*[-•*–▪●‣⁃+>]?\s*(work\s+|professional\s+|relevant\s+)?(experience|employment|work\s*history|employment\s*history|job\s*history|career\s*history|professional\s*background|responsibilities)\b/i;
 
   const start = lines.findIndex((l) => {
     const trimmed = l.trim();
