@@ -1,18 +1,35 @@
 import { Request } from "express";
 import rateLimit from "express-rate-limit";
-import jwt from "jsonwebtoken";
-import { CustomRequest } from "./validateJWTMiddleware";
+import prisma from "../lib/prisma";
+import { CustomRequest, readTokenClaims } from "./validateJWTMiddleware";
 
-export const isAdminRequest = (req: Request): boolean => {
-  if ((req as CustomRequest).user?.role === "admin") return true;
+// Limiters run before authenticateToken on public routes, so the caller is identified
+// from the token here.
+const claimFromRequest = (req: Request): { userId: string; role?: string } | null => {
+  const fromAuth = (req as CustomRequest).user;
+  if (fromAuth) return { userId: fromAuth.userId, role: fromAuth.role };
 
-  const token = req.cookies?.token || req.headers.authorization?.split(" ")[1];
-  if (!token) return false;
+  const claims = readTokenClaims(req);
+  return claims ? { userId: claims.userId, role: claims.role } : null;
+};
+
+// Skipping a limiter removes every ceiling on login attempts, OTP sends and AI spend, so
+// the admin role claim inside a 24h token is not enough on its own: a demoted admin would
+// keep that bypass until the token expired. Confirm against the DB. Only tokens already
+// claiming admin reach the query — every other request costs one string compare — and a
+// failed lookup applies the limit rather than granting the bypass.
+export const isAdminRequest = async (req: Request): Promise<boolean> => {
+  const claim = claimFromRequest(req);
+  if (claim?.role !== "admin") return false;
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET_Key!) as { role?: string };
-    return decoded.role === "admin";
-  } catch {
+    const current = await prisma.user.findUnique({
+      where: { id: claim.userId },
+      select: { role: true },
+    });
+    return current?.role === "admin";
+  } catch (err) {
+    console.error("[rate-limit] admin check failed, applying limit:", (err as Error).message);
     return false;
   }
 };

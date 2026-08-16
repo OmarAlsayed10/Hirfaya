@@ -52,7 +52,7 @@ const STEPS = ['Your details', 'Choose your path'];
 const OnboardingWizard = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, fetchingAndFrefreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<ProfileForm>(EMPTY);
@@ -81,7 +81,7 @@ const OnboardingWizard = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
         withCredentials: true,
       });
-      await fetchingAndFrefreshUser?.();
+      await refreshUser?.();
     } catch {
       setError(t('Photo upload failed. You can add one later in Settings.'));
     } finally {
@@ -160,7 +160,7 @@ const OnboardingWizard = () => {
           await axios.patch(CV_ENDPOINTS.setPrimary(cvId), {}, { withCredentials: true }).catch(() => {});
         }
       }
-      await fetchingAndFrefreshUser?.();
+      await refreshUser?.();
       navigate(destination);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;

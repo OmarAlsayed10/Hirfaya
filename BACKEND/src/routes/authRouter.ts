@@ -18,7 +18,6 @@ import {
   updateProfilePhoto,
   deleteProfilePhoto,
   deleteAccount,
-  getPlan,
 } from "../controllers/authController";
 import { authenticateToken } from "../middleware/validateJWTMiddleware";
 import {
@@ -53,7 +52,6 @@ router.post(
 );
 router.delete("/profile/photo", authenticateToken, deleteProfilePhoto);
 router.delete("/account", authenticateToken, deleteAccount);
-router.get("/plan", authenticateToken, getPlan);
 
 router.get("/git-credentials", authenticateToken, listGitCredentialsController);
 router.post("/git-credentials", authenticateToken, saveGitCredentialController);

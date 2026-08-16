@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { body, validationResult } from "express-validator";
 import { StatusCodes } from "http-status-codes";
 import prisma from "../lib/prisma";
+import { normalizeEmail } from "../lib/normalizeEmail";
 
 const withValidationErrors = (validationRules: any[]) => {
   return [
@@ -28,7 +29,9 @@ export const validateRegisterInput = withValidationErrors([
     .isEmail()
     .withMessage("Invalid email format")
     .custom(async (email) => {
-      const user = await prisma.user.findUnique({ where: { email } });
+      const user = await prisma.user.findUnique({
+        where: { email: normalizeEmail(email) },
+      });
       if (user) {
         throw new Error("Email already exists");
       }

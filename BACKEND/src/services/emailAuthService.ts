@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { createHmac, randomInt, timingSafeEqual } from "crypto";
 import prisma from "../lib/prisma";
 import { emailService } from "./emailService";
+import { normalizeEmail } from "../lib/normalizeEmail";
 
 const BCRYPT_ROUNDS = 12;
 const OTP_TTL_MS = 10 * 60 * 1000;
@@ -33,7 +34,7 @@ export const registerEmail = async (input: Record<string, unknown>): Promise<Ema
     return { status: 400, message: "Password must be at least 8 characters." };
   }
 
-  const emailAddress = String(email);
+  const emailAddress = normalizeEmail(email);
   const existing = await prisma.user.findUnique({ where: { email: emailAddress } });
   if (existing?.emailVerified) return { status: 409, message: "Email already registered." };
 
@@ -52,7 +53,7 @@ export const authenticateEmail = async (input: Record<string, unknown>): Promise
   const { email, password } = input;
   if (!email || !password) return { status: 400, message: "Email and password are required." };
 
-  const user = await prisma.user.findUnique({ where: { email: String(email) } });
+  const user = await prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
   if (!user) return { status: 401, message: "Invalid credentials." };
   if (user.googleId && !user.passwordHash) {
     return { status: 400, message: "This account uses Google Sign-In. Please log in with Google." };
@@ -70,7 +71,7 @@ export const verifyEmailOtp = async (input: Record<string, unknown>): Promise<Em
   const { email, otp } = input;
   if (!email || !otp) return { status: 400, message: "Email and OTP are required." };
 
-  const emailAddress = String(email);
+  const emailAddress = normalizeEmail(email);
   const user = await prisma.user.findUnique({ where: { email: emailAddress } });
   if (!user || !user.otp || !user.otpExpiry) {
     return { status: 400, message: "No pending verification for this email." };
@@ -90,7 +91,7 @@ export const verifyEmailOtp = async (input: Record<string, unknown>): Promise<Em
 
 export const resendEmailOtp = async (email: unknown): Promise<void> => {
   if (!email) return;
-  const emailAddress = String(email);
+  const emailAddress = normalizeEmail(email);
   const user = await prisma.user.findUnique({ where: { email: emailAddress } });
   if (!user || user.emailVerified) return;
 

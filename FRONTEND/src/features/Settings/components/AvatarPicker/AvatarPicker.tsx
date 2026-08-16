@@ -15,15 +15,14 @@ interface Props {
 
 const AvatarPicker = ({ size = 96, onFeedback }: Props) => {
   const { t } = useTranslation();
-  const { user, fetchingAndFrefreshUser } = useAuth();
-  const u = user as Record<string, string | null> | null;
+  const { user, refreshUser } = useAuth();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const initials = `${u?.firstName?.[0] ?? ''}${u?.lastName?.[0] ?? ''}`.toUpperCase() || 'U';
-  const color = u?.avatarColor || AVATAR_COLORS[0];
-  const refresh = () => fetchingAndFrefreshUser && fetchingAndFrefreshUser();
+  const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase() || 'U';
+  const color = user?.avatarColor || AVATAR_COLORS[0];
+  const refresh = () => refreshUser && refreshUser();
 
   const uploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -69,7 +68,7 @@ const AvatarPicker = ({ size = 96, onFeedback }: Props) => {
     <>
       <Box sx={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
         <Avatar
-          src={u?.photo || ''}
+          src={user?.photo || ''}
           sx={{ width: size, height: size, bgcolor: color, fontSize: size * 0.36, fontWeight: 600 }}
         >
           {initials}
@@ -108,7 +107,7 @@ const AvatarPicker = ({ size = 96, onFeedback }: Props) => {
           >
             {t('Upload')}
           </Button>
-          {u?.photo && (
+          {user?.photo && (
             <Button
               variant="text" size="small" color="error" startIcon={<Trash2 size={16} />}
               onClick={removePhoto}
@@ -129,11 +128,11 @@ const AvatarPicker = ({ size = 96, onFeedback }: Props) => {
               sx={{
                 width: 46, height: 46, borderRadius: '50%', bgcolor: c, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', color: COLORS.onAccent,
-                border: color === c && !u?.photo ? '3px solid #1a1a18' : '3px solid transparent',
+                border: color === c && !user?.photo ? '3px solid #1a1a18' : '3px solid transparent',
                 transition: 'transform .12s', '&:hover': { transform: 'scale(1.08)' },
               }}
             >
-              {color === c && !u?.photo && <Check size={20} />}
+              {color === c && !user?.photo && <Check size={20} />}
             </Box>
           ))}
         </Box>

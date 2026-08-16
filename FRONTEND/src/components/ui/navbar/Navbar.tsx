@@ -6,8 +6,7 @@ import axios from 'axios';
 import i18n from '../../../i18n';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../hooks/useAuth';
-import { useDispatch, useSelector } from 'react-redux';
-import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { AUTH_ENDPOINTS } from '../../../constants/endpoints';
 import { resetStore } from '../../../redux/store/store';
 import { useNavigate } from 'react-router-dom';
@@ -19,19 +18,12 @@ function Navbar() {
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, isAuthenticated, updateUserFromPayment } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const currentLang = i18n.language;
   const isRTL = currentLang === 'ar';
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'), { noSsr: true });
-  const paymentState = useSelector((state: { payment: { success: boolean; user: unknown } }) => state.payment);
   const dispatch = useDispatch();
-
-  useEffect(() => {
-    if (paymentState.success && paymentState.user) {
-      updateUserFromPayment(paymentState.user);
-    }
-  }, [paymentState.success, paymentState.user, updateUserFromPayment]);
 
   const handleLogout = async () => {
     try {

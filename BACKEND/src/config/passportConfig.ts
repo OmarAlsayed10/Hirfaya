@@ -3,6 +3,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import prisma from "../lib/prisma";
+import { normalizeEmail } from "../lib/normalizeEmail";
 dotenv.config();
 
 passport.use(
@@ -18,16 +19,18 @@ passport.use(
           where: { googleId: profile.id },
         });
 
+        const googleEmail = normalizeEmail(profile.emails?.[0].value);
+
         if (!user) {
           // check if email already exists (user registered normally before)
           const existingEmail = await prisma.user.findUnique({
-            where: { email: profile.emails?.[0].value || "" },
+            where: { email: googleEmail },
           });
 
           if (existingEmail) {
             // link google to existing account
             user = await prisma.user.update({
-              where: { email: profile.emails?.[0].value || "" },
+              where: { email: googleEmail },
               data: { googleId: profile.id },
             });
           } else {
@@ -37,7 +40,7 @@ passport.use(
                 googleId: profile.id,
                 firstName: profile.name?.givenName?.trim() || "User",
                 lastName: profile.name?.familyName?.trim() || "",
-                email: profile.emails?.[0].value || "no-email",
+                email: googleEmail || "no-email",
                 role: "normal user",
                 proExpiresAt: null,
               },

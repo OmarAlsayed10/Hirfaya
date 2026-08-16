@@ -3,6 +3,7 @@ import { randomInt } from "crypto";
 import prisma from "../lib/prisma";
 import { emailService } from "./emailService";
 import { BCRYPT_ROUNDS, hashOTP, otpMatches } from "./registrationService";
+import { normalizeEmail } from "../lib/normalizeEmail";
 
 export const RESET_OTP_TTL_MS = 15 * 60 * 1000;
 
@@ -29,7 +30,7 @@ type ResetResponse = {
 export const requestPasswordReset = async (email: unknown): Promise<string> => {
   if (typeof email !== "string" || !email.trim()) return REQUEST_MESSAGE;
 
-  const user = await prisma.user.findUnique({ where: { email: email.trim() } });
+  const user = await prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
 
   // A Google-only account has no password to reset, and an unverified account
   // must finish registration instead.
@@ -59,7 +60,7 @@ export const confirmPasswordReset = async (
     return { status: 400, message: "Password must be at least 8 characters." };
   }
 
-  const user = await prisma.user.findUnique({ where: { email: email.trim() } });
+  const user = await prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
   if (
     !user?.resetOtp ||
     !user.resetOtpExpiry ||

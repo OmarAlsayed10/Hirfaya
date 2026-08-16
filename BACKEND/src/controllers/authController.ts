@@ -11,6 +11,11 @@ import { emailService } from "../services/emailService";
 import { hashOTP, otpMatches, OTP_TTL_MS, registerAccount } from "../services/registrationService";
 import { confirmPasswordReset, requestPasswordReset } from "../services/passwordResetService";
 import { sanitizeProfile } from "../services/profileService";
+import { normalizeEmail } from "../lib/normalizeEmail";
+import { hasPaidAccess } from "../services/entitlementService";
+import { isLocked, nextLockoutState } from "../services/loginLockoutService";
+import { revokeSessions } from "../lib/sessionRevocationCache";
+import { readTokenClaims } from "../middleware/validateJWTMiddleware";
 
 const PROFILE_FIELDS = ["phone", "location", "title", "linkedin", "github", "portfolio", "summary", "avatarColor", "skills", "onboarded"] as const;
 const profileDefault = (k: string) => (k === "onboarded" ? false : k === "skills" ? [] : null);
@@ -81,7 +86,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({
+    where: { email: normalizeEmail(email) },
+  });
 
   if (!user) {
     res.status(401).json({ message: "Invalid credentials." });
@@ -103,9 +110,30 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   }
 
   const valid = await bcrypt.compare(password, user.passwordHash!);
-  if (!valid) {
+
+  // Checked after the hash comparison, not before: an early return would make a locked
+  // account answer measurably faster than any other, handing back the account-existence
+  // signal the shared "Invalid credentials." message exists to hide. A locked account is
+  // also denied without incrementing, so an attacker cannot hold the lock open.
+  if (isLocked(user)) {
     res.status(401).json({ message: "Invalid credentials." });
     return;
+  }
+
+  if (!valid) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: nextLockoutState(user),
+    });
+    res.status(401).json({ message: "Invalid credentials." });
+    return;
+  }
+
+  if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginAttempts: 0, lockedUntil: null },
+    });
   }
 
   const token = issueToken(user);
@@ -120,6 +148,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       lastName: user.lastName,
       role: user.role,
       planTier: user.planTier,
+      isPro: hasPaidAccess(user),
       proExpiresAt: user.proExpiresAt ? user.proExpiresAt.getTime() : null,
     },
   });
@@ -133,7 +162,8 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const emailAddress = normalizeEmail(email);
+  const user = await prisma.user.findUnique({ where: { email: emailAddress } });
 
   if (!user || !user.otp || !user.otpExpiry) {
     res.status(400).json({ message: "No pending verification for this email." });
@@ -151,11 +181,11 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
   }
 
   const verified = await prisma.user.update({
-    where: { email },
+    where: { email: emailAddress },
     data: { emailVerified: true, otp: null, otpExpiry: null },
   });
 
-  await emailService.sendWelcome(email, verified.firstName);
+  await emailService.sendWelcome(emailAddress, verified.firstName);
 
   const token = issueToken(verified);
   setAuthCookie(res, token);
@@ -168,7 +198,9 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
       firstName: verified.firstName,
       lastName: verified.lastName,
       role: verified.role,
-      proExpiresAt: null,
+      planTier: verified.planTier,
+      isPro: hasPaidAccess(verified),
+      proExpiresAt: verified.proExpiresAt ? verified.proExpiresAt.getTime() : null,
     },
   });
 };
@@ -181,7 +213,8 @@ export const resendOTP = async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const emailAddress = normalizeEmail(email);
+  const user = await prisma.user.findUnique({ where: { email: emailAddress } });
 
   if (!user || user.emailVerified) {
     // Intentionally vague to prevent email enumeration
@@ -191,19 +224,40 @@ export const resendOTP = async (req: Request, res: Response): Promise<void> => {
 
   const otp = String(randomInt(100000, 999999));
   await prisma.user.update({
-    where: { email },
+    where: { email: emailAddress },
     data: { otp: hashOTP(otp), otpExpiry: new Date(Date.now() + OTP_TTL_MS) },
   });
 
-  await emailService.sendOTP(email, user.firstName, otp);
+  await emailService.sendOTP(emailAddress, user.firstName, otp);
 
   res.status(200).json({ message: "If that email has a pending registration, a new code was sent." });
 };
 
 // ─── Session / Profile ────────────────────────────────────────────────────────
 
-export const logout = (req: Request, res: Response) => {
+export const logout = async (req: Request, res: Response): Promise<void> => {
+  const claims = readTokenClaims(req);
   res.clearCookie("token", AUTH_COOKIE_OPTIONS);
+
+  if (claims?.userId) {
+    const now = new Date();
+    // Persist before touching the cache so a successful logout is durable. If the write
+    // fails the in-memory revocation still holds for this process, but it is lost on
+    // restart while the token itself stays valid — worth alerting on, not just noting.
+    try {
+      await prisma.user.update({
+        where: { id: claims.userId },
+        data: { sessionsValidFrom: now },
+      });
+    } catch (err) {
+      console.error(
+        `[logout] durable revocation failed for user ${claims.userId} — token remains valid until it expires`,
+        err
+      );
+    }
+    revokeSessions(claims.userId, now);
+  }
+
   res.status(200).json({ message: "Logged out successfully" });
 };
 
@@ -244,6 +298,9 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       // not only after the user happens to re-login with a fresh token.
       role: dbUser?.role ?? customReq.user.role,
       planTier: dbUser?.planTier ?? "basic",
+      // Paid access is a computed answer (tier + expiry + admin), never a stored label —
+      // the client must not have to re-derive it and drift from the server's rules.
+      isPro: hasPaidAccess(dbUser),
       proExpiresAt: dbUser?.proExpiresAt ?? customReq.user.proExpiresAt,
       firstName: dbUser?.firstName,
       lastName: dbUser?.lastName,
@@ -347,39 +404,6 @@ export const deleteAccount = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to delete account" });
   }
 };
-export const getPlan = async (req: Request, res: Response) => {
-  const customReq = req as CustomRequest;
-  if (!customReq.user) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
-
-  try {
-    const user = await prisma.user.findUnique({ where: { id: customReq.user.userId } });
-    if (!user) {
-      res.status(404).json({ message: "User not found" });
-      return;
-    }
-
-    let plan = user.role;
-    let daysLeft = 0;
-
-    if (user.proExpiresAt) {
-      const now = new Date();
-      if (user.proExpiresAt > now) {
-        const diffTime = user.proExpiresAt.getTime() - now.getTime();
-        daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      } else {
-        plan = "normal user";
-      }
-    }
-
-    res.status(200).json({ plan, daysLeft, expiresAt: user.proExpiresAt });
-  } catch (error) {
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-};
-
 export const updateProfilePhoto = async (req: Request, res: Response) => {
   const customReq = req as CustomRequest;
   if (!customReq.user) {

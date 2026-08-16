@@ -6,14 +6,14 @@ import { useTranslation } from 'react-i18next';
 import googleAuthSuccess from './googleAuthSuccess.tokens';
 
 const GoogleAuthSuccess = () => {
-  const { fetchingAndFrefreshUser } = useAuth();
+  const { refreshUser } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
   useEffect(() => {
     const processAuth = async () => {
       try {
-        const user = await fetchingAndFrefreshUser();
+        const user = await refreshUser();
         if (!user) throw new Error('Authentication refresh failed.');
         navigate(user.onboarded ? '/' : '/onboarding', { replace: true });
       } catch (error) {

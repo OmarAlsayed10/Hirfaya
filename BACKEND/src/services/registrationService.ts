@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { createHmac, randomInt, timingSafeEqual } from "crypto";
 import prisma from "../lib/prisma";
 import { emailService } from "./emailService";
+import { normalizeEmail } from "../lib/normalizeEmail";
 
 export const BCRYPT_ROUNDS = 12;
 export const OTP_TTL_MS = 10 * 60 * 1000;
@@ -42,7 +43,7 @@ export const registerAccount = async (input: RegistrationInput): Promise<Registr
   if (failure) return failure;
 
   const { firstName, lastName, email, password } = input as Required<RegistrationInput>;
-  const existing = await prisma.user.findUnique({ where: { email: String(email) } });
+  const existing = await prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
   if (existing?.emailVerified) {
     return { status: 409, message: "Email already registered." };
   }
@@ -51,10 +52,10 @@ export const registerAccount = async (input: RegistrationInput): Promise<Registr
   const passwordHash = await bcrypt.hash(String(password), BCRYPT_ROUNDS);
   const otpExpiry = new Date(Date.now() + OTP_TTL_MS);
   await prisma.user.upsert({
-    where: { email: String(email) },
+    where: { email: normalizeEmail(email) },
     update: { firstName: String(firstName), lastName: String(lastName), passwordHash, otp: hashOTP(otp), otpExpiry },
-    create: { firstName: String(firstName), lastName: String(lastName), email: String(email), passwordHash, otp: hashOTP(otp), otpExpiry, emailVerified: false },
+    create: { firstName: String(firstName), lastName: String(lastName), email: normalizeEmail(email), passwordHash, otp: hashOTP(otp), otpExpiry, emailVerified: false },
   });
-  await emailService.sendOTP(String(email), String(firstName), otp);
+  await emailService.sendOTP(normalizeEmail(email), String(firstName), otp);
   return { status: 200, message: "Verification code sent to your email." };
 };

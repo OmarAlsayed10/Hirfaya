@@ -28,7 +28,7 @@ import { AppDispatch, resetStore } from '../../../../redux/store/store';
 
 const ProfileTab = () => {
   const { t } = useTranslation();
-  const { user, fetchingAndFrefreshUser, logout } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
@@ -105,7 +105,7 @@ const ProfileTab = () => {
       );
       setFirstName('');
       setLastName('');
-      if (fetchingAndFrefreshUser) fetchingAndFrefreshUser();
+      if (refreshUser) refreshUser();
       feedback(undefined, 'Profile updated successfully');
     } catch (e) {
       feedback(e);

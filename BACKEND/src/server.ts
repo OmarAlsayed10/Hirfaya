@@ -28,11 +28,17 @@ import { isGroqRateLimit } from "./lib/groqChat";
 import { blockBannedIp } from "./middleware/ipBanMiddleware";
 import { startCronJobs } from "./services/cronService";
 import { loadBanCache } from "./lib/banCache";
+import { loadRevocationCache } from "./lib/sessionRevocationCache";
 import prisma from "./lib/prisma";
 import { closeBrowser } from "./services/pdfExportService";
 
 const app = express();
 const port = process.env.PORT;
+
+// Number of reverse proxies in front of this process. Rate limits and IP bans key
+// off req.ip, so a wrong value either lumps every visitor onto one proxy IP or
+// lets clients forge X-Forwarded-For. Set it to the real hop count per deployment.
+app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS ?? 0));
 
 app.use(helmet());
 app.use(
@@ -46,11 +52,21 @@ app.use(cookieParser());
 app.use(express.json({ limit: "1mb" }));
 app.use(passport.initialize());
 
+app.get("/health", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({ status: "ok" });
+  } catch (error) {
+    console.error("[health] Database probe failed:", error);
+    res.status(503).json({ status: "degraded" });
+  }
+});
+
 app.use(generalLimiter);
 app.use(blockBannedIp);
 
 app.use("/auth", authRouter);
-app.use("/api/ai", aiLimiter, cvRouter);
+app.use("/api/ai", cvRouter);
 app.use("/cvbuilder", cvBuilderRouter);
 app.use("/api/chatbot", aiLimiter, chatBotRouter);
 app.use("/payment", paymentRouter);
@@ -90,6 +106,7 @@ async function start() {
     await prisma.$connect();
     console.log("PostgreSQL connected!");
     await loadBanCache();
+    await loadRevocationCache();
   } catch (e) {
     // ponytail: don't kill the whole server on a transient DB hiccup — Prisma
     // reconnects on the next query, and DB-free routes (CV analyze/enhance) still work.
