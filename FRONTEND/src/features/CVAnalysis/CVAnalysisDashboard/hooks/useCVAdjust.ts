@@ -36,6 +36,7 @@ export function useCVAdjust(cvAnalyze: CVAnalysisResult | null) {
     openModal,
     closeModal,
     adjustedCV: adjustState.adjustedCV,
+    optimizedFormData: adjustState.optimizedFormData,
     changes: adjustState.changes,
     newScore: adjustState.newScore,
     newBreakdown: adjustState.newBreakdown,

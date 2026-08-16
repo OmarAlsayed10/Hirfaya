@@ -19,9 +19,17 @@ import { pdf } from '@react-pdf/renderer';
 import PdfPlainCV from '../../../../templates/pdf/PdfPlainCV';
 import { updateFormData } from '../../../../redux/store/slices/cvBuilderSlice';
 import { COLORS, TYPOGRAPHY } from '../../../../theme/tokens';
-import { AI_ENDPOINTS } from '../../../../constants/endpoints';
+import { AI_ENDPOINTS, CV_ENDPOINTS } from '../../../../constants/endpoints';
+import { useTemplate } from '../../../../hooks/useTemplate';
+import { preferredSectionOrder } from '../../../Builder/cvChecks';
+import type { CvSection } from '../../../../redux/store/slices/cvBuilderSlice';
 import { roundScore } from '../../../../utils/scoreDisplay';
 import type { CVChange, ScoreCategory } from '../../../../redux/store/slices/cvAdjustSlice';
+
+// Every section a template can render, reordered into the order the analysis rewards.
+const TEMPLATE_SECTIONS: CvSection[] = [
+  'personal', 'projects', 'experience', 'education', 'skills', 'languages', 'certifications',
+];
 
 const LOADING_STEPS = [
   'Reading your CV...',
@@ -301,6 +309,9 @@ interface CVOptimizeModalProps {
   loading: boolean;
   error: string | null;
   adjustedCV: string | null;
+  // The optimizer now returns the rewrite as fields alongside the text, in the same AI call. Null
+  // when the model skipped the block, which is what the plain-text renderer is still there for.
+  optimizedFormData?: Record<string, any> | null;
   changes: CVChange[];
   newScore: number | null;
   newBreakdown: ScoreCategory[];
@@ -309,7 +320,7 @@ interface CVOptimizeModalProps {
 }
 
 const CVOptimizeModal = ({
-  open, onClose, loading, error, adjustedCV, changes, newScore, newBreakdown, originalScore, pageCount,
+  open, onClose, loading, error, adjustedCV, optimizedFormData, changes, newScore, newBreakdown, originalScore,
 }: CVOptimizeModalProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -319,10 +330,17 @@ const CVOptimizeModal = ({
   const [downloading, setDownloading] = useState(false);
   const [openingBuilder, setOpeningBuilder] = useState(false);
   const stepTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { choosenTemp } = useTemplate();
   const formDataCache = useRef<any>(null);
 
+  // The optimizer already returned the structure, so parsing the text a second time is a paid AI
+  // call for something we were handed for free. Only fall back to it if that block was missing.
   const ensureFormData = async () => {
     if (formDataCache.current) return formDataCache.current;
+    if (optimizedFormData) {
+      formDataCache.current = optimizedFormData;
+      return optimizedFormData;
+    }
     const res = await axios.post(AI_ENDPOINTS.parseCv, { cvText: adjustedCV }, { withCredentials: true });
     formDataCache.current = res.data.formData;
     return res.data.formData;
@@ -356,18 +374,45 @@ const CVOptimizeModal = ({
     return () => { if (stepTimer.current) clearInterval(stepTimer.current); };
   }, [loading, adjustedCV]);
 
+  const saveBlob = (blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleDownload = async () => {
     if (!adjustedCV) return;
     setDownloading(true);
     try {
       const firstLine = adjustedCV.split('\n').map((l) => l.trim()).find(Boolean) || 'optimized';
+      const fileName = `${firstLine.replace(/\s+/g, '_').slice(0, 40)}_CV.pdf`;
+
+      // Render through the same template pipeline the builder download uses, so the optimized CV
+      // comes out in the template the user actually chose instead of a generic text layout.
+      if (optimizedFormData) {
+        // Templates default to projects-before-experience and education-before-skills, which is the
+        // opposite of the order the optimizer was told to produce and the analysis rewards. Passing
+        // the order explicitly stops the render undoing the reordering the AI just did.
+        const response = await axios.post(
+          CV_ENDPOINTS.exportPdf,
+          {
+            formData: optimizedFormData,
+            sectionOrder: preferredSectionOrder(TEMPLATE_SECTIONS),
+            template: choosenTemp,
+            name: firstLine,
+          },
+          { withCredentials: true, responseType: 'blob' },
+        );
+        saveBlob(response.data, fileName);
+        return;
+      }
+
+      // No structure came back — the plain renderer is the fallback, not the default.
       const blob = await pdf(<PdfPlainCV cvText={adjustedCV} />).toBlob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${firstLine.replace(/\s+/g, '_').slice(0, 40)}_CV.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      saveBlob(blob, fileName);
     } catch {
       const blob = new Blob([adjustedCV], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);

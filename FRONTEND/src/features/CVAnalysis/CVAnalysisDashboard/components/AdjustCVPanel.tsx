@@ -15,7 +15,7 @@ type AdjustCVPanelProps = ReturnType<typeof useCVAdjust> & {
 
 const AdjustCVPanel = ({
   modalOpen, openModal, closeModal,
-  loading, error, adjustedCV, changes, newScore, newBreakdown, originalScore, pageCount,
+  loading, error, adjustedCV, optimizedFormData, changes, newScore, newBreakdown, originalScore, pageCount,
   scoreBreakdown = [],
 }: AdjustCVPanelProps) => {
   const { t } = useTranslation();
@@ -80,6 +80,7 @@ const AdjustCVPanel = ({
         loading={loading}
         error={error}
         adjustedCV={adjustedCV}
+        optimizedFormData={optimizedFormData}
         changes={changes}
         newScore={newScore}
         newBreakdown={newBreakdown}

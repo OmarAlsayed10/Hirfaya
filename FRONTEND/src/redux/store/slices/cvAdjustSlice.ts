@@ -37,7 +37,7 @@ export const adjustCVAction = createAsyncThunk(
         payload,
         { withCredentials: true }
       );
-      return response.data as { adjustedCV: string; changes: CVChange[]; originalScore: number; newScore: number; newBreakdown: ScoreCategory[] };
+      return response.data as { adjustedCV: string; formData: Record<string, any> | null; changes: CVChange[]; originalScore: number; newScore: number; newBreakdown: ScoreCategory[] };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.data?.message) {
         return rejectWithValue(error.response.data.message as string);
@@ -51,6 +51,8 @@ const cvAdjustSlice = createSlice({
   name: "cvAdjust",
   initialState: {
     adjustedCV: null as string | null,
+    // The optimizer returns the rewrite as fields too, so the download can use the real templates.
+    optimizedFormData: null as Record<string, any> | null,
     changes: [] as CVChange[],
     originalScore: null as number | null,
     newScore: null as number | null,
@@ -62,6 +64,7 @@ const cvAdjustSlice = createSlice({
   reducers: {
     clearAdjustedCV(state) {
       state.adjustedCV = null;
+      state.optimizedFormData = null;
       state.changes = [];
       state.originalScore = null;
       state.newScore = null;
@@ -78,6 +81,7 @@ const cvAdjustSlice = createSlice({
       .addCase(adjustCVAction.fulfilled, (state, action) => {
         state.loading = false;
         state.adjustedCV = action.payload.adjustedCV;
+        state.optimizedFormData = action.payload.formData ?? null;
         state.changes = action.payload.changes;
         state.originalScore = action.payload.originalScore;
         state.newScore = action.payload.newScore;
