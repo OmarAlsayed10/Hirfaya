@@ -1,6 +1,6 @@
 export interface CVAnalysisDashboardProps {
   uploadedFile?: File;
-  cvText?: string;
+  cvId?: string;
   level?: string;
 }
 

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import { CustomRequest } from "../middleware/validateJWTMiddleware";
 import { estimateTextPageCount, extractText } from "../services/extractTextService";
+import { extractionQuality, pdfOrigin } from "../services/extractionQuality";
 import { aiResponse, hasAiResponse } from "../services/aiService";
 import { scoreCVWithBreakdown, hasScore } from "../services/cvScoring";
 import { canSpend, canAnonAnalyze, consumeAnonAnalyze } from "../services/quotaService";
@@ -9,22 +10,27 @@ import { isGroqRateLimit } from "../lib/groqChat";
 import prisma from "../lib/prisma";
 import { InvalidAiResponseError } from "../lib/aiResponseValidation";
 import { normalizeLanguage } from "../lib/aiLanguage";
+import { savedCvAnalysisArtifact } from "../services/savedCvAnalysisService";
+import { hasPaidAccess } from "../services/entitlementService";
 
 export const analyzeCVController = async (req: Request, res: Response) => {
   const file = req.file as Express.Multer.File | undefined;
   const cvText = (
     typeof req.body?.cvText === "string" ? req.body.cvText : ""
   ).slice(0, 30000);
+  const cvId = typeof req.body?.cvId === "string" ? req.body.cvId.trim() : "";
 
   console.log("[cv-analyze] request received", {
     hasFile: !!file,
     fileName: file?.originalname ?? null,
     mimeType: file?.mimetype ?? null,
     inlineTextLength: cvText.length,
+    hasSavedCv: Boolean(cvId),
   });
 
-  if (!file && cvText.trim().length < 30) {
-    res.status(400).json({ message: "No file uploaded" });
+  const sourceCount = Number(Boolean(file)) + Number(cvText.trim().length >= 30) + Number(Boolean(cvId));
+  if (sourceCount !== 1) {
+    res.status(400).json({ message: "Choose exactly one CV source" });
     return;
   }
 
@@ -34,49 +40,52 @@ export const analyzeCVController = async (req: Request, res: Response) => {
   const language = normalizeLanguage(req.body?.language);
 
   try {
-    const extracted = file
-      ? await extractText(file.buffer, file.mimetype)
-      : { text: cvText, pageCount: estimateTextPageCount(cvText) };
-    const extractedText = extracted.text.slice(0, 30000);
-    const pageCount = extracted.pageCount;
-
-    if (file && extractedText.trim().length < 100) {
-      res.status(400).json({
-        message: "Couldn't read enough text from this file. Upload a text-based PDF or Word CV, not a scan or image.",
+    // The requester is optional here — /analyze stays public — and is attached upstream by
+    // the optionalAuth middleware. Quota falls back to the IP when nobody is signed in.
+    const userId = (req as CustomRequest).user?.userId;
+    let isPro = false;
+    if (userId) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true, planTier: true, proExpiresAt: true },
       });
+      isPro = !!dbUser && hasPaidAccess(dbUser);
+    }
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
+
+    if (cvId && !userId) {
+      res.status(401).json({ message: "Sign in to analyze a saved CV" });
       return;
     }
 
-    // Identify the requester (optional — /analyze stays public) for per-user quota.
-    const token =
-      req.cookies?.token || req.headers.authorization?.split(" ")[1];
-    let userId: string | undefined;
-    let isPro = false;
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET_Key!) as {
-          userId: string;
-        };
-        userId = decoded.userId;
-        const dbUser = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { role: true, proExpiresAt: true },
-        });
-        isPro =
-          dbUser?.role === "pro user" ||
-          (!!dbUser?.proExpiresAt &&
-            dbUser.proExpiresAt.getTime() > Date.now());
-      } catch {
-        /* anonymous — fall through to IP */
-      }
+    const savedCv = cvId
+      ? await prisma.cV.findFirst({ where: { id: cvId, userId: userId! } })
+      : null;
+    if (cvId && !savedCv) {
+      res.status(404).json({ message: "CV not found" });
+      return;
     }
-    const ip = req.ip || req.socket.remoteAddress || "unknown";
+
+    const extracted = file
+      ? await extractText(file.buffer, file.mimetype)
+      : savedCv
+        ? await savedCvAnalysisArtifact(savedCv)
+        : { text: cvText, pageCount: estimateTextPageCount(cvText) };
+    const extractedText = extracted.text.slice(0, 30000);
+    const pageCount = extracted.pageCount;
+
+    if ((file || savedCv) && extractedText.trim().length < 100) {
+      res.status(400).json({
+        message: "Couldn't read enough text from this CV.",
+      });
+      return;
+    }
 
     // A repeat of the exact same CV+role+level is served from cache — free, no quota spent.
     // Viewing an already-analyzed CV in the other language is also free: language is
     // clamped to en/ar, so this caps a paid analysis at one regeneration, not unlimited.
     const analyzedIn = async (candidate: "en" | "ar") =>
-      (await hasScore(extractedText, "", level, candidate)) &&
+      (await hasScore(extractedText, "", level, candidate, pageCount)) &&
       (await hasAiResponse(extractedText, "", "", candidate));
     const cached = (await analyzedIn("en")) || (await analyzedIn("ar"));
     if (!cached) {
@@ -122,12 +131,23 @@ export const analyzeCVController = async (req: Request, res: Response) => {
         null,
     });
 
-    // Record analysis event for home page live metrics
+    // Record analysis event for home page live metrics, plus how well we managed to read the file.
+    // Measurements only — no CV content is stored, and nothing here is shown to the user.
     try {
+      const quality = extractionQuality(extractedText, pageCount);
+      const origin = file
+        ? await pdfOrigin(file.buffer, file.mimetype)
+        : { producer: null, creator: null };
+      if (quality.suspect) {
+        console.warn("[cv-analyze] extraction looks incomplete", { ...quality, ...origin });
+      }
       await prisma.analysisEvent.create({
         data: {
           userId: userId ?? null,
           ip,
+          ...quality,
+          ...origin,
+          score: qualityScore,
         },
       });
     } catch (e) {
@@ -144,8 +164,8 @@ export const analyzeCVController = async (req: Request, res: Response) => {
       originalFile: file
         ? { name: file.originalname, type: file.mimetype, size: file.size }
         : {
-            name: "Primary CV",
-            type: "text/plain",
+            name: savedCv?.title || "Saved CV",
+            type: savedCv ? "application/pdf" : "text/plain",
             size: extractedText.length,
           },
       extractedText,

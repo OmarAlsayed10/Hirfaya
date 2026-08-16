@@ -9,12 +9,13 @@ export const requestLanguage = () => (i18n.language.startsWith("ar") ? "ar" : "e
 export const cvAnalyzeAction = createAsyncThunk(
   "cvAnalyze",
   async function featchAnalysisCV(
-    { file, cvText, level, language }: { file?: File; cvText?: string; level?: string; language?: string },
+    { file, cvId, cvText, level, language }: { file?: File; cvId?: string; cvText?: string; level?: string; language?: string },
     { rejectWithValue }
   ) {
     try {
       const formData = new FormData();
       if (file) formData.append("cv", file);
+      if (cvId) formData.append("cvId", cvId);
       if (cvText) formData.append("cvText", cvText);
       if (level) formData.append("level", level);
       formData.append("language", language ?? requestLanguage());
@@ -23,7 +24,7 @@ export const cvAnalyzeAction = createAsyncThunk(
         withCredentials: true,
       });
       window.dispatchEvent(new Event("quota:refresh"));
-      track("analysis_run", { source: file ? "upload" : "saved_cv" });
+      track("analysis_run", { source: file ? "upload" : cvId ? "saved_cv" : "text" });
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.data?.message) {

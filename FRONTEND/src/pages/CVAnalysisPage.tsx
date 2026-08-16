@@ -187,7 +187,7 @@ const CVAnalysisPage = () => {
                 {t("Analyze Another File")}
               </Button>
             </Box>
-            <CVAnalysisDashboard uploadedFile={uploadedFile ?? undefined} cvText={savedCv?.text || undefined} level={level || undefined} />
+            <CVAnalysisDashboard uploadedFile={uploadedFile ?? undefined} cvId={savedCv?.id} level={level || undefined} />
           </Box>
         )}
       </Container>

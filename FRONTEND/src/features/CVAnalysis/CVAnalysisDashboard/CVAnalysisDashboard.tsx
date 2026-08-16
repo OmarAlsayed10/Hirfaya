@@ -29,22 +29,22 @@ import CVChatPanel from './components/CVChatPanel';
 import cvAnalysisDashboard from './cvAnalysisDashboard.tokens';
 import { COLORS } from '../../../theme/tokens';
 import type { CVAnalysisDashboardProps } from './CVAnalysisDashboard.types';
-import { isProUser } from '../../../utils/proAccess';
+import { hasPaidAccess } from '../../../utils/proAccess';
 
 const FREE_QUESTION_LIMIT = 3;
 
-const CVAnalysisDashboard = ({ uploadedFile, cvText, level }: CVAnalysisDashboardProps) => {
+const CVAnalysisDashboard = ({ uploadedFile, cvId, level }: CVAnalysisDashboardProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
-  const isPro = isProUser(user);
+  const isPro = hasPaidAccess(user);
   const { notify, showEntitlement } = useFeedback();
   const [chatOpen, setChatOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
 
   // Hooks — must be called before any code that references their return values
-  const { cvAnalyze, loading, error, errorCode } = useCVAnalysis(uploadedFile, cvText, level);
+  const { cvAnalyze, loading, error, errorCode } = useCVAnalysis(uploadedFile, cvId, level);
   const adjustProps = useCVAdjust(cvAnalyze);
   const chatProps = useCVChat(cvAnalyze?.extractedText);
 
