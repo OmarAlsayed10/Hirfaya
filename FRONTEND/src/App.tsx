@@ -5,7 +5,6 @@ import Error from "./pages/error";
 import store from "./redux/store/store";
 import Layout from "./pages/layout";
 import GetStarted from "./features/GetStart/GetStart";
-import Builder from "./features/Builder/Builder";
 import { buildTheme } from "./utils/theme";
 import { ThemeModeProvider } from "./context/ThemeModeContext";
 import { useThemeMode } from "./hooks/useThemeMode";
@@ -15,40 +14,50 @@ import LoginPage from "./features/Auth/LoginPage";
 import RegisterPage from "./features/Auth/RegisterPage";
 import GoogleAuthSuccess from "./features/Auth/GoogleAuthSuccess";
 import ForgotPasswordPage from "./features/Auth/ForgotPasswordPage";
-import GrammarCheck from "./features/GrammarCheck/GrammarCheck";
-import CVAnalysisPage from "./pages/CVAnalysisPage";
-import JobRadarPage from "./pages/JobRadarPage";
-import ApplicationWorkspacePage from "./pages/ApplicationWorkspacePage";
-import CareerMatchPage from "./pages/CareerMatchPage";
-import RoadmapPage from "./pages/RoadmapPage";
 import { FileProvider } from "./context/fileContext.jsx";
 import ProtectedRoute from "./guard/ProtectedRoute.jsx";
 import { useAuth } from "./hooks/useAuth.js";
 import "./i18n";
 import { useTranslation } from "react-i18next";
-import { useEffect, useMemo } from "react";
+import { lazy, Suspense, useEffect, useMemo } from "react";
 import { PreviewProvider } from "./context/previewContext.jsx";
-import ChatBot from "./features/chatBot/ChatBot";
-import ProPaymentForm from "./features/payment/Payment";
-import Blog from "./pages/blogs.jsx";
-import BlogDetail from "./pages/blogDetails.jsx";
-
-import PricingPage from "./pages/PricingPage.tsx";
-import Settings from "./features/Settings/Settings";
-import OnboardingWizard from "./features/Onboarding/OnboardingWizard";
-import BuildTypeChooser from "./features/Create/BuildTypeChooser";
-import ProseDocumentEditor from "./features/Create/ProseDocumentEditor";
-import TemplatesPage from "./pages/Templates";
-import PrintCV from "./pages/PrintCV";
-import HelpCenter from "./pages/HelpCenter";
-import TermsPage from "./pages/TermsPage";
-import PrivacyPage from "./pages/PrivacyPage";
 import { PricingSection } from "./features/Home/index.ts";
-import AdminDashboard from "./features/admin/AdminDashboard";
 import AdminRoute from "./guard/AdminRoute";
 import PaidRoute from "./guard/PaidRoute";
 import { FeedbackProvider } from "./context/FeedbackContext";
 import { COLORS } from "./theme/tokens";
+
+// Everything past the landing page loads on demand. The builder, PDF export, CV
+// analysis and admin dashboard are the bulk of the bundle and most visitors never
+// open them, so they must not sit in the first download.
+const Builder = lazy(() => import("./features/Builder/Builder"));
+const GrammarCheck = lazy(() => import("./features/GrammarCheck/GrammarCheck"));
+const CVAnalysisPage = lazy(() => import("./pages/CVAnalysisPage"));
+const JobRadarPage = lazy(() => import("./pages/JobRadarPage"));
+const ApplicationWorkspacePage = lazy(() => import("./pages/ApplicationWorkspacePage"));
+const CareerMatchPage = lazy(() => import("./pages/CareerMatchPage"));
+const RoadmapPage = lazy(() => import("./pages/RoadmapPage"));
+const ChatBot = lazy(() => import("./features/chatBot/ChatBot"));
+const ProPaymentForm = lazy(() => import("./features/payment/Payment"));
+const Blog = lazy(() => import("./pages/blogs.jsx"));
+const BlogDetail = lazy(() => import("./pages/blogDetails.jsx"));
+const PricingPage = lazy(() => import("./pages/PricingPage.tsx"));
+const Settings = lazy(() => import("./features/Settings/Settings"));
+const OnboardingWizard = lazy(() => import("./features/Onboarding/OnboardingWizard"));
+const BuildTypeChooser = lazy(() => import("./features/Create/BuildTypeChooser"));
+const ProseDocumentEditor = lazy(() => import("./features/Create/ProseDocumentEditor"));
+const TemplatesPage = lazy(() => import("./pages/Templates"));
+const PrintCV = lazy(() => import("./pages/PrintCV"));
+const HelpCenter = lazy(() => import("./pages/HelpCenter"));
+const TermsPage = lazy(() => import("./pages/TermsPage"));
+const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
+const AdminDashboard = lazy(() => import("./features/admin/AdminDashboard"));
+
+const RouteFallback = () => (
+  <Box sx={{ display: "grid", placeItems: "center", minHeight: "60vh" }}>
+    <CircularProgress sx={{ color: COLORS.primary }} />
+  </Box>
+);
 
 const ThemedApp = ({ router }: { router: ReturnType<typeof createBrowserRouter> }) => {
   const { mode } = useThemeMode();
@@ -64,7 +73,9 @@ const ThemedApp = ({ router }: { router: ReturnType<typeof createBrowserRouter> 
 
 const FeedbackRouterRoot = () => (
   <FeedbackProvider>
-    <Outlet />
+    <Suspense fallback={<RouteFallback />}>
+      <Outlet />
+    </Suspense>
   </FeedbackProvider>
 );
 
