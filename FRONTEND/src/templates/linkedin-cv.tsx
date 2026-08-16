@@ -4,6 +4,9 @@ import BulletList from "./BulletList";
 import CustomSections from "./CustomSections";
 import { certificationDetail } from "./certificationText";
 
+const PAGE_HEIGHT = 1123;
+const PAGE_WIDTH = 794;
+
 const LinkedInCV = ({
   name,
   email,
@@ -22,26 +25,19 @@ const LinkedInCV = ({
   sectionOrder = ['personal', 'projects', 'experience', 'education', 'skills', 'languages', 'certifications'],
   customSections = [],
   printMode = false,
+  activePage = 1,
 }: any) => {
-  return (
-    <Box sx={printMode ? {} : {
-      backgroundColor: "#f4f7fb",
-      display: "flex",
-      justifyContent: "center",
-      padding: "40px 20px",
-      minHeight: "100vh",
-    }}>
+  const fullContent = (
       <Box sx={{
         width: "100%",
         backgroundColor: "#fff",
-        // Vertical inset comes from the @page margin when printing, so it repeats per page.
-        padding: printMode ? "0 40px" : "40px",
-        ...(printMode ? {} : { boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)", borderRadius: "12px" }),
+        padding: "40px",
         fontFamily: `"Segoe UI", Tahoma, Geneva, Verdana, sans-serif`,
         color: "#333",
         lineHeight: 1.6,
         display: 'flex',
         flexDirection: 'column',
+        boxSizing: "border-box",
       }}>
         <Box sx={{
           borderBottom: "2px solid #0056b3",
@@ -149,7 +145,7 @@ const LinkedInCV = ({
                   fontSize: "14px",
                   color: "#666",
                 }}>
-                  {item.company} — {item.years}
+                  {[item.company, item.years].filter(Boolean).join(' — ')}
                 </Typography>
                 <BulletList text={item.description} fieldPath={`experience.${index}.description`} sx={{
                   fontSize: "14px",
@@ -262,6 +258,35 @@ const LinkedInCV = ({
           entryMetaSx={{ fontSize: "14px", color: "#666" }}
           bodySx={{ fontSize: "14px", marginTop: "6px", color: "#444" }}
         />
+      </Box>
+  );
+
+  // Printing hands pagination to the browser, so the fixed-height clipped page frame
+  // and the page switcher are dropped and the content flows.
+  if (printMode) return fullContent;
+
+  const pageContainerStyle = {
+    backgroundColor: "#fff",
+    width: `${PAGE_WIDTH}px`,
+    height: `${PAGE_HEIGHT}px`,
+    border: "1px solid rgba(0,0,0,0.08)",
+    borderRadius: "10px",
+    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
+    boxSizing: "border-box" as const,
+    position: "relative" as const,
+    overflow: "hidden",
+  };
+
+  return (
+    <Box sx={{ backgroundColor: "#f4f7fb", p: { xs: 2, md: 4 }, display: "flex", justifyContent: "center" }}>
+      <Box data-cv-page sx={pageContainerStyle}>
+        <Box sx={{
+          width: "100%",
+          transform: `translateY(-${(activePage - 1) * PAGE_HEIGHT}px)`,
+          transition: "transform 0.3s ease",
+        }}>
+          {fullContent}
+        </Box>
       </Box>
     </Box>
   );

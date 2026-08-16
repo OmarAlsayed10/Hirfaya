@@ -28,10 +28,14 @@ function Bullets({ text, fieldPath }: { text: string; fieldPath: string }) {
   if (lines.length <= 1) {
     return <Typography data-cv-field={fieldPath} sx={{ fontSize: "0.9rem", color: "#333", lineHeight: 1.5 }}><FormattedText text={text} /></Typography>;
   }
+  // Marker written as text, not left to `list-style` — see the note in BulletList.
   return (
-    <Box component="ul" data-cv-field={fieldPath} sx={{ pl: 2.2, m: 0 }}>
+    <Box component="ul" data-cv-field={fieldPath} sx={{ pl: 0, m: 0, listStyle: 'none' }}>
       {lines.map((l, i) => (
-        <Box component="li" key={i} sx={{ fontSize: "0.9rem", color: "#333", lineHeight: 1.5, mb: 0.3 }}><FormattedText text={l} /></Box>
+        <Box component="li" key={i} sx={{ fontSize: "0.9rem", color: "#333", lineHeight: 1.5, mb: 0.3, display: 'flex', gap: '0.55em' }}>
+          <Box component="span" sx={{ flexShrink: 0 }}>•</Box>
+          <Box component="span"><FormattedText text={l} /></Box>
+        </Box>
       ))}
     </Box>
   );
@@ -59,13 +63,20 @@ const JakeCV = ({
   activePage = 1,
 }: any) => {
   const { t } = useTranslation();
-  const contact = [phone, email, linkedin, github, portfolio, location, professionalTitle].filter(Boolean).join("  |  ");
+  // The title is what the CV is applying as, so it gets its own line under the name. Tacked onto
+  // the end of the contact string it read as one more contact field, in the same small grey type.
+  const contact = [phone, email, linkedin, github, portfolio, location].filter(Boolean).join("  |  ");
 
   const fullContent = (
     <Box sx={{ p: { xs: 4, sm: 5 }, boxSizing: "border-box", display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <Box sx={{ textAlign: "center", mb: 1 }}>
         <Typography sx={{ fontSize: "1.9rem", fontWeight: 700, color: "#1a1a18", lineHeight: 1.1 }}>{name || "Your Name"}</Typography>
+        {professionalTitle && (
+          <Typography sx={{ fontSize: "1rem", fontWeight: 600, color: "#1a1a18", letterSpacing: "0.02em", mt: 0.5 }}>
+            {professionalTitle}
+          </Typography>
+        )}
         {contact && <Typography sx={{ fontSize: "0.82rem", color: "#555", mt: 0.6 }}>{contact}</Typography>}
       </Box>
 
@@ -85,9 +96,9 @@ const JakeCV = ({
             <Box key={i} sx={{ mb: 1.5 }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap" }}>
                 <Typography sx={{ fontSize: "0.95rem", fontWeight: 700, color: "#1a1a18" }}>
-                  {exp.role}{exp.company ? ` — ${exp.company}` : ""}
+                  {[exp.role, exp.company].filter(Boolean).join(' — ')}
                 </Typography>
-                <Typography sx={{ fontSize: "0.82rem", color: "#555", fontStyle: "italic" }}>{exp.years}</Typography>
+                {exp.years && <Typography sx={{ fontSize: "0.82rem", color: "#555", fontStyle: "italic" }}>{exp.years}</Typography>}
               </Box>
               {exp.location && <Typography sx={{ fontSize: "0.8rem", color: "#777", mb: 0.3 }}>{exp.location}</Typography>}
               <Bullets text={exp.description} fieldPath={`experience.${i}.description`} />

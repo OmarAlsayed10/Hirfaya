@@ -54,6 +54,7 @@ interface Pixels {
   height: number;
   at: (x: number, y: number) => [number, number, number];
   inkRatio: number;
+  lastInkedRow: number;
 }
 
 const rasterise = async (pdf: Buffer, pageNumber: number): Promise<Pixels> => {
@@ -73,8 +74,12 @@ const rasterise = async (pdf: Buffer, pageNumber: number): Promise<Pixels> => {
   const { data } = context.getImageData(0, 0, image.width, image.height);
 
   let inked = 0;
+  let lastInkedRow = 0;
   for (let i = 0; i < data.length; i += 4) {
-    if (data[i] < 240 || data[i + 1] < 240 || data[i + 2] < 240) inked += 1;
+    if (data[i] < 240 || data[i + 1] < 240 || data[i + 2] < 240) {
+      inked += 1;
+      lastInkedRow = Math.floor(i / 4 / image.width);
+    }
   }
 
   return {
@@ -85,6 +90,7 @@ const rasterise = async (pdf: Buffer, pageNumber: number): Promise<Pixels> => {
       return [data[offset], data[offset + 1], data[offset + 2]];
     },
     inkRatio: inked / (data.length / 4),
+    lastInkedRow,
   };
 };
 
@@ -121,6 +127,13 @@ const run = async () => {
       // Catches a page that rendered nothing, and a page flooded with a background.
       if (page.inkRatio < 0.002) failures.push(`${label}: looks blank (ink ${(page.inkRatio * 100).toFixed(2)}%)`);
       if (page.inkRatio > 0.6) failures.push(`${label}: mostly covered (ink ${(page.inkRatio * 100).toFixed(1)}%)`);
+
+      // Asking a section's entry list not to break moved the whole list to the next page and left
+      // most of this one empty. Every page but the last has to be filled close to the bottom.
+      const filledTo = page.lastInkedRow / page.height;
+      if (pageNumber < pageCount && filledTo < 0.8) {
+        failures.push(`${label}: content stops at ${(filledTo * 100).toFixed(0)}% of the page, leaving a blank half-page`);
+      }
     }
 
     // A user-added section must reach the paper in every template, heading and bullets both.

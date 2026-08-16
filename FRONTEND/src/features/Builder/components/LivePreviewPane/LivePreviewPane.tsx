@@ -17,12 +17,12 @@ import type { CvSection } from '../../../../redux/store/slices/cvBuilderSlice';
 import { useTemplate } from '../../../../hooks/useTemplate';
 import livePreviewPane from './livePreviewPane.tokens';
 import { cvSectionFrom, pageCountFrom, shouldApplyPageCount } from './previewEditing';
-import { applyPageBreaks } from './pageBreaks';
+import { applyPageBreaks, PAGE_HEIGHT, PAGE_WIDTH } from './pageBreaks';
 import { COLORS } from "../../../../theme/tokens";
 
-const DESIGN_WIDTH = 794;
-const DESIGN_HEIGHT = 1123;
-const PAGE_PADDING = 48;
+// Shared with the print page so both paginate against the same sheet.
+const DESIGN_WIDTH = PAGE_WIDTH;
+const DESIGN_HEIGHT = PAGE_HEIGHT;
 const FONT_SIZE_STEP = 0.5;
 // Long enough that crossing an edge on the way elsewhere does not turn the page.
 const PAGE_TURN_DELAY = 700;
@@ -110,7 +110,7 @@ export const LivePreviewPane = () => {
     const measure = (allowShrink = false) => {
       // Zero height means the pane is hidden (mobile form view) — nothing to measure.
       if (!content.scrollHeight) return;
-      applyPageBreaks(page, content, DESIGN_HEIGHT, PAGE_PADDING, fontScale);
+      applyPageBreaks(content, fontScale, page.getBoundingClientRect().height / DESIGN_HEIGHT);
       const next = pageCountFrom(content.scrollHeight, DESIGN_HEIGHT);
       if (!shouldApplyPageCount(next, latchedPageCountRef.current, allowShrink)) return;
       latchedPageCountRef.current = next;

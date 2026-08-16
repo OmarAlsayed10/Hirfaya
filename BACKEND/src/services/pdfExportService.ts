@@ -108,6 +108,9 @@ export const renderCvPdf = async (payload: CvPrintPayload): Promise<RenderedCv> 
   try {
     const browser = await getBrowser();
     page = await browser.newPage();
+    // The print page measures its own page breaks on screen, before printing re-lays the document
+    // out at the paper width. A tab the same size as the sheet keeps those two layouts identical.
+    await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1 });
 
     await page.evaluateOnNewDocument((data) => {
       (window as any).__CV_DATA__ = data;

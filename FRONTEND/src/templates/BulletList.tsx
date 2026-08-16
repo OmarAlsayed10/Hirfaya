@@ -13,10 +13,16 @@ const BulletList = ({ text, fieldPath, sx }: { text: string; fieldPath?: string;
     return <Typography data-cv-field={fieldPath} sx={sx}><FormattedText text={lines[0]} /></Typography>;
   }
 
+  // The marker is written as text rather than left to `list-style`. A CSS marker is painted into
+  // the PDF but never lands in its text layer, so every parser reading that layer — the analysis
+  // scorer and a real ATS alike — saw a CV with no bullets at all.
   return (
-    <Box component="ul" data-cv-field={fieldPath} sx={{ pl: 2.2, m: 0, ...sx }}>
+    <Box component="ul" data-cv-field={fieldPath} sx={{ pl: 0, m: 0, listStyle: 'none', ...sx }}>
       {lines.map((line, index) => (
-        <Box component="li" key={index} sx={{ mb: 0.2 }}><FormattedText text={line} /></Box>
+        <Box component="li" key={index} sx={{ mb: 0.2, display: 'flex', gap: '0.55em' }}>
+          <Box component="span" sx={{ flexShrink: 0 }}>•</Box>
+          <Box component="span"><FormattedText text={line} /></Box>
+        </Box>
       ))}
     </Box>
   );

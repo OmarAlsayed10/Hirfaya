@@ -1,5 +1,12 @@
 import { Page, Text, View, Document, StyleSheet } from "@react-pdf/renderer";
 import { pdfLangStyle } from "./pdfFont";
+import {
+  collapseSkillBullets,
+  isContactLine,
+  matchSubLabel,
+  splitEntryHeader,
+  splitHeaderLine,
+} from "./plainCvLines";
 
 const styles = StyleSheet.create({
   page: {
@@ -16,11 +23,23 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     textAlign: "center",
   },
+  role: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#1a1a18",
+    letterSpacing: 0.2,
+    marginBottom: 3,
+    textAlign: "center",
+  },
   contact: {
     fontSize: 9,
     color: "#555",
     marginBottom: 8,
     textAlign: "center",
+  },
+  subLabel: {
+    fontWeight: "bold",
+    color: "#1a1a18",
   },
   heading: {
     fontSize: 10,
@@ -41,12 +60,20 @@ const styles = StyleSheet.create({
     marginTop: 6,
     marginBottom: 2,
   },
+  // Without these the two sides size to their content and draw over each other — a long project
+  // title opposite a long technology list overlapped into unreadable text.
   entryTitle: {
+    flexGrow: 1,
+    flexShrink: 1,
+    paddingRight: 8,
     fontWeight: "bold",
     fontSize: 10.5,
     color: "#1a1a18",
   },
   entryLocation: {
+    flexShrink: 0,
+    maxWidth: "40%",
+    textAlign: "right",
     fontSize: 9,
     color: "#555",
     fontStyle: "italic",
@@ -79,11 +106,10 @@ const SECTION_KEYWORDS =
 const isHeader = (line: string) =>
   line.length < 50 && (SECTION_HEADER_PATTERN.test(line) || SECTION_KEYWORDS.test(line));
 
-const isEntryHeader = (line: string) => line.includes(" | ");
-
 const PdfPlainCV = ({ cvText }: { cvText: string }) => {
-  const lines = cvText.split("\n");
+  const lines = collapseSkillBullets(cvText.split("\n"));
   let seenName = false;
+  let seenRole = false;
   let seenContact = false;
 
   return (
@@ -95,6 +121,19 @@ const PdfPlainCV = ({ cvText }: { cvText: string }) => {
 
           if (!seenName && !isHeader(line)) {
             seenName = true;
+            // The optimizer often returns name, role and every contact fact on one line. Only the
+            // name belongs in name styling; the rest is the contact line.
+            const header = splitHeaderLine(line);
+            if (header) {
+              seenRole = true;
+              seenContact = true;
+              return (
+                <View key={i}>
+                  <Text style={styles.name}>{header.name}</Text>
+                  <Text style={styles.contact}>{header.rest}</Text>
+                </View>
+              );
+            }
             return (
               <Text key={i} style={styles.name}>
                 {line}
@@ -102,8 +141,18 @@ const PdfPlainCV = ({ cvText }: { cvText: string }) => {
             );
           }
 
+          if (!seenRole && !seenContact && !isHeader(line) && !isContactLine(line)) {
+            seenRole = true;
+            return (
+              <Text key={i} style={styles.role}>
+                {line}
+              </Text>
+            );
+          }
+
           if (!seenContact && !isHeader(line)) {
             seenName = true;
+            seenRole = true;
             seenContact = true;
             return (
               <Text key={i} style={styles.contact}>
@@ -114,6 +163,7 @@ const PdfPlainCV = ({ cvText }: { cvText: string }) => {
 
           if (isHeader(line)) {
             seenName = true;
+            seenRole = true;
             seenContact = true;
             return (
               <Text key={i} style={styles.heading}>
@@ -130,13 +180,23 @@ const PdfPlainCV = ({ cvText }: { cvText: string }) => {
             );
           }
 
-          if (isEntryHeader(line)) {
-            const idx = line.lastIndexOf(" | ");
+          const entry = splitEntryHeader(line);
+          if (entry) {
             return (
               <View key={i} style={styles.entryHeader}>
-                <Text style={styles.entryTitle}>{line.slice(0, idx).trim()}</Text>
-                <Text style={styles.entryLocation}>{line.slice(idx + 3).trim()}</Text>
+                <Text style={styles.entryTitle}>{entry.title}</Text>
+                <Text style={styles.entryLocation}>{entry.aside}</Text>
               </View>
+            );
+          }
+
+          const subLabel = matchSubLabel(line);
+          if (subLabel) {
+            return (
+              <Text key={i} style={styles.plainText}>
+                <Text style={styles.subLabel}>{`${subLabel.label}: `}</Text>
+                {subLabel.rest}
+              </Text>
             );
           }
 

@@ -95,8 +95,8 @@ const PhotoCV = ({
           {experience.map((exp: any, index: number) => (
             <Box key={index} sx={{ mb: 1.5 }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap" }}>
-                <Typography sx={{ color: "#1a1a18", fontWeight: 500 }}>{exp.role}{exp.company ? ` — ${exp.company}` : ""}</Typography>
-                <Typography sx={{ color: "#6b6b66", fontSize: "0.85rem" }}>{exp.years}</Typography>
+                <Typography sx={{ color: "#1a1a18", fontWeight: 500 }}>{[exp.role, exp.company].filter(Boolean).join(' — ')}</Typography>
+                {exp.years && <Typography sx={{ color: "#6b6b66", fontSize: "0.85rem" }}>{exp.years}</Typography>}
               </Box>
               {exp.location && <Typography sx={{ color: "#8a8a84", fontSize: "0.8rem" }}>{exp.location}</Typography>}
               <BulletList text={exp.description} fieldPath={`experience.${index}.description`} sx={{ color: "#1a1a18", fontSize: "0.95rem" }} />

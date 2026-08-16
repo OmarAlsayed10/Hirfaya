@@ -67,8 +67,10 @@ const ClassicCV = ({
           <Box component="ul" sx={{ paddingLeft: "16px", m: 0 }}>
             {experience.map((exp: any, index: number) => (
               <Box component="li" key={index} sx={{ marginBottom: '12px', color: "#6b6b66" }}>
-                <Typography sx={{ color: "#1a1a18" }}><Box component="span" sx={{ fontWeight: 500 }}>{exp.role}</Box> at {exp.company}</Typography>
-                <Typography sx={{ fontSize: "0.85rem", mb: 0.5 }}>{exp.years} | {exp.location}</Typography>
+                <Typography sx={{ color: "#1a1a18", fontWeight: 500 }}>{[exp.role, exp.company].filter(Boolean).join(' at ')}</Typography>
+                {(exp.years || exp.location) && (
+                  <Typography sx={{ fontSize: "0.85rem", mb: 0.5 }}>{[exp.years, exp.location].filter(Boolean).join(' | ')}</Typography>
+                )}
                 <BulletList text={exp.description} fieldPath={`experience.${index}.description`} sx={{ color: "#1a1a18", fontSize: "0.95rem" }} />
               </Box>
             ))}

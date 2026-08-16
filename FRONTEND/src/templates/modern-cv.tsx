@@ -97,9 +97,11 @@ const ModernCV = ({
           <Typography draggable data-cv-drag-handle variant="h2" sx={{ fontSize: '22px', borderBottom: '2px solid #1e293b', paddingBottom: '5px', marginBottom: '10px' }}>{t('Experience')}</Typography>
           {experience.map((exp: any, index: number) => (
             <Box key={index} sx={{ marginBottom: '20px' }}>
-              <Typography variant="h3" sx={{ fontSize: '16px', fontWeight: 'bold' }}>{exp.role} at {exp.company}</Typography>
+              <Typography variant="h3" sx={{ fontSize: '16px', fontWeight: 'bold' }}>{[exp.role, exp.company].filter(Boolean).join(' at ')}</Typography>
               <Typography><Box component="strong">{t('Location:')}</Box> {exp.location}</Typography>
-              <Typography><Box component="strong">From:</Box> {exp.startDate} <Box component="strong">To:</Box> {exp.endDate}</Typography>
+              {(exp.startDate || exp.endDate) && (
+                <Typography>{[exp.startDate, exp.endDate].filter(Boolean).join(' - ')}</Typography>
+              )}
               <BulletList text={exp.description} fieldPath={`experience.${index}.description`} />
             </Box>
           ))}

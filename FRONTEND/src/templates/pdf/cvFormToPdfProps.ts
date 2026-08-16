@@ -34,7 +34,7 @@ export function cvFormToPdfProps(formData: BuilderFormData) {
       company: exp.company || '',
       startDate: exp.startDate || '',
       endDate: exp.endDate || '',
-      years: `${exp.startDate || ''} - ${exp.endDate || ''}`,
+      years: [exp.startDate, exp.endDate].filter(Boolean).join(' - '),
       location: exp.location || '',
       description: exp.description || '',
     })),
