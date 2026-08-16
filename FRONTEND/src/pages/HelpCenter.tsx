@@ -87,7 +87,7 @@ const HelpCenter = () => {
       <Seo
         title={t("Help Center")}
         description={t(
-          "Answers about building a CV, AI analysis, credits, plans and payments on Hirfaya."
+          "Answers about building a CV, AI analysis, credits, plans and payments on Muhtaraf."
         )}
       />
       {/* Header */}
@@ -106,7 +106,7 @@ const HelpCenter = () => {
         </Typography>
         <Typography color="text.secondary" fontSize={15}>
           {t(
-            "Find answers to common questions and learn how to get the most out of Hirfaya",
+            "Find answers to common questions and learn how to get the most out of Muhtaraf",
           )}
         </Typography>
       </Box>
@@ -195,7 +195,7 @@ const HelpCenter = () => {
         <Button
           variant="contained"
           startIcon={<EmailIcon />}
-          href="mailto:support@hirfaya.com"
+          href="mailto:support@muhtaraf.com"
           sx={{
             backgroundColor: COLORS.primarySurface,
             borderRadius: 2,

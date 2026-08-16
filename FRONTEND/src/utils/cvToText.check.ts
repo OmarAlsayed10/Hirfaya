@@ -11,7 +11,7 @@ const base = {
     jobTitle: "Engineer", company: "Acme", location: "Cairo", startDate: "2020", endDate: "2024",
     description: "- Built the billing service. - Cut load time 40%.",
   }],
-  projects: [{ name: "Resume-IQ", technologies: "React", description: "CV builder" }],
+  projects: [{ name: "Muhtaraf", technologies: "React", description: "CV builder" }],
   education: [{ degree: "BSc", institution: "Cairo University", startYear: "2016", endYear: "2020" }],
 };
 

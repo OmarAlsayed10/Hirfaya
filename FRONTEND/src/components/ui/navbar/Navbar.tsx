@@ -57,7 +57,7 @@ function Navbar() {
         <Toolbar disableGutters>
           <Typography variant="h6" noWrap onClick={() => navigate('/')} sx={navbar.logoDesktop}>
             <DescriptionIcon sx={navbar.brandIcon} />
-            Hirfaya
+            Muhtaraf
           </Typography>
 
           {!isDesktop && (
@@ -68,7 +68,7 @@ function Navbar() {
                 </IconButton>
                 <Typography variant="h5" noWrap onClick={() => navigate('/')} sx={navbar.logoMobile}>
                   <DescriptionIcon sx={navbar.brandIconSmall} />
-                  Hirfaya
+                  Muhtaraf
                 </Typography>
               </Box>
 

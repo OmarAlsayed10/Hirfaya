@@ -69,7 +69,7 @@ const MobileMenu = ({ open, onClose, pages, productPages, isAuthenticated, user,
       slotProps={{ paper: { sx: mobileMenu.paper } }}
     >
       <Box sx={mobileMenu.topBar}>
-        <Typography sx={mobileMenu.brand}>Hirfaya</Typography>
+        <Typography sx={mobileMenu.brand}>Muhtaraf</Typography>
         <IconButton onClick={onClose} aria-label={t('Close')} size="small">
           <CloseIcon fontSize="small" />
         </IconButton>
