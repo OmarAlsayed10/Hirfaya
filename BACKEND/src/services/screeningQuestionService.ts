@@ -26,6 +26,11 @@ export interface ScreeningInput {
 export async function generateScreeningQuestions(input: ScreeningInput): Promise<ScreeningQA[]> {
   const { jobTitle, company, jobDescription, cvText, userProfile } = input;
 
+  // Salary, notice period, work authorisation, work mode and relocation are facts
+  // about the candidate that only they can state. Guessing them puts a false claim
+  // into a real job application, so an unset profile field stays unanswered.
+  const NEEDS_USER_INPUT = "Not provided — please complete this answer before applying.";
+
   const defaultQAs: ScreeningQA[] = [
     {
       id: "q-1",
@@ -39,7 +44,7 @@ export async function generateScreeningQuestions(input: ScreeningInput): Promise
       question: "What are your salary expectations for this position?",
       answer: userProfile?.salaryExpectation
         ? `My salary expectation is ${userProfile.salaryExpectation} ${userProfile.salaryCurrency || "USD"}.`
-        : "Flexible and open to negotiation based on the total compensation package.",
+        : NEEDS_USER_INPUT,
       source: "ai",
       editable: true,
     },
@@ -48,7 +53,7 @@ export async function generateScreeningQuestions(input: ScreeningInput): Promise
       question: "What is your notice period / availability?",
       answer: userProfile?.noticePeriod
         ? `My notice period is ${userProfile.noticePeriod.replace("_", " ")}.`
-        : "Available to start with standard 2-4 weeks notice.",
+        : NEEDS_USER_INPUT,
       source: "ai",
       editable: true,
     },
@@ -57,7 +62,7 @@ export async function generateScreeningQuestions(input: ScreeningInput): Promise
       question: "What is your work authorization / visa status?",
       answer: userProfile?.visaStatus
         ? `My status: ${userProfile.visaStatus.replace("_", " ")}.`
-        : "Authorized to work locally or open to sponsorship if applicable.",
+        : NEEDS_USER_INPUT,
       source: "ai",
       editable: true,
     },
@@ -66,14 +71,19 @@ export async function generateScreeningQuestions(input: ScreeningInput): Promise
       question: "What is your work mode preference (remote, hybrid, on-site)?",
       answer: userProfile?.workPreference
         ? `Preference: ${userProfile.workPreference}.`
-        : "Flexible with remote, hybrid, or on-site arrangements.",
+        : NEEDS_USER_INPUT,
       source: "ai",
       editable: true,
     },
     {
       id: "q-6",
       question: "Are you open to relocation?",
-      answer: userProfile?.relocationOpen ? "Yes, I am open to relocation." : "Currently seeking local or remote roles.",
+      answer:
+        userProfile?.relocationOpen == null
+          ? NEEDS_USER_INPUT
+          : userProfile.relocationOpen
+            ? "Yes, I am open to relocation."
+            : "Currently seeking local or remote roles.",
       source: "ai",
       editable: true,
     },
@@ -91,6 +101,10 @@ User Profile Defaults:
 - Notice Period: ${userProfile?.noticePeriod || "N/A"}
 - Work Mode: ${userProfile?.workPreference || "N/A"}
 - Relocation: ${userProfile?.relocationOpen ? "Yes" : "No"}
+
+Never invent salary, notice period, work authorisation, visa status, work mode or
+relocation willingness. Where the matching User Profile Default above is N/A, the
+answer for that topic must be exactly: ${NEEDS_USER_INPUT}
 
 Return ONLY a JSON object with this shape:
 {

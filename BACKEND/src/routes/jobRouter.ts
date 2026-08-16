@@ -22,6 +22,8 @@ import {
   submitRoleSuggestionController,
 } from "../controllers/jobCatalogController";
 import { submitJobController } from "../controllers/jobSubmissionController";
+import { requireCredits, withUserContext } from "../middleware/creditMiddleware";
+import { aiLimiter } from "../middleware/rateLimitMiddleware";
 
 const recalculationLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
@@ -47,12 +49,12 @@ router.post("/matches/custom", createCustomMatchController);
 router.get("/matches/:id/details", getMatchDetailsController);
 router.get("/matches/:id/workspace", getWorkspaceController);
 router.patch("/matches/:id/workspace", updateWorkspaceController);
-router.post("/matches/:id/screening-answers", generateScreeningAnswersController);
+router.post("/matches/:id/screening-answers", aiLimiter, requireCredits, withUserContext, generateScreeningAnswersController);
 router.patch("/matches/:id/status", updateMatchStatusController);
 router.post("/refresh", recalculationLimiter, refreshMatchesController);
-router.post("/matches/:id/cover-letter", generateCoverLetterController);
+router.post("/matches/:id/cover-letter", aiLimiter, requireCredits, withUserContext, generateCoverLetterController);
 router.get("/analytics", getAnalyticsController);
-router.post("/matches/:id/variants", generateVariantsController);
+router.post("/matches/:id/variants", aiLimiter, requireCredits, withUserContext, generateVariantsController);
 router.patch("/variants/:id/outcome", updateVariantOutcomeController);
 
 export default router;

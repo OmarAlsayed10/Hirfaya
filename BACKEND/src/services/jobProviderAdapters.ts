@@ -8,6 +8,9 @@ export async function fetchAdzuna(preference: Preference): Promise<RawJob[]> {
   const id = process.env.ADZUNA_APP_ID;
   const key = process.env.ADZUNA_APP_KEY;
   if (!id || !key) return [];
+  // Adzuna publishes no Egypt (or wider MENA) endpoint — a country code it does not serve
+  // 404s the whole provider — so this stays an international/remote source. Egypt-local
+  // listings come from Jooble, Careerjet and JSearch, which default to Egypt below.
   const country = process.env.ADZUNA_COUNTRY || "gb";
   const what = encodeURIComponent(`${preference.role} ${preference.keywords ?? ""}`.trim());
   const where = preference.location ? `&where=${encodeURIComponent(preference.location)}` : "";
