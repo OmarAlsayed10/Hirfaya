@@ -20,6 +20,9 @@ passport.use(
         });
 
         const googleEmail = normalizeEmail(profile.emails?.[0].value);
+        if (!googleEmail) {
+          return done(null, false, { message: "Google did not provide an email address." });
+        }
 
         if (!user) {
           // check if email already exists (user registered normally before)
@@ -40,7 +43,7 @@ passport.use(
                 googleId: profile.id,
                 firstName: profile.name?.givenName?.trim() || "User",
                 lastName: profile.name?.familyName?.trim() || "",
-                email: googleEmail || "no-email",
+                email: googleEmail,
                 role: "normal user",
                 proExpiresAt: null,
               },

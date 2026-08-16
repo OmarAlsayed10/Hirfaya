@@ -22,6 +22,15 @@ const REQUIRED = [
   "USD_TO_EGP_RATE",
 ] as const;
 
+export const parseTrustProxyHops = (value = process.env.TRUST_PROXY_HOPS): number => {
+  const configuredValue = value ?? "0";
+  const hops = Number(configuredValue);
+  if (!/^\d+$/.test(configuredValue) || !Number.isSafeInteger(hops)) {
+    throw new Error("TRUST_PROXY_HOPS must be a non-negative integer.");
+  }
+  return hops;
+};
+
 export function validateEnv(): void {
   const missing = REQUIRED.filter((key) => !process.env[key]);
   if (missing.length > 0) {

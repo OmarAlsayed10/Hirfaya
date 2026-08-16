@@ -2,8 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 dotenv.config();
 
-import { validateEnv } from "./config/env";
-validateEnv(); // fail-fast: crash before anything starts if a secret is missing
+import { parseTrustProxyHops, validateEnv } from "./config/env";
+validateEnv();
 
 import passport from "passport";
 import cors from "cors";
@@ -35,10 +35,8 @@ import { closeBrowser } from "./services/pdfExportService";
 const app = express();
 const port = process.env.PORT;
 
-// Number of reverse proxies in front of this process. Rate limits and IP bans key
-// off req.ip, so a wrong value either lumps every visitor onto one proxy IP or
-// lets clients forge X-Forwarded-For. Set it to the real hop count per deployment.
-app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS ?? 0));
+const trustProxyHops = parseTrustProxyHops();
+app.set("trust proxy", trustProxyHops);
 
 app.use(helmet());
 app.use(
@@ -102,23 +100,21 @@ if (!process.env.DATABASE_URL) {
 }
 
 async function start() {
-  try {
-    await prisma.$connect();
-    console.log("PostgreSQL connected!");
-    await loadBanCache();
-    await loadRevocationCache();
-  } catch (e) {
-    // ponytail: don't kill the whole server on a transient DB hiccup — Prisma
-    // reconnects on the next query, and DB-free routes (CV analyze/enhance) still work.
-    console.error("DB connect failed at boot — starting anyway, will retry on demand:", e);
-  }
+  await prisma.$connect();
+  await loadBanCache();
+  await loadRevocationCache();
+  console.log("PostgreSQL connected");
+  console.log(`Trust proxy hops: ${trustProxyHops}`);
   startCronJobs();
   app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
   });
 }
 
-start();
+void start().catch((error) => {
+  console.error("Server startup failed:", error);
+  process.exit(1);
+});
 
 process.on("beforeExit", async () => {
   await prisma.$disconnect();
