@@ -70,9 +70,9 @@ Hirfaya/
 
 ```bash
 cd BACKEND
-npm install
+npm ci
 npx prisma generate
-npx prisma db push
+npm run db:deploy
 npm run dev
 ```
 
@@ -84,7 +84,8 @@ DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/resume_iq
 CLIENT_URL=http://localhost:5173
 
 JWT_SECRET_Key=replace_me
-SESSION_SECRET=replace_me
+TRUST_PROXY_HOPS=0
+CRON_ENABLED=true
 
 GROQ_API_KEY=replace_me
 # Optional additional Groq keys used for rate-limit fallback:
@@ -116,14 +117,17 @@ EMAIL_PASS=replace_me
 # EMAIL_DKIM_PRIVATE_KEY=replace_me
 
 ADMIN_EMAIL=admin@example.com
-ADMIN_SECRET=replace_me
+CREDENTIAL_ENCRYPTION_KEY=replace_with_at_least_32_characters
+USD_TO_EGP_RATE=replace_me
 
 INSTAPAY_BANK_NAME=replace_me
 INSTAPAY_ACCOUNT_NAME=replace_me
 INSTAPAY_ACCOUNT_NUMBER=replace_me
 ```
 
-The backend validates its required environment variables during startup. AI features additionally need at least one configured Groq key.
+The backend validates its required environment variables and proxy hop count during startup. AI features additionally need at least one configured Groq key.
+
+Production migration, backup, restore, and rollback procedures are in [`BACKEND/OPERATIONS.md`](BACKEND/OPERATIONS.md). Production releases use `prisma migrate deploy`; do not use `prisma db push` against production data.
 
 ### Frontend
 
