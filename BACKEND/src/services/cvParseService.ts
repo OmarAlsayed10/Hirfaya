@@ -49,6 +49,7 @@ export interface CertificationItem {
   issuer: string;
   date: string;
   url: string;
+  description: string;
 }
 
 const EMPTY: BuilderFormData = {
@@ -64,14 +65,14 @@ export const coerceCertifications = (input: any): CertificationItem[] => {
   const text = (v: any) => (typeof v === "string" ? v : "");
   if (typeof input === "string") {
     return input.split(",").map((name) => name.trim()).filter(Boolean)
-      .map((name) => ({ name, issuer: "", date: "", url: "" }));
+      .map((name) => ({ name, issuer: "", date: "", url: "", description: "" }));
   }
   if (!Array.isArray(input)) return [];
   return input
     .map((entry) =>
       typeof entry === "string"
-        ? { name: entry.trim(), issuer: "", date: "", url: "" }
-        : { name: text(entry?.name), issuer: text(entry?.issuer), date: text(entry?.date), url: text(entry?.url) },
+        ? { name: entry.trim(), issuer: "", date: "", url: "", description: "" }
+        : { name: text(entry?.name), issuer: text(entry?.issuer), date: text(entry?.date), url: text(entry?.url), description: text(entry?.description) },
     )
     .filter((cert) => cert.name);
 };

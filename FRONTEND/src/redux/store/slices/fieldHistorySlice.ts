@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { updateFormData } from "./cvBuilderSlice";
+import { reapplyBuilderSnapshot, restoreBuilderSnapshot } from "./builderHistoryActions";
 
 interface FieldHistoryState {
   entries: Record<string, unknown[]>;
@@ -21,10 +22,16 @@ export const fieldHistorySlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-
-    builder.addCase(updateFormData, (state) => {
-      state.entries = {};
-    });
+    builder
+      .addCase(updateFormData, (state) => {
+        state.entries = {};
+      })
+      .addCase(restoreBuilderSnapshot, (state) => {
+        state.entries = {};
+      })
+      .addCase(reapplyBuilderSnapshot, (state) => {
+        state.entries = {};
+      });
   },
 });
 

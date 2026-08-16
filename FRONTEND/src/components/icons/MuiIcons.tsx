@@ -44,6 +44,8 @@ import RadarRounded from "@mui/icons-material/RadarRounded";
 import CloudUploadRounded from "@mui/icons-material/CloudUploadRounded";
 import SearchRounded from "@mui/icons-material/SearchRounded";
 import BusinessRounded from "@mui/icons-material/BusinessRounded";
+import UndoRounded from "@mui/icons-material/UndoRounded";
+import RedoRounded from "@mui/icons-material/RedoRounded";
 
 export interface MuiIconProps extends Omit<SvgIconProps, "color"> {
   size?: number | string;
@@ -111,3 +113,5 @@ export const Radar = compatible(RadarRounded);
 export const UploadCloud = compatible(CloudUploadRounded);
 export const Search = compatible(SearchRounded);
 export const Building2 = compatible(BusinessRounded);
+export const Undo = compatible(UndoRounded);
+export const Redo = compatible(RedoRounded);

@@ -9,7 +9,11 @@ export interface ChatMessage {
   content: string;
 }
 
+const cvSectionSchema = z.enum(["personalInfo", "experience", "education", "projects", "skills"]);
+
 const conversationalBuildResponseSchema = z.object({
+  changeIntent: z.enum(["add", "modify", "remove", "none"]),
+  changedSections: z.array(cvSectionSchema),
   formData: z.object({
     personalInfo: z.object({
       firstName: z.string(), lastName: z.string(), email: z.string(), phoneCode: z.string(),
@@ -33,12 +37,59 @@ const conversationalBuildResponseSchema = z.object({
       skills: z.array(z.string()),
       languages: z.string(),
       certifications: z.array(z.object({
-        name: z.string(), issuer: z.string(), date: z.string(), url: z.string(),
+        name: z.string(), issuer: z.string(), date: z.string(), url: z.string(), description: z.string(),
       })),
     }),
   }),
   reply: z.string().trim().min(1),
 });
+
+type CvSection = z.infer<typeof cvSectionSchema>;
+
+const normalizedIdentity = (parts: string[]) => parts.join("|").trim().toLocaleLowerCase();
+
+const isExplicitAddRequest = (request: string): boolean =>
+  /(?:^|\s|:)\s*(?:add|append|include)\b|(?:أضف|اضف|زود|زوّد|ضيف)/iu.test(request);
+
+const appendNewEntries = <T>(current: T[], proposed: T[], identity: (entry: T) => string): T[] => {
+  const existingIdentities = new Set(current.map(identity));
+  return [...current, ...proposed.filter((entry) => !existingIdentities.has(identity(entry)))];
+};
+
+const mergeAdditiveUpdate = (current: BuilderFormData, proposed: BuilderFormData): BuilderFormData => ({
+  personalInfo: Object.fromEntries(
+    Object.entries(current.personalInfo).map(([field, currentText]) => [
+      field,
+      currentText || proposed.personalInfo[field as keyof typeof proposed.personalInfo],
+    ]),
+  ) as BuilderFormData["personalInfo"],
+  experience: appendNewEntries(current.experience, proposed.experience, (entry) =>
+    normalizedIdentity([entry.jobTitle, entry.company]),
+  ),
+  education: appendNewEntries(current.education, proposed.education, (entry) =>
+    normalizedIdentity([entry.degree, entry.institution]),
+  ),
+  projects: appendNewEntries(current.projects, proposed.projects, (entry) => normalizedIdentity([entry.name])),
+  skills: {
+    skills: appendNewEntries(current.skills.skills, proposed.skills.skills, (skill) => normalizedIdentity([skill])),
+    languages: current.skills.languages || proposed.skills.languages,
+    certifications: appendNewEntries(current.skills.certifications, proposed.skills.certifications, (credential) =>
+      normalizedIdentity([credential.name, credential.issuer]),
+    ),
+  },
+});
+
+const mergeChangedSections = (
+  current: BuilderFormData,
+  proposed: BuilderFormData,
+  changedSections: CvSection[],
+): BuilderFormData => {
+  const updatedFormData = { ...current };
+  changedSections.forEach((section) => {
+    Object.assign(updatedFormData, { [section]: proposed[section] });
+  });
+  return updatedFormData;
+};
 
 export async function conversationalBuild(
   messages: ChatMessage[],
@@ -57,9 +108,9 @@ The user's latest message: "${lastUser}"
 
 Apply the user's requested CV change precisely. When asked to replace, remove, rewrite, shorten, or reorder an entry, change the matching existing entry instead of keeping it. Use ONLY the facts the user provides — never invent employers, dates, metrics, or skills.
 
-Route each fact to the section it belongs to. A certification, course, or credential belongs in skills.certifications, not in an experience description. Job duties belong in the description of the matching experience entry.
+Route each fact to the section it belongs to. A certification, course, or credential belongs in skills.certifications, not in an experience description. Job duties belong in the description of the matching experience entry. An employer's business type is context, not evidence of the candidate's duties or performance. Never infer sales operations, customer assistance, satisfaction, or other responsibilities from the fact that an employer is a store. Leave jobTitle empty when the user did not state a role.
 
-skills.certifications is an array with one object per credential: { "name", "issuer", "date", "url" }. Leave any field "" when the user has not stated it — never guess an issuer or a date. Return [] when there are no certifications.
+skills.certifications is an array with one object per credential: { "name", "issuer", "date", "url", "description" }. Put course duration and covered topics in description. Leave any field "" when the user has not stated it — never guess an issuer or a date. Return [] when there are no certifications.
 
 LANGUAGE:
 Write every CV field in ${cvOutputLanguage(JSON.stringify(currentFormData))}. This is fixed. The user may write to you in Arabic, English, or a mix — never mirror the language of their message in the CV itself, and never switch the CV's language because a request was phrased in another one. The conversational "reply" field should match the user's own language.
@@ -101,8 +152,12 @@ Good — stronger wording, same facts, nothing added:
 
 Provide a helpful, conversational response directly answering the user's question, request, or comment in the "reply" field. If they asked to modify their CV, confirm the changes you made. If they asked a general question or requested advice, answer them directly and professionally. Do not use generic template-like confirmation messages; instead, address the user's input directly.
 
+Classify the latest request as "add" when it asks to add new facts or entries without replacing existing content, "modify" when it edits existing content, "remove" only when it explicitly asks to delete content, and "none" for advice or questions that do not change the CV. List only the top-level CV sections that the request changes in "changedSections"; use [] for "none". Even when more than one section changes, preserve every supplied field and entry that was not targeted.
+
 Return ONLY this JSON:
 {
+  "changeIntent": "add | modify | remove | none",
+  "changedSections": ["experience", "skills"],
   "formData": { ...the full updated CV in the exact same schema as above... },
   "reply": "<your helpful and direct conversational response>"
 }`;
@@ -123,9 +178,16 @@ Return ONLY this JSON:
   }
 
   const parsed = parseAiResponse(responseContent, conversationalBuildResponseSchema);
+  const proposedFormData = coerceFormData(parsed.formData);
+  const additiveRequest = parsed.changeIntent === "add" || isExplicitAddRequest(lastUser);
+  const updatedFormData = additiveRequest
+    ? mergeAdditiveUpdate(currentFormData, proposedFormData)
+    : parsed.changeIntent === "none"
+      ? currentFormData
+      : mergeChangedSections(currentFormData, proposedFormData, parsed.changedSections);
 
   return {
-    formData: coerceFormData(parsed.formData),
+    formData: updatedFormData,
     reply: parsed.reply,
   };
 }

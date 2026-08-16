@@ -15,13 +15,6 @@ export const AUTH_ENDPOINTS = {
   gitCredential: (host: string) => `${API_BASE_URL}/auth/git-credentials/${host}`,
 };
 
-export const BUILDER_ENDPOINTS = {
-  save: `${API_BASE_URL}/cvbuilder/save`,
-  exportPdf: `${API_BASE_URL}/cvbuilder/export-pdf`,
-  update: (id: string) => `${API_BASE_URL}/cvbuilder/${id}`,
-  delete: (id: string) => `${API_BASE_URL}/cvbuilder/${id}`,
-};
-
 export const AI_ENDPOINTS = {
   grammarCheck: `${API_BASE_URL}/api/ai/grammarcheck`,
   analyze: `${API_BASE_URL}/api/ai/analyze`,
@@ -51,6 +44,7 @@ export const CV_ENDPOINTS = {
   userCvs: `${API_BASE_URL}/cvbuilder/user`,
   primary: `${API_BASE_URL}/cvbuilder/primary`,
   save: `${API_BASE_URL}/cvbuilder/save`,
+  exportPdf: `${API_BASE_URL}/cvbuilder/export-pdf`,
   update: (id: string) => `${API_BASE_URL}/cvbuilder/${id}`,
   delete: (id: string) => `${API_BASE_URL}/cvbuilder/${id}`,
   setPrimary: (id: string) => `${API_BASE_URL}/cvbuilder/${id}/primary`,
@@ -71,7 +65,6 @@ export const QUOTA_ENDPOINTS = {
 
 
 export const USER_ENDPOINTS = {
-  plan: `${API_BASE_URL}/auth/plan`,
   updateProfile: `${API_BASE_URL}/auth/profile`,
   deleteAccount: `${API_BASE_URL}/auth/account`,
 };
@@ -110,6 +103,7 @@ export const PAYMENT_ENDPOINTS = {
   creditQuote: `${API_BASE_URL}/payment/credit-quote`,
   customInstapayDetails: `${API_BASE_URL}/payment/instapay/details/custom`,
   status: `${API_BASE_URL}/payment/status`,
+  history: `${API_BASE_URL}/payment/history`,
   adminPending: `${API_BASE_URL}/payment/admin/pending`,
   adminApprove: (id: string) => `${API_BASE_URL}/payment/admin/${id}/approve`,
   adminReject: (id: string) => `${API_BASE_URL}/payment/admin/${id}/reject`,

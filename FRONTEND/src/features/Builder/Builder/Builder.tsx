@@ -21,14 +21,15 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { ArrowLeft, CheckCircle2, Download, Plus, LayoutTemplate, Save, ShieldAlert, Sparkles, Upload, Home } from "../../../components/icons/MuiIcons";
+import { ArrowLeft, CheckCircle2, Download, Plus, LayoutTemplate, Redo, Save, ShieldAlert, Sparkles, Undo, Upload, Home } from "../../../components/icons/MuiIcons";
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AI_ENDPOINTS, BUILDER_ENDPOINTS } from '../../../constants/endpoints';
+import { AI_ENDPOINTS, CV_ENDPOINTS } from '../../../constants/endpoints';
 import { track } from '../../../lib/analytics';
-import { addCustomSection, customSectionId, setCurrentCvId, setCvTitle, setPageCount, updateFormData } from '../../../redux/store/slices/cvBuilderSlice';
+import { addCustomSection, customSectionId, setCurrentCvId, setCvTitle, setFontScale, setPageCount, setSectionOrder, updateFormData, updateSection } from '../../../redux/store/slices/cvBuilderSlice';
+import { builderSnapshotFrom, clearBuilderHistory, reapplyBuilderSnapshot, restoreBuilderSnapshot } from '../../../redux/store/slices/builderHistoryActions';
 import type { RootState } from '../../../redux/store/store';
 import { cvFormToPdfProps } from '../../../templates/pdf/cvFormToPdfProps';
 import { useTemplate } from '../../../hooks/useTemplate';
@@ -38,7 +39,8 @@ import ConversationalBuilder from '../components/ConversationalBuilder/Conversat
 import ChooseTemplate from '../sidebar/components/ChooseTemplate';
 import AddSectionDialog from '../components/AddSectionDialog/AddSectionDialog';
 import { useSkillAutoExtract } from '../hooks/useSkillAutoExtract';
-import { runCvChecks } from '../cvChecks';
+import { detectDateStyles, hasWeakBullets, MIN_READABLE_FONT_SCALE, preferredSectionOrder, runCvChecks, spellOutCvDates } from '../cvChecks';
+import type { CvCheck } from '../cvChecks';
 import builder from './builder.tokens';
 
 const sectionLabels = {
@@ -62,15 +64,14 @@ const Builder = () => {
   const [downloading, setDownloading] = useState(false);
   const [checksAnchor, setChecksAnchor] = useState<HTMLElement | null>(null);
   const [addSectionOpen, setAddSectionOpen] = useState(false);
-  const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [applyingCheckId, setApplyingCheckId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dispatch = useDispatch();
-  const formData = useSelector((state: RootState) => state.cvBuilder.formData);
-  const sectionOrder = useSelector((state: RootState) => state.cvBuilder.sectionOrder);
-  const currentCvId = useSelector((state: RootState) => state.cvBuilder.currentCvId);
-  const title = useSelector((state: RootState) => state.cvBuilder.title);
-  const fontScale = useSelector((state: RootState) => state.cvBuilder.fontScale);
-  const pageCount = useSelector((state: RootState) => state.cvBuilder.pageCount);
+  const builderState = useSelector((state: RootState) => state.cvBuilder);
+  const { formData, sectionOrder, currentCvId, title, fontScale, pageCount } = builderState;
+  const builderSnapshots = useSelector((state: RootState) => state.builderHistory.snapshots);
+  const redoSnapshots = useSelector((state: RootState) => state.builderHistory.redoSnapshots);
   const { choosenTemp } = useTemplate();
   const { t } = useTranslation();
   const steps = sectionOrder.map((section) => {
@@ -86,7 +87,7 @@ const Builder = () => {
   const [workspaceKey, setWorkspaceKey] = useState(0);
   useSkillAutoExtract();
 
-  const flashNotice = (type: 'success' | 'error', text: string) => {
+  const flashNotice = (type: 'success' | 'error' | 'info', text: string) => {
     setNotice({ type, text });
     window.setTimeout(() => setNotice(null), 3000);
   };
@@ -99,6 +100,7 @@ const Builder = () => {
     try {
       const response = await axios.post(AI_ENDPOINTS.importCv, upload, { withCredentials: true });
       dispatch(updateFormData(response.data.formData));
+      dispatch(clearBuilderHistory());
       setWorkspaceKey((k) => k + 1);
       setChatOpen(true);
     } catch (error) {
@@ -117,15 +119,29 @@ const Builder = () => {
     void importCV(analyzedFile);
   }, [analyzedFile, importCV]);
 
+  const undoLastChange = () => {
+    const previousBuilder = builderSnapshots[builderSnapshots.length - 1];
+    if (!previousBuilder) return;
+    dispatch(restoreBuilderSnapshot({ nextBuilder: previousBuilder, currentBuilder: builderSnapshotFrom(builderState) }));
+    setWorkspaceKey((key) => key + 1);
+  };
+
+  const redoLastChange = () => {
+    const nextBuilder = redoSnapshots[redoSnapshots.length - 1];
+    if (!nextBuilder) return;
+    dispatch(reapplyBuilderSnapshot({ nextBuilder, currentBuilder: builderSnapshotFrom(builderState) }));
+    setWorkspaceKey((key) => key + 1);
+  };
+
   const saveCV = async () => {
     setSaving(true);
     const resolvedTitle = title.trim() || formData.personalInfo.professionalTitle.trim();
     const payload = { ...formData, title: resolvedTitle, template: choosenTemp, sectionOrder, fontScale };
     try {
       if (currentCvId) {
-        await axios.put(BUILDER_ENDPOINTS.update(currentCvId), payload, { withCredentials: true });
+        await axios.put(CV_ENDPOINTS.update(currentCvId), payload, { withCredentials: true });
       } else {
-        const response = await axios.post(BUILDER_ENDPOINTS.save, payload, { withCredentials: true });
+        const response = await axios.post(CV_ENDPOINTS.save, payload, { withCredentials: true });
         const newId = response.data?.cv?.id;
         if (newId) dispatch(setCurrentCvId(newId));
         track('cv_created');
@@ -151,13 +167,88 @@ const Builder = () => {
   );
   const warningCount = checks.filter((check) => check.severity === 'warning').length;
 
+  const polishWeakExperience = async () => Promise.all(
+    formData.experience.map(async (experience) => {
+      if (!hasWeakBullets(experience.description || '')) return experience;
+      const response = await axios.post(
+        AI_ENDPOINTS.polishEntry,
+        { sectionName: 'experience', raw: experience.description, jobTitle: experience.jobTitle, formData },
+        { withCredentials: true },
+      );
+      return { ...experience, description: response.data.polished };
+    }),
+  );
+
+  const applyAiSuggestion = async (checkId: string) => {
+    if (checkId === 'weak-verbs') {
+      dispatch(updateFormData({ ...formData, experience: await polishWeakExperience() }));
+    } else if (checkId === 'summary-too-short') {
+      const response = await axios.post(
+        AI_ENDPOINTS.editFieldAI,
+        { sectionName: 'summary', userPrompt: 'Write a concise professional summary using only facts already in this CV.', currentContent: formData.personalInfo.ProfessionalSummary, context: {}, formData },
+        { withCredentials: true },
+      );
+      dispatch(updateSection({ section: 'personalInfo', data: { ProfessionalSummary: response.data.result } }));
+    } else if (checkId === 'too-few-skills') {
+      const response = await axios.post(AI_ENDPOINTS.generateSmartSkills, { formData }, { withCredentials: true });
+      dispatch(updateSection({ section: 'skills', data: { skills: response.data.skills } }));
+    } else if (checkId === 'too-many-pages') {
+      const response = await axios.post(
+        AI_ENDPOINTS.optimizeCvLength,
+        { formData, currentPages: pageCount },
+        { withCredentials: true },
+      );
+      dispatch(updateFormData({
+        ...response.data.formData,
+        personalInfo: { ...response.data.formData.personalInfo, photo: formData.personalInfo.photo },
+        customSections: formData.customSections,
+      }));
+    }
+  };
+
+  const applyCvSuggestion = async (check: CvCheck) => {
+    const step = sectionOrder.indexOf(check.section);
+    if (step >= 0) setActiveStep(step);
+    if (check.id === 'missing-contact' || check.id === 'no-numbers') {
+      setChecksAnchor(null);
+      flashNotice('info', t('Add the missing factual information in the highlighted section.'));
+      return;
+    }
+
+    setApplyingCheckId(check.id);
+    try {
+      if (check.id === 'section-order') dispatch(setSectionOrder(preferredSectionOrder(sectionOrder)));
+      else if (check.id === 'font-too-small') dispatch(setFontScale(MIN_READABLE_FONT_SCALE));
+      // Reformatting a date the user already entered invents nothing, so it needs no AI call.
+      // Only a bare month/year can be rewritten; a hand-typed range has to go back to the user
+      // rather than leaving the click looking like it did nothing.
+      else if (check.id === 'mixed-dates') {
+        const spelled = spellOutCvDates(formData);
+        dispatch(updateFormData(spelled));
+        if (detectDateStyles(spelled).length > 1) {
+          setChecksAnchor(null);
+          flashNotice('info', t('Some dates need fixing by hand — edit the date fields in the highlighted section.'));
+          return;
+        }
+      }
+      else await applyAiSuggestion(check.id);
+      setWorkspaceKey((key) => key + 1);
+      setChecksAnchor(null);
+      flashNotice('success', t('CV suggestion applied.'));
+    } catch {
+      flashNotice('error', t('We could not apply that suggestion. Please try again.'));
+    } finally {
+      setApplyingCheckId(null);
+    }
+  };
+
   // The server prints the same template the preview renders, so the download matches what
   // is on screen instead of being a second hand-written implementation of the design.
   const downloadPdf = async () => {
     setDownloading(true);
     try {
       const response = await axios.post(
-        BUILDER_ENDPOINTS.exportPdf,
+        CV_ENDPOINTS.exportPdf,
         { formData, sectionOrder, template: choosenTemp, fontScale, name: pdfProps.name },
         { withCredentials: true, responseType: 'blob' },
       );
@@ -300,6 +391,28 @@ const Builder = () => {
 
           <Box sx={builder.dock}>
             <Box sx={builder.dockItem}>
+              <Tooltip title={t('Undo last change')}>
+                <span>
+                  <IconButton onClick={undoLastChange} disabled={builderSnapshots.length === 0} sx={builder.dockButton}>
+                    <Undo size={22} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Typography sx={builder.dockLabel}>{t('Undo')}</Typography>
+            </Box>
+
+            <Box sx={builder.dockItem}>
+              <Tooltip title={t('Redo last change')}>
+                <span>
+                  <IconButton onClick={redoLastChange} disabled={redoSnapshots.length === 0} sx={builder.dockButton}>
+                    <Redo size={22} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Typography sx={builder.dockLabel}>{t('Redo')}</Typography>
+            </Box>
+
+            <Box sx={builder.dockItem}>
               <Tooltip title={t('Choose Template')}>
                 <IconButton onClick={() => setTemplateOpen(true)} sx={builder.dockButton}>
                   <LayoutTemplate size={22} />
@@ -378,15 +491,12 @@ const Builder = () => {
                 {checks.map((check) => (
                   <ListItemButton
                     key={check.id}
-                    onClick={() => {
-                      const step = sectionOrder.indexOf(check.section);
-                      if (step >= 0) setActiveStep(step);
-                      setChecksAnchor(null);
-                    }}
+                    onClick={() => void applyCvSuggestion(check)}
+                    disabled={applyingCheckId !== null}
                     sx={{ alignItems: 'flex-start', gap: 1 }}
                   >
                     <Box sx={{ mt: '2px', color: check.severity === 'warning' ? 'error.main' : 'text.secondary' }}>
-                      <ShieldAlert size={16} />
+                      {applyingCheckId === check.id ? <CircularProgress size={16} /> : <ShieldAlert size={16} />}
                     </Box>
                     <ListItemText
                       primary={t(check.message, check.values)}

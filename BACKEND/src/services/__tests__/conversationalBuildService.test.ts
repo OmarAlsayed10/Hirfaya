@@ -51,12 +51,61 @@ describe("conversationalBuild AI response integrity", () => {
   test("returns a schema-complete provider update", async () => {
     const formData = { ...currentFormData, skills: { ...currentFormData.skills, skills: ["TypeScript"] } };
     mockedGroqChat.mockResolvedValueOnce({
-      choices: [{ message: { content: JSON.stringify({ formData, reply: "Added TypeScript to your skills." }) } }],
+      choices: [{ message: { content: JSON.stringify({
+        changeIntent: "add",
+        changedSections: ["skills"],
+        formData,
+        reply: "Added TypeScript to your skills.",
+      }) } }],
     } as never);
 
     await expect(conversationalBuild(messages, currentFormData)).resolves.toEqual({
       formData,
       reply: "Added TypeScript to your skills.",
     });
+  });
+
+  test("2026-07 additive Arabic request preserves the imported CV when the provider returns only new entries", async () => {
+    const importedFormData = {
+      ...currentFormData,
+      personalInfo: { ...currentFormData.personalInfo, ProfessionalSummary: "Insurance and retail sales professional." },
+      experience: [{
+        jobTitle: "Insurance Broker", company: "ABC Insurance", location: "", startDate: "", endDate: "", description: "Advised clients on insurance products.",
+      }],
+    };
+    const providerFormData = {
+      ...currentFormData,
+      personalInfo: {
+        ...currentFormData.personalInfo,
+        firstName: "",
+        lastName: "",
+        email: "",
+        professionalTitle: "",
+        ProfessionalSummary: "Motivated and results-driven Sales & Customer Service Professional.",
+      },
+      experience: [{
+        jobTitle: "Sales Associate", company: "TAG Store", location: "", startDate: "", endDate: "6 months", description: "Supported retail sales of household goods.",
+      }],
+      skills: {
+        ...currentFormData.skills,
+        certifications: [{ name: "Digital Marketing Course", issuer: "", date: "", url: "", description: "35-hour course covering content creation and media buying." }],
+      },
+    };
+    mockedGroqChat.mockResolvedValueOnce({
+      choices: [{ message: { content: JSON.stringify({
+        changeIntent: "modify",
+        changedSections: ["personalInfo", "experience", "skills"],
+        formData: providerFormData,
+        reply: "تمت إضافة الخبرة والكورس.",
+      }) } }],
+    } as never);
+
+    const update = await conversationalBuild([
+      { role: "user", content: "add: زودلي اني اشتغلت في tag store للادوات المنزلية ٦ شهور وخدت كورس ديجيتال ماركتينج (content creation - media buying) حوالي ٣٥ ساعة" },
+    ], importedFormData);
+
+    expect(update.formData.personalInfo).toEqual(importedFormData.personalInfo);
+    expect(update.formData.experience).toEqual([...importedFormData.experience, ...providerFormData.experience]);
+    expect(update.formData.skills.certifications).toEqual(providerFormData.skills.certifications);
   });
 });

@@ -49,7 +49,7 @@ export const adjustCVController = async (req: Request, res: Response) => {
     // Score original once — gives the optimizer its gaps and the honest baseline
     const { total: originalScore, categories: breakdown, dimensions } = await withRetry(() => scoreCVWithBreakdown(cvText, role, lvl));
 
-    const { adjustedCV, changes } = await withRetry(() =>
+    const { adjustedCV, changes, formData } = await withRetry(() =>
       adjustCV(
         cvText,
         safeCurrentScore,
@@ -72,7 +72,7 @@ export const adjustCVController = async (req: Request, res: Response) => {
     const newScore = improved ? rescored.total : originalScore;
     const newBreakdown = improved ? rescored.categories : breakdown;
 
-    res.status(200).json({ adjustedCV, changes, originalScore, newScore, newBreakdown });
+    res.status(200).json({ adjustedCV, changes, formData, originalScore, newScore, newBreakdown });
   } catch (error) {
     sendAiError(res, error, "CV adjust error", "Failed to adjust CV");
   }

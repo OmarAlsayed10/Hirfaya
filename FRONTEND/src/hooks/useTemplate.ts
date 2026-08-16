@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
-import { BUILDER_ENDPOINTS } from "../constants/endpoints";
+import { CV_ENDPOINTS } from "../constants/endpoints";
 import { setTemplate } from "../redux/store/slices/cvBuilderSlice";
 import type { RootState } from "../redux/store/store";
 
@@ -15,7 +15,7 @@ export const useTemplate = () => {
         // explicit Save writes the template anyway, so a failure here is recoverable.
         if (currentCvId) {
             void axios
-                .put(BUILDER_ENDPOINTS.update(currentCvId), { template }, { withCredentials: true })
+                .put(CV_ENDPOINTS.update(currentCvId), { template }, { withCredentials: true })
                 .catch(() => {});
         }
     };

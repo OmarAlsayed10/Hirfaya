@@ -1,5 +1,7 @@
 import type { ScoreCategory, ScoreDimension } from "./cvScoring";
 import { groqChat } from "../lib/groqChat";
+import { coerceFormData, type BuilderFormData } from "./cvParseService";
+import { WEAK_OPENER_WORDS, startsWithActionVerb } from "./cvScoring/constants";
 
 export interface CVChange {
   section: string;
@@ -11,6 +13,10 @@ export interface CVChange {
 export interface AdjustCVResult {
   adjustedCV: string;
   changes: CVChange[];
+  // The same CV as fields, so the download can render through the real templates instead of the
+  // plain-text fallback. Null whenever the model omits the block or returns unusable JSON — the
+  // rewrite itself is still good, so a missing structure must never fail the request.
+  formData: BuilderFormData | null;
 }
 
 const ENHANCE_FORMAT = `═══ FORMAT — CLEAN UP FOR ATS, KEEP THE CANDIDATE'S CONTENT ═══
@@ -23,16 +29,20 @@ Keep every real role, project, skill, date, and metric — never delete content 
 - Use ONE bullet style throughout — a single "- " marker on every bullet. Never mix bullet glyphs.
 - Use ONE date format throughout (e.g. "Jan 2023 – Present"). Make every role and education date match it exactly.
 - Projects: put each project's title on its OWN header line as "Project Name – short descriptor | Tech, Tech, Tech" (use " | ", NO leading bullet, and NO separate "Tech:" line). Under it, list ONLY real achievement bullets. Never turn the project name, the tech list, or a repo/live link into a bullet.
-- Start every experience/project bullet with a strong action verb (Built, Led, Reduced, Designed, Improved, Developed...). Never open a bullet with a weak verb like "Followed", "Worked on", "Responsible for", or "Helped".
+- Start every experience/project bullet with a strong action verb (Built, Led, Reduced, Designed, Improved, Developed...). Never open a bullet with any of these, which the scorer counts as weak: ${WEAK_OPENER_WORDS.map((w) => `"${w}"`).join(", ")}.
 - Turn weak/duty bullets into accomplishment statements (verb + what + result), quantified ONLY with numbers already present. Never invent metrics.
 - Tighten the summary and skills wording; drop filler skills.
 Single column — no tables, no multi-column tabs, no vertical bars.`;
 
-const JAKE_FORMAT = `═══ REQUIRED FORMAT — "Jake's Resume" one-page ATS template ═══
+const JAKE_FORMAT = `═══ REQUIRED FORMAT — "Jake's Resume" ATS template ═══
+Length follows the content — two pages is fine. This template is usually described as one page, and
+saying so here made the model drop real roles and bullets to hit that length, which contradicts the
+never-shorten rule below.
 Output plain text in EXACTLY this structure and order. Omit a section only if the original has zero content for it.
 
 Line 1: Full Name
-Line 2: phone | email | linkedin-url | github-or-website   (only the ones present)
+Line 2: the candidate's role / professional title ALONE on its own line — no contact details, no "|" on this line
+Line 3: phone | email | linkedin-url | github-or-website   (only the ones present — the role must NOT be repeated here)
 (blank line)
 SUMMARY
 <2-3 line summary>
@@ -55,6 +65,7 @@ SKILLS
 
 Rules for this format:
 - Section headings are ALL-CAPS on their own line.
+- Start every experience/project bullet with a strong action verb (Built, Led, Reduced, Designed, Improved, Developed...). Never open a bullet with any of these, which the scorer counts as weak: ${WEAK_OPENER_WORDS.map((w) => `"${w}"`).join(", ")}.
 - ADAPT TO THE CANDIDATE'S FIELD — first infer their role family from the CV (software, data, design, lab/biotech science, healthcare, engineering, sales, marketing, finance, operations, legal, academic, education, skilled trade, etc.), then shape sections to fit:
   • Name the skills section for the field: TECHNICAL SKILLS (software/IT), LABORATORY SKILLS (lab science), CLINICAL SKILLS (healthcare), CORE COMPETENCIES (business/other).
   • Group skills under sub-labels that FIT the field (e.g. software → Languages/Frameworks/Tools; biotech → Techniques/Instruments/Software; sales → Methods/Tools/Domains). NEVER output a sub-label with nothing after it — omit empty labels entirely.
@@ -65,9 +76,12 @@ Rules for this format:
 - The output must contain at least as many experience bullets and skills as the original. Never shorten to fit one page — length follows the content.
 - Single column, no tables, no graphics.`;
 
-const GOLD_EXAMPLE = `═══ GOLD-STANDARD SHAPE — match this STRUCTURE and writing style; do NOT copy its facts ═══
+const goldExample = (jake: boolean) => `═══ GOLD-STANDARD SHAPE — match this STRUCTURE and writing style; do NOT copy its facts ═══
 Sample Candidate
-Full Stack Developer | React, Node.js, TypeScript | City, ST | +1-000-000-0000 | sample@example.com | github.com/sample | linkedin.com/in/sample
+${jake
+  ? `Full Stack Developer
++1-000-000-0000 | sample@example.com | github.com/sample | linkedin.com/in/sample`
+  : `Full Stack Developer | React, Node.js, TypeScript | City, ST | +1-000-000-0000 | sample@example.com | github.com/sample | linkedin.com/in/sample`}
 SUMMARY
 Full Stack Developer delivering measurable impact across 8+ apps: 45% lower API latency, 60% more frequent deploys, 38% faster page loads.
 EXPERIENCE
@@ -138,7 +152,7 @@ export async function adjustCV(
 ${fixList || gaps || "  (no specific issues flagged — apply the quality bar below)"}
 
 ═══ HARD RULES ═══
-- The output MUST begin with the candidate's header: line 1 is their real Full Name (never "Summary" or any section word), line 2 is their real contact facts (role, email, phone, LinkedIn, GitHub, location). Only THEN comes the first section. Never drop the name or any contact detail.
+- The output MUST begin with the candidate's header: line 1 is their real Full Name (never "Summary" or any section word), then their real contact facts (role, email, phone, LinkedIn, GitHub, location) laid out exactly as the REQUIRED FORMAT section below specifies. Only THEN comes the first section. Never drop the name or any contact detail.
 - Apply every fix above: reorder the sections to Summary → Experience → Skills → Education, use standard heading lines, unify to ONE date format, rewrite the exact dates flagged (e.g. "09/2021 – 07/2024" → "September 2021 – July 2024"), add or sharpen the Professional Summary using the candidate's real content, lead every bullet with a strong action verb, and remove any multi-column / tab / vertical-bar formatting.
 - KEEP every real number, percentage, and metric the candidate already wrote — NEVER drop a quantified result. Surface them: keep existing metrics in the summary and inside the matching bullets (e.g. if the CV says "improved page load speed by 40%", that number must survive in the rewrite).
 - The ONLY things you may NEVER do: invent or change any number, percentage, or metric; invent skills, employers, job titles, calendar dates, schools, or degrees the candidate did not state. If a fix says "quantify" a bullet or "add N skills" and that data is not already in the CV, SKIP only that single item and apply all the others.
@@ -149,7 +163,7 @@ ${gaps || "  (none)"}
 
 ${applyJakeTemplate ? JAKE_FORMAT : ENHANCE_FORMAT}
 
-${GOLD_EXAMPLE}
+${goldExample(applyJakeTemplate)}
 ${role || lvl ? `\n═══ TARGET — TAILOR TO THIS ═══\nThis candidate is targeting: ${lvl ? lvl + " " : ""}${role || "their stated role"}. Emphasize the experience, skills, and terminology expected of a ${lvl || ""} ${role || "candidate"} — only where the candidate genuinely has them. Do NOT invent skills or seniority the candidate lacks or inflate them beyond their real level.\n` : ""}
 ═══ SUPPLEMENTARY AI NOTES ═══
 ${aiNotes || "  (none)"}
@@ -158,7 +172,7 @@ ${aiNotes || "  (none)"}
 ${cvText}
 
 ${applyJakeTemplate
-  ? "Rewrite the entire CV into the required one-page ATS format above, improving real quality. Then list every change you made."
+  ? "Rewrite the entire CV into the required ATS format above, improving real quality. Keep every real role, bullet and skill — never trim content to reach a page count. Then list every change you made."
   : "Rewrite the entire CV applying the improvements above while keeping its existing structure and section order. Then list every change you made."}
 
 Use EXACTLY this format — no extra text before or after:
@@ -172,12 +186,46 @@ CHANGES_START
   {"section":"<name>","what":"<what changed>","why":"<why it improves ATS score>","impact":"high|medium|low"},
   ...
 ]
-CHANGES_END`;
+CHANGES_END
+
+FORMDATA_START
+{
+  "personalInfo": {"firstName":"","lastName":"","email":"","phoneCode":"","phone":"","city":"","country":"","professionalTitle":"","ProfessionalSummary":"","linkedin":"","github":"","portfolio":""},
+  "experience": [{"jobTitle":"","company":"","location":"","startDate":"","endDate":"","description":"one bullet per line, no bullet characters"}],
+  "education": [{"institution":"","degree":"","location":"","startYear":"","endYear":"","description":""}],
+  "projects": [{"name":"","technologies":"","demoUrl":"","githubUrl":"","description":"one bullet per line, no bullet characters"}],
+  "skills": {"skills":["one skill per array entry"],"languages":"","certifications":[{"name":"","issuer":"","date":"","url":"","description":""}]}
+}
+FORMDATA_END
+
+FORMDATA rules — this is the SAME CV as above, just as fields instead of text:
+- Every fact must already appear in the rewritten CV. Invent nothing, drop nothing.
+- Dates stay exactly as written above ("Jan 2023", "Present"). Do not reformat them.
+- description holds the achievement bullets separated by newlines, with NO leading "-" or "•".
+- skills is a flat array of individual skills, never one comma-joined string.`;
 
   const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
     { role: "system", content: systemPrompt },
     { role: "user", content: userPrompt },
   ];
+
+  // A model that ignores its own output contract is the norm, not the exception — this same prompt
+  // already specifies name on line 1 and contacts on line 2, and the model still returned them
+  // joined. So a missing or malformed block degrades to null rather than throwing.
+  const parseFormData = (raw: string): BuilderFormData | null => {
+    const match = raw.match(/FORMDATA_START\s*([\s\S]*?)\s*FORMDATA_END/);
+    if (!match) return null;
+    try {
+      const parsed = coerceFormData(JSON.parse(match[1].trim()));
+      const hasName = `${parsed.personalInfo.firstName}${parsed.personalInfo.lastName}`.trim();
+      // Structure with no name and no roles is not worth rendering a template from.
+      if (!hasName && parsed.experience.length === 0) return null;
+      return parsed;
+    } catch (error) {
+      console.warn("cvAdjustService: FORMDATA block was not usable JSON", error);
+      return null;
+    }
+  };
 
   const parseChanges = (raw: string): CVChange[] => {
     const m = raw.match(/CHANGES_START\s*([\s\S]*?)\s*CHANGES_END/);
@@ -189,6 +237,17 @@ CHANGES_END`;
       return [];
     }
   };
+
+  // Bullets the scorer would mark weak, quoted back to the model so it knows which ones to redo.
+  const weakOpenings = (cv: string): string[] =>
+    cv
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => /^[-•*]\s+/.test(line))
+      .map((line) => line.replace(/^[-•*]\s+/, "").trim())
+      .filter((bullet) => bullet && !startsWithActionVerb(bullet));
+
+  let lastGoodRewrite: AdjustCVResult | null = null;
 
   for (let attempt = 0; attempt < 3; attempt++) {
     const response = await groqChat({
@@ -207,21 +266,44 @@ CHANGES_END`;
 
     const candidate = cvMatch[1].trim();
     const invented = fabricatedMetrics(candidate, cvText);
+    const weakBullets = weakOpenings(candidate);
+
+    if (invented.length === 0 && weakBullets.length === 0) {
+      return { adjustedCV: candidate, changes: parseChanges(raw), formData: parseFormData(raw) };
+    }
+
+    // Naming the banned words in the prompt was not enough on its own — a real run still returned
+    // "Participated in 90% of code reviews". The model has to be shown the offending bullet back.
     if (invented.length === 0) {
-      return { adjustedCV: candidate, changes: parseChanges(raw) };
+      console.warn(`cvAdjustService: ${weakBullets.length} weak bullet opening(s) — retry ${attempt + 1}/2`);
+      lastGoodRewrite = { adjustedCV: candidate, changes: parseChanges(raw), formData: parseFormData(raw) };
+      messages.push({ role: "assistant", content: raw });
+      messages.push({
+        role: "user",
+        content: `These bullets open with a weak verb, which the scorer penalises:\n${weakBullets.map((b) => `  • ${b}`).join("\n")}\n\nRewrite ONLY those bullets to open with a strong action verb (Reviewed, Led, Built, Improved, Mentored...), keeping every fact and every number exactly as it is — "Participated in 90% of code reviews" becomes "Reviewed 90% of code reviews". Return the full CV again in the exact same CV_START/CV_END, CHANGES_START/CHANGES_END and FORMDATA_START/FORMDATA_END format.`,
+      });
+      continue;
     }
 
     console.warn(`cvAdjustService: rewrite invented metrics ${JSON.stringify(invented)} — retry ${attempt + 1}/2`);
     messages.push({ role: "assistant", content: raw });
     messages.push({
       role: "user",
-      content: `STOP — your rewrite INVENTED these figures that are NOT in the original CV: ${invented.join(", ")}. That is fake data and is forbidden. Regenerate the CV in the exact same CV_START/CV_END and CHANGES_START/CHANGES_END format, keeping every structural and wording improvement, but REMOVE every invented number and percentage. Any bullet with no number in the original must have no number.`,
+      content: `STOP — your rewrite INVENTED these figures that are NOT in the original CV: ${invented.join(", ")}. That is fake data and is forbidden. Regenerate the CV in the exact same CV_START/CV_END, CHANGES_START/CHANGES_END and FORMDATA_START/FORMDATA_END format, keeping every structural and wording improvement, but REMOVE every invented number and percentage. Any bullet with no number in the original must have no number.`,
     });
+  }
+
+  // A weak verb is a wording nit, not fabricated data. If the retries could not clear it, the
+  // rewrite is still far better than the original — keep it rather than throwing the work away.
+  if (lastGoodRewrite) {
+    console.warn("cvAdjustService: weak bullet openings survived every retry — returning the rewrite anyway.");
+    return lastGoodRewrite;
   }
 
   console.error("cvAdjustService: could not optimize without fabricating metrics — returning original CV unchanged.");
   return {
     adjustedCV: cvText,
+    formData: null,
     changes: [
       {
         section: "All",

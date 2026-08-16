@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { builderSnapshotFrom, reapplyBuilderSnapshot, restoreBuilderSnapshot } from "./builderHistoryActions";
 
 export interface PersonalInfo {
   firstName: string;
@@ -332,6 +333,9 @@ export const cvBuilderSlice = createSlice({
       );
       state.sectionOrder = state.sectionOrder.filter((section) => section !== `custom:${action.payload}`);
     },
+    setSectionOrder: (state, action: PayloadAction<CvSection[]>) => {
+      state.sectionOrder = sanitizeSectionOrder(action.payload, state.formData.customSections);
+    },
     moveCvSection: (state, action: PayloadAction<{ from: number; to: number }>) => {
       const { from, to } = action.payload;
       if (from < 0 || to < 0 || from >= state.sectionOrder.length || to >= state.sectionOrder.length) return;
@@ -381,6 +385,15 @@ export const cvBuilderSlice = createSlice({
       state.myCvs = action.payload;
     },
   },
+  extraReducers: (builder) => {
+    builder
+      .addCase(restoreBuilderSnapshot, (state, action) => {
+        Object.assign(state, builderSnapshotFrom(action.payload.nextBuilder));
+      })
+      .addCase(reapplyBuilderSnapshot, (state, action) => {
+        Object.assign(state, builderSnapshotFrom(action.payload.nextBuilder));
+      });
+  },
 });
 
 export const {
@@ -396,6 +409,7 @@ export const {
   renameCustomSection,
   setCustomSectionItems,
   removeCustomSection,
+  setSectionOrder,
   moveCvSection,
   updateSection,
   updateArraySection,

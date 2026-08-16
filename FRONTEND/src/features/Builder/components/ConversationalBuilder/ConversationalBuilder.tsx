@@ -45,7 +45,11 @@ const ConversationalBuilder = ({ open, onClose, onUpdate }: Props) => {
         { withCredentials: true },
       );
       if (res.data?.formData) {
-        dispatch(updateFormData(res.data.formData));
+        dispatch(updateFormData({
+          ...res.data.formData,
+          personalInfo: { ...res.data.formData.personalInfo, photo: formData.personalInfo.photo },
+          customSections: formData.customSections,
+        }));
         if (onUpdate) onUpdate();
       }
       setMessages((m) => [...m, { role: 'assistant', content: res.data?.reply || t('Got it — what next?') }]);
