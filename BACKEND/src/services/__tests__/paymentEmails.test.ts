@@ -6,8 +6,8 @@ jest.mock("nodemailer", () => {
   };
 });
 
-process.env.CLIENT_URL = "https://hirfaya.test/";
-process.env.ADMIN_EMAIL = "admin@hirfaya.test";
+process.env.CLIENT_URL = "https://muhtaraf.test/";
+process.env.ADMIN_EMAIL = "admin@muhtaraf.test";
 
 import nodemailer from "nodemailer";
 import { emailService } from "../emailService";
@@ -60,7 +60,7 @@ describe("payment emails", () => {
       });
 
       const html = lastHtml();
-      expect(html).toContain("https://hirfaya.test/admin");
+      expect(html).toContain("https://muhtaraf.test/admin");
       expect(html).not.toContain("cloudinary");
       expect(html).not.toContain("X-Admin-Secret");
     });
